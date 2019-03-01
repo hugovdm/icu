@@ -824,6 +824,9 @@ _addVariantToList(VariantListEntry **first, VariantListEntry *var) {
         int32_t cmp;
 
         /* variants order should be preserved */
+        // Disagree! As per Unicode LDML spec, we'd prefer them sorted. (So
+        // where does the above idea come from, who might be disappointed by
+        // sorting?)
         prev = NULL;
         cur = *first;
         while (TRUE) {
@@ -1166,6 +1169,7 @@ _appendVariantsToLanguageTag(const char* localeID, icu::ByteSink& sink, UBool st
                                 break;
                             }
                             var->variant = pVar;
+                            // To sort variants, perhaps sorted version of this:
                             if (!_addVariantToList(&varFirst, var)) {
                                 /* duplicated variant */
                                 uprv_free(var);
@@ -1492,8 +1496,12 @@ _appendKeywordsToLanguageTag(const char* localeID, icu::ByteSink& sink, UBool st
                 } else {
                     sink.Append("-", 1);
                     sink.Append(ext->key, static_cast<int32_t>(uprv_strlen(ext->key)));
-                    sink.Append("-", 1);
-                    sink.Append(ext->value, static_cast<int32_t>(uprv_strlen(ext->value)));
+                    // TODO(hugovdm): determine if this is the best place to
+                    // drop "true".
+                    if (uprv_strcmp(ext->value, "true") != 0) {
+                        sink.Append("-", 1);
+                        sink.Append(ext->value, static_cast<int32_t>(uprv_strlen(ext->value)));
+                    }
                 }
             }
         }

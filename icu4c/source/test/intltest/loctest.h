@@ -122,6 +122,7 @@ public:
 
     void TestForLanguageTag();
     void TestToLanguageTag();
+    void TestLanguageTagCanonicalization();
 
     void TestMoveAssign();
     void TestMoveCtor();

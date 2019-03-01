@@ -253,6 +253,7 @@ void LocaleTest::runIndexedTest( int32_t index, UBool exec, const char* &name, c
     TESTCASE_AUTO(TestBug20410);
     TESTCASE_AUTO(TestForLanguageTag);
     TESTCASE_AUTO(TestToLanguageTag);
+    TESTCASE_AUTO(TestLanguageTagCanonicalization);
     TESTCASE_AUTO(TestMoveAssign);
     TESTCASE_AUTO(TestMoveCtor);
     TESTCASE_AUTO(TestBug20407iVariantPreferredValue);
@@ -3151,6 +3152,28 @@ void LocaleTest::TestToLanguageTag() {
     std::string result_bogus = loc_bogus.toLanguageTag<std::string>(status);
     assertEquals("bogus", U_ILLEGAL_ARGUMENT_ERROR, status.reset());
     assertTrue(result_bogus.c_str(), result_bogus.empty());
+}
+
+void LocaleTest::TestLanguageTagCanonicalization() {
+    IcuTestErrorCode status(*this, "TestLanguageTagCanonicalization");
+
+    static const char orig_tag_variants[] = "en-scouse-fonipa";
+    static const char orig_tag_u_with_true[] = "und-u-foo-bar-nu-thai-ca-buddhist-kk-true";
+
+    static const char canonical_tag_variants[] = "en-fonipa-scouse";
+    static const char canonical_tag_u_with_true[] = "und-u-bar-foo-ca-buddhist-kk-nu-thai";
+
+    Locale loc_variants = Locale::forLanguageTag(orig_tag_variants, status);
+    status.errIfFailureAndReset("forLanguageTag \"%s\"", orig_tag_variants);
+    std::string result_variants = loc_variants.toLanguageTag<std::string>(status);
+    status.errIfFailureAndReset("toLanguageTag \"%s\"", result_variants.c_str());
+    assertEquals((UnicodeString)orig_tag_variants + " " + loc_variants.getName(), canonical_tag_variants, result_variants.c_str());
+
+    Locale loc_u_with_true = Locale::forLanguageTag(orig_tag_u_with_true, status);
+    status.errIfFailureAndReset("forLanguageTag \"%s\"", orig_tag_u_with_true);
+    std::string result_u_with_true = loc_u_with_true.toLanguageTag<std::string>(status);
+    status.errIfFailureAndReset("toLanguageTag \"%s\"", result_u_with_true.c_str());
+    assertEquals((UnicodeString)orig_tag_u_with_true + " " + loc_u_with_true.getName(), canonical_tag_u_with_true, result_u_with_true.c_str());
 }
 
 void LocaleTest::TestMoveAssign() {
