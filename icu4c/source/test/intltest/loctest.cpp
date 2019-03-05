@@ -3161,7 +3161,9 @@ void LocaleTest::TestLanguageTagCanonicalization() {
       const char* const original;
       const char* const expected;
     } testCases[] = {
-      { "root", "und" },
+        {"root", "und"},
+        {"und-u-foo-bar-nu-thai-ca-buddhist-kk-true",
+         "und-u-bar-foo-ca-buddhist-kk-nu-thai"},
     };
 
     for (const auto& testCase : testCases) {
