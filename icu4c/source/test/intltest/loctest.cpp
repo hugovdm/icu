@@ -253,6 +253,7 @@ void LocaleTest::runIndexedTest( int32_t index, UBool exec, const char* &name, c
     TESTCASE_AUTO(TestBug20410);
     TESTCASE_AUTO(TestForLanguageTag);
     TESTCASE_AUTO(TestToLanguageTag);
+    TESTCASE_AUTO(TestLanguageTagCanonicalization);
     TESTCASE_AUTO(TestMoveAssign);
     TESTCASE_AUTO(TestMoveCtor);
     TESTCASE_AUTO(TestBug20407iVariantPreferredValue);
@@ -3151,6 +3152,30 @@ void LocaleTest::TestToLanguageTag() {
     std::string result_bogus = loc_bogus.toLanguageTag<std::string>(status);
     assertEquals("bogus", U_ILLEGAL_ARGUMENT_ERROR, status.reset());
     assertTrue(result_bogus.c_str(), result_bogus.empty());
+}
+
+void LocaleTest::TestLanguageTagCanonicalization() {
+    IcuTestErrorCode status(*this, "TestLanguageTagCanonicalization");
+
+    static const struct {
+      const char* const original;
+      const char* const expected;
+    } testCases[] = {
+      { "root", "und" },
+    };
+
+    for (const auto& testCase : testCases) {
+      const char* const orig = testCase.original;
+      const char* const expected = testCase.expected;
+
+      Locale loc = Locale::forLanguageTag(orig, status);
+      status.errIfFailureAndReset("forLanguageTag \"%s\"", orig);
+      std::string result = loc.toLanguageTag<std::string>(status);
+      status.errIfFailureAndReset("toLanguageTag \"%s\" (from \"%s\")",
+                                  result.c_str(), orig);
+      assertEquals((UnicodeString)orig + " " + loc.getName(), expected,
+                   result.c_str());
+    }
 }
 
 void LocaleTest::TestMoveAssign() {
