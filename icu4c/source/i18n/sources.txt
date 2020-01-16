@@ -209,6 +209,7 @@ ulocdata.cpp
 umsg.cpp
 unesctrn.cpp
 uni2name.cpp
+unitconverter.cpp
 unum.cpp
 unumsys.cpp
 upluralrules.cpp
