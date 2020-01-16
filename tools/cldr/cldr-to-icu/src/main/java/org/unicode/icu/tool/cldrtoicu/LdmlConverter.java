@@ -287,6 +287,10 @@ public final class LdmlConverter {
           return;
         }
 
+        if (splitDirs.isEmpty()) {
+            return;
+        }
+
         Map<IcuLocaleDir, DependencyGraph> graphMetadata = new HashMap<>();
         splitDirs.forEach(d -> graphMetadata.put(d, new DependencyGraph(cldrVersion)));
 
