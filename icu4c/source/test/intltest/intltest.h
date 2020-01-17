@@ -17,6 +17,7 @@
 #include "unicode/fmtable.h"
 #include "unicode/testlog.h"
 #include "unicode/uniset.h"
+#include "number_decnum.h"
 
 #include <vector>
 #include <string>
