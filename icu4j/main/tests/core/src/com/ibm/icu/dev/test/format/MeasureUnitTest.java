@@ -287,7 +287,7 @@ public class MeasureUnitTest extends TestFmwk {
     public void testZZZ() {
         // various generateXXX calls go here, see
         // http://site.icu-project.org/design/formatting/measureformat/updating-measure-unit
-        // use this test to run each of the ollowing in succession
+        // use this test to run each of the following in succession
         //generateConstants("65"); // for MeasureUnit.java, update generated MeasureUnit constants
         //generateBackwardCompatibilityTest("65"); // for MeasureUnitTest.java, create TestCompatible65
         //generateCXXHConstants("65"); // for measunit.h, update generated createXXX methods

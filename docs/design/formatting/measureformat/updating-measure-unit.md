@@ -8,16 +8,25 @@ that you are updating the MeasureUnit clases for ICU54.1
 
 * In ICU4J check out
   $SVN_ROOT/main/tests/core/src/com/ibm/icu/dev/test/format/MeasureUnitTest.java
-* Open MeasureUnitTest.java in eclipse.
-* Near the top of the file, create a new test, testZZZ like so:
+* Open MeasureUnitTest.java in
+  [eclipse](http://site.icu-project.org/setup/java/eclipse-setup-for-java-developers).
+* Near the top of the file, find the testZZZ unit test.
 
       public void testZZZ() {
           // desired code goes here
       }
 
-  This test will execute last and will run the desired code
+  Use this test to verify the changes work as intended. This test will execute
+  last and will run the desired code.
 * Make sure DRAFT_VERSIONS at top of MeasureUnitTest.java is set correctly.
   These are the ICU versions that have draft methods.
+
+<!--
+FOR REVIEW: I don't know what this above testZZZ thing is about exactly. "Draft
+methods" are also something I'm not familiar with, but perhaps those that would
+touch such methods would know what they are. Do you have suggestions fo
+clarifying the text above a bit? Else I leave it as is.
+-->
 
 Update MeasureUnit.java
 
