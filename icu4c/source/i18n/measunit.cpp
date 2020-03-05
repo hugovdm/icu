@@ -136,6 +136,8 @@ static const char * const gSubTypes[] = {
     "square-meter",
     "square-mile",
     "square-yard",
+    // concentration
+    "item-per-cubic-meter",
     "karat",
     "milligram-per-deciliter",
     "millimole-per-liter",
@@ -144,10 +146,13 @@ static const char * const gSubTypes[] = {
     "percent",
     "permille",
     "permyriad",
+    // consumption
+    "liter-per-100-kilometer",
     "liter-per-100kilometers",
     "liter-per-kilometer",
     "mile-per-gallon",
     "mile-per-gallon-imperial",
+    // currencies
     "ADP",
     "AED",
     "AFA",
@@ -521,8 +526,11 @@ static const char * const gSubTypes[] = {
     "point",
     "solar-radius",
     "yard",
+    // luminous-flux
+    "candela-square-meter-per-square-meter",
     "lux",
     "solar-luminosity",
+    // mass
     "carat",
     "dalton",
     "earth-mass",
@@ -538,28 +546,39 @@ static const char * const gSubTypes[] = {
     "stone",
     "ton",
     "one",
+    // portion
     "percent",
     "permille",
+    "portion",
+    // power
     "gigawatt",
     "horsepower",
     "kilowatt",
     "megawatt",
     "milliwatt",
     "watt",
+    // pressure
     "atmosphere",
     "bar",
     "hectopascal",
     "inch-hg",
+    "inch-ofhg",
     "kilopascal",
     "megapascal",
     "millibar",
     "millimeter-of-mercury",
+    "millimeter-ofhg"
     "pascal",
     "pound-per-square-inch",
+    // speed
     "kilometer-per-hour",
     "knot",
     "meter-per-second",
     "mile-per-hour",
+    // substance-amount
+    "item",
+    "mole",
+    // temperature
     "celsius",
     "fahrenheit",
     "generic",
