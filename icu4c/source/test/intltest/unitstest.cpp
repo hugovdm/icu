@@ -443,7 +443,7 @@ StringPiece trimField(char *(&field)[2]) {
 }
 
 /**
- * WIP(hugovdm): deals with a single data-driven unit test for unit conversions.
+ * Runs a single unit conversion test from unitsTest.txt.
  * This is a UParseLineFn as required by u_parseDelimitedFile.
  */
 void runDataDrivenConversionTest(void *context, char *fields[][2], int32_t fieldCount,
@@ -452,10 +452,10 @@ void runDataDrivenConversionTest(void *context, char *fields[][2], int32_t field
     (void)fieldCount; // unused UParseLineFn variable
     IcuTestErrorCode status(*(UnitsTest *)context, "runDataDrivenConversionTest");
 
-    StringPiece quantity = trimField(fields[0]);
+    // Field 0: quantity (category).
     StringPiece x = trimField(fields[1]);
     StringPiece y = trimField(fields[2]);
-    StringPiece commentConversionFormula = trimField(fields[3]);
+    // Field 3: conversion formula.
     StringPiece utf8Expected = trimField(fields[4]);
 
     UNumberFormat *nf = unum_open(UNUM_DEFAULT, NULL, -1, "en_US", NULL, status);
@@ -474,26 +474,23 @@ void runDataDrivenConversionTest(void *context, char *fields[][2], int32_t field
     MeasureUnit targetUnit = MeasureUnit::forIdentifier(y, status);
     if (status.errIfFailureAndReset("forIdentifier(\"%.*s\")", y.length(), y.data())) { return; }
 
-    // WIP(hugovdm): Once merged with tryingdouble:
+    UnitConverter converter(sourceUnit, targetUnit, status);
+    if (status.errIfFailureAndReset("constructor: UnitConverter(<%s>, <%s>, status)",
+                                    sourceUnit.getIdentifier(), targetUnit.getIdentifier())) {
+        return;
+    }
+    double got = converter.convert(1000);
+    ((UnitsTest*)context)->assertEqualsNear(fields[0][0], expected, got, 0.0001);
 
-    // UnitConverter converter(sourceUnit, targetUnit, status);
-    // if (status.errIfFailureAndReset("constructor: UnitConverter(<%s>, <%s>, status)",
-    //                                 sourceUnit.getIdentifier(), targetUnit.getIdentifier())) {
-    //     return;
-    // }
-    // double got = converter.convert(1000);
-    // ((UnitsTest*)context)->assertEqualsNear(fields[0][0], expected, got, 0.0001);
-
-    // WIP(hugovdm): Debug output while not merged with tryingdouble:
-
-    fprintf(stderr,
-            "Quantity/Category: \"%.*s\", "
-            "Converting: \"1000 %.*s in %.*s\", expecting: %f, "
-            "commentConversionFormula: \"%.*s\", "
-            "expected field: \"%.*s\"\n",
-            quantity.length(), quantity.data(), x.length(), x.data(), y.length(), y.data(), expected,
-            commentConversionFormula.length(), commentConversionFormula.data(), utf8Expected.length(),
-            utf8Expected.data());
+    // WIP(hugovdm): Debug output, delete in clean-up:
+    // fprintf(stderr,
+    //         "Quantity/Category: \"%.*s\", "
+    //         "Converting: \"1000 %.*s in %.*s\", expecting: %f, "
+    //         "commentConversionFormula: \"%.*s\", "
+    //         "expected field: \"%.*s\"\n",
+    //         quantity.length(), quantity.data(), x.length(), x.data(), y.length(), y.data(), expected,
+    //         commentConversionFormula.length(), commentConversionFormula.data(), utf8Expected.length(),
+    //         utf8Expected.data());
 }
 
 /**
