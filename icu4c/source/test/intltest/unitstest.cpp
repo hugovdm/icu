@@ -446,10 +446,11 @@ StringPiece trimField(char *(&field)[2]) {
  * WIP(hugovdm): deals with a single data-driven unit test for unit conversions.
  * This is a UParseLineFn as required by u_parseDelimitedFile.
  */
-static void U_CALLCONV unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount,
-                                           UErrorCode *pErrorCode) {
+void runDataDrivenConversionTest(void *context, char *fields[][2], int32_t fieldCount,
+                                 UErrorCode *pErrorCode) {
+    if (U_FAILURE(*pErrorCode)) { return; }
     (void)fieldCount; // unused UParseLineFn variable
-    IcuTestErrorCode status(*(UnitsTest *)context, "unitsTestDatalineFn");
+    IcuTestErrorCode status(*(UnitsTest *)context, "runDataDrivenConversionTest");
 
     StringPiece quantity = trimField(fields[0]);
     StringPiece x = trimField(fields[1]);
@@ -457,10 +458,15 @@ static void U_CALLCONV unitsTestDataLineFn(void *context, char *fields[][2], int
     StringPiece commentConversionFormula = trimField(fields[3]);
     StringPiece utf8Expected = trimField(fields[4]);
 
-    UNumberFormat *nf = unum_open(UNUM_DEFAULT, NULL, -1, "en_US", NULL, pErrorCode);
+    UNumberFormat *nf = unum_open(UNUM_DEFAULT, NULL, -1, "en_US", NULL, status);
+    if (status.errIfFailureAndReset("unum_open failed")) { return; }
     UnicodeString uExpected = UnicodeString::fromUTF8(utf8Expected);
-    double expected = unum_parseDouble(nf, uExpected.getBuffer(), uExpected.length(), 0, pErrorCode);
+    double expected = unum_parseDouble(nf, uExpected.getBuffer(), uExpected.length(), 0, status);
     unum_close(nf);
+    if (status.errIfFailureAndReset("unum_parseDouble(\"%.*s\") failed", uExpected.length(),
+                                    uExpected.getBuffer())) {
+        return;
+    }
 
     MeasureUnit sourceUnit = MeasureUnit::forIdentifier(x, status);
     if (status.errIfFailureAndReset("forIdentifier(\"%.*s\")", x.length(), x.data())) { return; }
@@ -468,17 +474,21 @@ static void U_CALLCONV unitsTestDataLineFn(void *context, char *fields[][2], int
     MeasureUnit targetUnit = MeasureUnit::forIdentifier(y, status);
     if (status.errIfFailureAndReset("forIdentifier(\"%.*s\")", y.length(), y.data())) { return; }
 
-    // WIP(hugovdm): hook this up to actual tests.
-    //
-    // Possible after merging in younies/tryingdouble:
-    // UnitConverter converter(sourceUnit, targetUnit, *pErrorCode);
-    // double got = converter.convert(1000, *pErrorCode);
-    // ((UnitsTest*)context)->assertEqualsNear(quantity.data(), expected, got, 0.0001);
-    //
-    // In the meantime, printing to stderr.
+    // WIP(hugovdm): Once merged with tryingdouble:
+
+    // UnitConverter converter(sourceUnit, targetUnit, status);
+    // if (status.errIfFailureAndReset("constructor: UnitConverter(<%s>, <%s>, status)",
+    //                                 sourceUnit.getIdentifier(), targetUnit.getIdentifier())) {
+    //     return;
+    // }
+    // double got = converter.convert(1000);
+    // ((UnitsTest*)context)->assertEqualsNear(fields[0][0], expected, got, 0.0001);
+
+    // WIP(hugovdm): Debug output while not merged with tryingdouble:
+
     fprintf(stderr,
-            "Quantity (Category): \"%.*s\", "
-            "Expected value of \"1000 %.*s in %.*s\": %f, "
+            "Quantity/Category: \"%.*s\", "
+            "Converting: \"1000 %.*s in %.*s\", expecting: %f, "
             "commentConversionFormula: \"%.*s\", "
             "expected field: \"%.*s\"\n",
             quantity.length(), quantity.data(), x.length(), x.data(), y.length(), y.data(), expected,
@@ -506,7 +516,8 @@ void UnitsTest::testConversions() {
     path.appendPathPart("units", errorCode);
     path.appendPathPart("unitsTest.txt", errorCode);
 
-    u_parseDelimitedFile(path.data(), ';', fields, kNumFields, unitsTestDataLineFn, this, errorCode);
+    u_parseDelimitedFile(path.data(), ';', fields, kNumFields, runDataDrivenConversionTest, this,
+                         errorCode);
     if (errorCode.errIfFailureAndReset("error parsing %s: %s\n", filename, u_errorName(errorCode))) {
         return;
     }
