@@ -322,7 +322,6 @@ MaybeStackVector<ConversionRateInfo> getConversionRatesInfo(const MeasureUnit so
         MeasureUnit baseUnit;
         processSingleUnit(targetUnits[i], convertUnitsBundle.getAlias(), convertSink, &baseUnit, status);
         if (target.getComplexity(status) == UMEASURE_UNIT_SEQUENCE) {
-            // WIP/TODO(hugovdm): add consistency checks.
             if (baseUnit != sourceBaseUnit) {
                 status = U_ILLEGAL_ARGUMENT_ERROR;
                 return result;
@@ -332,14 +331,31 @@ MaybeStackVector<ConversionRateInfo> getConversionRatesInfo(const MeasureUnit so
             // WIP/FIXME(hugovdm): I think I found a bug in targetBaseUnit.product():
             // Target Base: <kilogram-square-meter-per-square-second> x <one-per-meter> => <meter>
             //
-            // fprintf(stderr, "Target Base: <%s> x <%s> => ", targetBaseUnit.getIdentifier(),
-            //         baseUnit.getIdentifier());
-            targetBaseUnit = targetBaseUnit.product(baseUnit, status);
-            // fprintf(stderr, "<%s>\n", targetBaseUnit.getIdentifier());
-            // fprintf(stderr, "Status: %s\n", u_errorName(status));
+            // MeasureUnit targetBaseUnitX = MeasureUnit::forIdentifier("kilogram-square-meter-per-square-second", status);
+            // MeasureUnit targetBaseUnitY = MeasureUnit::forIdentifier(targetBaseUnit.getIdentifier(), status);
+            MeasureUnit targetBaseUnitX = MeasureUnit::forIdentifier(targetBaseUnit.getIdentifier(), status);
+            MeasureUnit targetBaseUnitY = MeasureUnit::forIdentifier("kilogram-square-meter-per-square-second", status);
+            fprintf(stderr, "Target Base: <%s> x <%s> => ", targetBaseUnit.getIdentifier(), baseUnit.getIdentifier());
+            // targetBaseUnit = targetBaseUnit.product(baseUnit, status);
+            auto tmp = targetBaseUnit.product(baseUnit, status);
+            targetBaseUnit = tmp;
+            fprintf(stderr, "<%s> - Status: %s\n", targetBaseUnit.getIdentifier(), u_errorName(status));
+
+            fprintf(stderr, "XTargetBase: <%s> x <%s> => ", targetBaseUnitX.getIdentifier(), baseUnit.getIdentifier());
+            // targetBaseUnitX = targetBaseUnitX.product(baseUnit, status);
+            tmp = targetBaseUnitX.product(baseUnit, status);
+            targetBaseUnitX = tmp;
+            fprintf(stderr, "<%s> - Status: %s\n", targetBaseUnitX.getIdentifier(), u_errorName(status));
+            fprintf(stderr, "YTargetBase: <%s> x <%s> => ", targetBaseUnitY.getIdentifier(), baseUnit.getIdentifier());
+            // targetBaseUnitY = targetBaseUnitY.product(baseUnit, status);
+            tmp = targetBaseUnitY.product(baseUnit, status);
+            targetBaseUnitY = tmp;
+            fprintf(stderr, "<%s> - Status: %s\n", targetBaseUnitY.getIdentifier(), u_errorName(status));
         }
     }
     if (targetBaseUnit != sourceBaseUnit) {
+        // WIP/FIXME(hugovdm): temporary debug output while developing:
+        fprintf(stderr, "Unconvertable: Compound Base Unit: target base unit <%s>, source base unit <%s>", targetBaseUnit.getIdentifier(), sourceBaseUnit.getIdentifier());
         status = U_ILLEGAL_ARGUMENT_ERROR;
         return result;
     }

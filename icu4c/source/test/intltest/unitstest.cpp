@@ -619,14 +619,18 @@ void UnitsTest::testGetConversionRateInfo() {
          {"therm-us", "kilogram", "meter", "second", NULL},
          "kilogram-square-meter-per-square-second"},
 
-        // WIP/FIXME(hugovdm): I think I found a bug in targetBaseUnit.product():
-        // Target Base: <kilogram-square-meter-per-square-second> x <one-per-meter> => <meter>
+        // WIP/FIXME(hugovdm): I think I found a bug in targetBaseUnit.product().
+        // The first noticed problem was a product not behaving as it should:
+        // Target Base: <kilogram-square-meter-per-square-second> * <one-per-meter> => <meter>
         //
-        // // Joule-per-meter
-        // {"therm-us-per-meter",
-        //  "joule-per-meter",
-        //  {"therm-us", "joule", "meter", NULL, NULL},
-        //  "kilogram-meter-per-square-second"},
+        // Additional code managed to cause the tripping of AddressSanitizer's detection of
+        // "heap-use-after-free".
+        //
+        // Joule-per-meter - designated nonsensical but managing to trigger the bug mentioned above:
+        {"therm-us-per-meter",
+         "joule-per-meter",
+         {"therm-us", "joule", "meter", NULL, NULL},
+         "kilogram-meter-per-square-second"},
 
         // TODO: include capacitance test case with base unit:
         // pow4-second-square-ampere-per-kilogram-square-meter;
