@@ -81,9 +81,6 @@ struct SingleUnitImpl : public UMemory {
      */
     int32_t index = -1;
 
-    /** Simple unit identifier; memory not owned by the SimpleUnit. */
-    StringPiece identifier;
-
     /** SI prefix. **/
     UMeasureSIPrefix siPrefix = UMEASURE_SI_PREFIX_ONE;
     

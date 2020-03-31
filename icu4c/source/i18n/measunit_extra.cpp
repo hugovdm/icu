@@ -329,6 +329,14 @@ private:
 
 class Parser {
 public:
+    /**
+     * Factory function for parsing the given identifier.
+     *
+     * @param source The identifier to parse. This function does not make a copy
+     * of source: the underlying string that source points at, must outlive the
+     * parser.
+     * @param status ICU error code.
+     */
     static Parser from(StringPiece source, UErrorCode& status) {
         if (U_FAILURE(status)) {
             return Parser();
@@ -349,6 +357,10 @@ public:
 private:
     // Tracks parser progress: the offset into fSource.
     int32_t fIndex = 0;
+
+    // Since we're not owning this memory, whatever is passed to the constructor
+    // should live longer than this Parser - and the parser shouldn't return any
+    // references to that string.
     StringPiece fSource;
     UCharsTrie fTrie;
 
@@ -507,7 +519,6 @@ private:
 
                 case Token::TYPE_SIMPLE_UNIT:
                     result.index = token.getSimpleUnitIndex();
-                    result.identifier = fSource.substr(previ, fIndex - previ);
                     return;
 
                 default:
@@ -625,7 +636,7 @@ void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& o
         return;
     }
 
-    output.append(singleUnit.identifier, status);
+    output.appendInvariantChars(gSimpleUnits[singleUnit.index], status);
 }
 
 /**
