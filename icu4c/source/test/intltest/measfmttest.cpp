@@ -3430,6 +3430,9 @@ void MeasureFormatTest::TestIdentifiers() {
         {true, "square-meter-per-square-meter", "square-meter-per-square-meter"},
         {true, "kilogram-meter-per-square-meter-square-second",
          "kilogram-meter-per-square-meter-square-second"},
+        {false, "hertz-and-one-per-hour", ""}, // -per- with -and- not permitted.
+        {false, "one-per-hour-and-hertz", ""}, // opposite order
+        {true, "kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
         // TODO(ICU-20920): Add more test cases once the proper ranking is available.
     };
     for (const auto& cas : cases) {
@@ -3439,6 +3442,7 @@ void MeasureFormatTest::TestIdentifiers() {
             status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
             continue;
         }
+        status.errIfFailureAndReset();
         const char* actual = unit.getIdentifier();
         assertEquals(cas.id, cas.normalized, actual);
         status.errIfFailureAndReset();

@@ -343,7 +343,13 @@ private:
     StringPiece fSource;
     UCharsTrie fTrie;
 
+    // Set to true when we've seen a "-per-", after which all units are in the
+    // denominator.
     bool fAfterPer = false;
+
+    // Set to true when we've seen an "-and-", meaning we have mixed units, and
+    // all units within it need to be single units with positive dimensionality.
+    bool fSawAnd = false;
 
     Parser() : fSource(""), fTrie(u"") {}
 
@@ -383,8 +389,7 @@ private:
         return Token(match);
     }
 
-    void nextSingleUnit(SingleUnitImpl& result, bool& sawAnd, UErrorCode& status) {
-        sawAnd = false;
+    void nextSingleUnit(SingleUnitImpl& result, UErrorCode& status) {
         if (U_FAILURE(status)) {
             return;
         }
@@ -413,7 +418,8 @@ private:
             }
             switch (token.getMatch()) {
                 case COMPOUND_PART_PER:
-                    if (fAfterPer) {
+                    if (fSawAnd) {
+                        // Mixed units can only contain single units.
                         status = kUnitIdentifierSyntaxError;
                         return;
                     }
@@ -428,8 +434,12 @@ private:
                     break;
 
                 case COMPOUND_PART_AND:
-                    sawAnd = true;
-                    fAfterPer = false;
+                    if (fAfterPer == true) {
+                        // Mixed units can only contain single units.
+                        status = kUnitIdentifierSyntaxError;
+                        return;
+                    }
+                    fSawAnd = true;
                     break;
             }
             previ = fIndex;
@@ -465,7 +475,7 @@ private:
 
                 case Token::TYPE_ONE:
                     // Skip "one" and go to the next unit
-                    return nextSingleUnit(result, sawAnd, status);
+                    return nextSingleUnit(result, status);
 
                 case Token::TYPE_SIMPLE_UNIT:
                     result.index = token.getSimpleUnitIndex();
@@ -488,9 +498,8 @@ private:
         }
         int32_t unitNum = 0;
         while (hasNext()) {
-            bool sawAnd;
             SingleUnitImpl singleUnit;
-            nextSingleUnit(singleUnit, sawAnd, status);
+            nextSingleUnit(singleUnit, status);
             if (U_FAILURE(status)) {
                 return;
             }
@@ -498,15 +507,14 @@ private:
                 continue;
             }
             bool added = result.append(singleUnit, status);
-            if (sawAnd && !added) {
+            if (fSawAnd && !added) {
                 // Two similar units are not allowed in a mixed unit
                 status = kUnitIdentifierSyntaxError;
                 return;
             }
             if ((++unitNum) >= 2) {
-                UMeasureUnitComplexity complexity = sawAnd
-                    ? UMEASURE_UNIT_MIXED
-                    : UMEASURE_UNIT_COMPOUND;
+                UMeasureUnitComplexity complexity =
+                    fSawAnd ? UMEASURE_UNIT_MIXED : UMEASURE_UNIT_COMPOUND;
                 if (unitNum == 2) {
                     U_ASSERT(result.complexity == UMEASURE_UNIT_SINGLE);
                     result.complexity = complexity;
