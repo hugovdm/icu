@@ -396,9 +396,18 @@ private:
         return Token(match);
     }
 
-    // Returns the next "single unit". If an "-and-" was parsed prior to finding
-    // the "single unit", sawAnd is set to true. If a "-per-" was parsed, the
-    // result will have appropriate negative dimensionality.
+    /**
+     * Returns the next "single unit" via result.
+     *
+     * If a "-per-" was parsed, the result will have appropriate negative
+     * dimensionality.
+     *
+     * @param result Should be set to "one" when passed in: will usually be
+     * overwritten, but will be left as is if "one" is parsed.
+     * @param sawAnd If an "-and-" was parsed prior to finding the "single
+     * unit", sawAnd is set to true.
+     * @param status ICU error code.
+     */
     void nextSingleUnit(SingleUnitImpl& result, bool& sawAnd, UErrorCode& status) {
         if (U_FAILURE(status)) {
             return;
@@ -478,6 +487,21 @@ private:
                 case Token::TYPE_ONE:
                     // Skip "one" and go to the next unit
                     return nextSingleUnit(result, sawAnd, status);
+
+                    // TODO(review): skipping "one" is fine when it's just a
+                    // product in a compound unit or a placeholder for
+                    // one-per-FOO. However if there's an -and-, it ignores
+                    // things that should fail. If we care: see unit tests
+                    // marked "BAD! Bad?"
+
+                    // // Find the next unit, have an eerror
+                    // nextSingleUnit(result, sawAnd, status);
+                    // if (sawAnd) {
+                    //     // "one-and-*" is considered invalid.
+                    //     status = kUnitIdentifierSyntaxError;
+                    //     return;
+                    // }
+                    // return;
 
                 case Token::TYPE_SIMPLE_UNIT:
                     result.index = token.getSimpleUnitIndex();
