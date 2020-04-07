@@ -34,9 +34,11 @@ namespace {
 // TODO: Propose a new error code for this?
 constexpr UErrorCode kUnitIdentifierSyntaxError = U_ILLEGAL_ARGUMENT_ERROR;
 
-// This is to ensure we only insert positive integers into the trie
+// Trie value offset for SI Prefixes. This is big enough to ensure we only
+// insert positive integers into the trie.
 constexpr int32_t kSIPrefixOffset = 64;
 
+// Trie value offset for compound parts, e.g. "-per-", "-", "-and-".
 constexpr int32_t kCompoundPartOffset = 128;
 
 enum CompoundPart {
@@ -45,6 +47,7 @@ enum CompoundPart {
     COMPOUND_PART_AND,
 };
 
+// Trie value offset for powers like "square-", "cubic-", "p2-" etc.
 constexpr int32_t kPowerPartOffset = 256;
 
 enum PowerPart {
@@ -64,6 +67,8 @@ enum PowerPart {
     POWER_PART_P15,
 };
 
+// Trie value offset for simple units, e.g. "gram", "nautical-mile",
+// "fluid-ounce-imperial".
 constexpr int32_t kSimpleUnitOffset = 512;
 
 const struct SIPrefixStrings {
@@ -270,6 +275,7 @@ public:
     enum Type {
         TYPE_UNDEFINED,
         TYPE_SI_PREFIX,
+        // Token type for "-per-", "-", and "-and-".
         TYPE_COMPOUND_PART,
         TYPE_POWER_PART,
         TYPE_ONE,
@@ -356,10 +362,15 @@ private:
         return fIndex < fSource.length();
     }
 
+    // Returns the next Token parsed from fSource, advanceing fIndex to the end
+    // of that token in fSource.
     Token nextToken(UErrorCode& status) {
         fTrie.reset();
         int32_t match = -1;
+        // Saves the position in the fSource string for the end of the most
+        // recent matching token.
         int32_t previ = -1;
+        // Find the longest token that matches a value in the trie:
         do {
             auto result = fTrie.next(fSource.data()[fIndex++]);
             if (result == USTRINGTRIE_NO_MATCH) {
@@ -405,7 +416,8 @@ private:
         int32_t state = 0;
         int32_t previ = fIndex;
 
-        // Maybe read a compound part
+        // If this is not the start of the string, we expect a COMPOUND_PART
+        // token next (separating the previous single unit and the next).
         if (fIndex != 0) {
             Token token = nextToken(status);
             if (U_FAILURE(status)) {
