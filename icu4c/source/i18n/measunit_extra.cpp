@@ -524,7 +524,7 @@ private:
         }
         int32_t unitNum = 0;
         while (hasNext()) {
-            bool sawAnd;
+            bool sawAnd = false;
             SingleUnitImpl singleUnit;
             nextSingleUnit(singleUnit, sawAnd, status);
             if (U_FAILURE(status)) {
