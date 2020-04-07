@@ -350,7 +350,8 @@ private:
     UCharsTrie fTrie;
 
     // Set to true when we've seen a "-per-", after which all units are in the
-    // denominator.
+    // denominator. Until we find an "-and-", at which point the identifier is
+    // invalid pending TODO(CLDR-13700).
     bool fAfterPer = false;
 
     Parser() : fSource(""), fTrie(u"") {}
@@ -405,7 +406,7 @@ private:
      * @param result Should be set to "one" when passed in: will usually be
      * overwritten, but will be left as is if "one" is parsed.
      * @param sawAnd If an "-and-" was parsed prior to finding the "single
-     * unit", sawAnd is set to true.
+     * unit", sawAnd is set to true. If not, it is left as is.
      * @param status ICU error code.
      */
     void nextSingleUnit(SingleUnitImpl& result, bool& sawAnd, UErrorCode& status) {
@@ -438,6 +439,12 @@ private:
             }
             switch (token.getMatch()) {
                 case COMPOUND_PART_PER:
+                    if (sawAnd) {
+                        // Mixed compound units not yet supported,
+                        // TODO(CLDR-13700).
+                        status = kUnitIdentifierSyntaxError;
+                        return;
+                    }
                     fAfterPer = true;
                     result.dimensionality = -1;
                     break;
@@ -449,7 +456,12 @@ private:
                     break;
 
                 case COMPOUND_PART_AND:
-                    fAfterPer = false;
+                    if (fAfterPer) {
+                        // Mixed compound units not yet supported,
+                        // TODO(CLDR-13700).
+                        status = kUnitIdentifierSyntaxError;
+                        return;
+                    }
                     sawAnd = true;
                     break;
             }
@@ -485,23 +497,17 @@ private:
                     break;
 
                 case Token::TYPE_ONE:
-                    // Skip "one" and go to the next unit
-                    return nextSingleUnit(result, sawAnd, status);
-
-                    // TODO(review): skipping "one" is fine when it's just a
-                    // product in a compound unit or a placeholder for
-                    // one-per-FOO. However if there's an -and-, it ignores
-                    // things that should fail. If we care: see unit tests
-                    // marked "BAD! Bad?"
-
-                    // // Find the next unit, have an eerror
-                    // nextSingleUnit(result, sawAnd, status);
-                    // if (sawAnd) {
-                    //     // "one-and-*" is considered invalid.
-                    //     status = kUnitIdentifierSyntaxError;
-                    //     return;
-                    // }
-                    // return;
+                    // Skip "one" and go to the next unit, valid if it's a
+                    // product or a -per-:
+                    nextSingleUnit(result, sawAnd, status);
+                    if (sawAnd) {
+                        // Since we don't allow "-per-"" in mixed units yet -
+                        // TODO(CLDR-13700) - and "one-and-mile" does not have a
+                        // reasonable use-case, we consdier it an error to ever
+                        // see "one" in a mixed unit.
+                        status = kUnitIdentifierSyntaxError;
+                    }
+                    return;
 
                 case Token::TYPE_SIMPLE_UNIT:
                     result.index = token.getSimpleUnitIndex();

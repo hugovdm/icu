@@ -3384,8 +3384,9 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     MeasureUnit squareKiloOne = squareOne.withSIPrefix(UMEASURE_SI_PREFIX_KILO, status);
     MeasureUnit onePerSquareKiloOne = squareKiloOne.reciprocal(status);
     MeasureUnit oneOne = MeasureUnit::forIdentifier("one-one", status);
-    MeasureUnit onePlusOne = MeasureUnit::forIdentifier("one-and-one", status); // TODO(review): I'm not convinced this one should succeed. :)
+    // MeasureUnit onePlusOne = MeasureUnit::forIdentifier("one-and-one", status); // TODO(review): I'm not convinced this one should succeed. :)
     MeasureUnit kilometer2 = one2.product(kilometer, status);
+    status.errIfFailureAndReset();
 
     verifySingleUnit(one1, UMEASURE_SI_PREFIX_ONE, 1, "one");
     verifySingleUnit(one2, UMEASURE_SI_PREFIX_ONE, 1, "one");
@@ -3395,7 +3396,7 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     verifySingleUnit(squareKiloOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
     verifySingleUnit(onePerSquareKiloOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
     verifySingleUnit(oneOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
-    verifySingleUnit(onePlusOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
+    // verifySingleUnit(onePlusOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
     verifySingleUnit(kilometer2, UMEASURE_SI_PREFIX_KILO, 1, "kilometer");
 
     assertTrue("one equality", one1 == one2);
@@ -3428,21 +3429,34 @@ void MeasureFormatTest::TestIdentifiers() {
         const char* normalized;
     } cases[] = {
         {true, "one", "one"},
-        {true, "mile-and-one", "mile"},                   // BAD! Bad?
-        {true, "one-and-mile", "mile"},                   // BAD! Bad?
-        {true, "mile-and-one-and-yard", "mile-and-yard"}, // BAD! Bad?
         {true, "square-meter-per-square-meter", "square-meter-per-square-meter"},
         {true, "kilogram-meter-per-square-meter-square-second",
          "kilogram-meter-per-square-meter-square-second"},
-        {true, "hertz-and-one-per-hour", "hertz-and-one-per-hour"}, // mixed with negative power
-        {true, "one-per-hour-and-hertz", "one-per-hour-and-hertz"}, // mixed with negative power
         {true, "square-mile-and-square-foot", "square-mile-and-square-foot"}, // mixed with >1 power
         {true, "kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
-        // Not currently supported, but CLDR-13700 proposes supporting it:
+
+        // Negative powers not supported in mixed units yet. TODO(CLDR-13701).
+        {false, "one-per-hour-and-hertz", ""},
+        {false, "hertz-and-one-per-hour", ""},
+
+        // Compound units not supported in mixed units yet. TODO(CLDR-13700).
         {false, "kilonewton-meter-and-newton-meter", ""},
+
+        // We don't currently allow "one" in a mixed unit: we don't have a use
+        // case for it ("one" doesn't mix well with other units).
+        {false, "mile-and-one", ""},
+        {false, "one-and-mile", ""},
+        {false, "mile-and-one-and-yard", ""},
+
+        // These are debatable: if "square-one" is just "one", what is
+        // "square-kiloone"? It's not clear we should even support these?
+        {true, "square-one", "one"},
+        {true, "kiloone", "one"},
+        {true, "square-kiloone", "one"},
+
         // TODO(ICU-20920): Add more test cases once the proper ranking is available.
     };
-    for (const auto& cas : cases) {
+    for (const auto &cas : cases) {
         status.setScope(cas.id);
         MeasureUnit unit = MeasureUnit::forIdentifier(cas.id, status);
         if (!cas.valid) {
