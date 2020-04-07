@@ -3430,9 +3430,12 @@ void MeasureFormatTest::TestIdentifiers() {
         {true, "square-meter-per-square-meter", "square-meter-per-square-meter"},
         {true, "kilogram-meter-per-square-meter-square-second",
          "kilogram-meter-per-square-meter-square-second"},
-        {false, "hertz-and-one-per-hour", ""}, // -per- with -and- not permitted.
-        {false, "one-per-hour-and-hertz", ""}, // opposite order
+        {true, "hertz-and-one-per-hour", "hertz-and-one-per-hour"},
+        {true, "one-per-hour-and-hertz", "one-per-hour-and-hertz"},
+        {true, "square-mile-and-square-foot", "square-mile-and-square-foot"},
         {true, "kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
+        // Not currently supported, but CLDR-13700 proposes supporting it:
+        {false, "kilonewton-meter-and-newton-meter", ""},
         // TODO(ICU-20920): Add more test cases once the proper ranking is available.
     };
     for (const auto& cas : cases) {
