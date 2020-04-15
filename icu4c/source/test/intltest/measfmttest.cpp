@@ -3384,7 +3384,6 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     MeasureUnit squareKiloOne = squareOne.withSIPrefix(UMEASURE_SI_PREFIX_KILO, status);
     MeasureUnit onePerSquareKiloOne = squareKiloOne.reciprocal(status);
     MeasureUnit oneOne = MeasureUnit::forIdentifier("one-one", status);
-    // MeasureUnit onePlusOne = MeasureUnit::forIdentifier("one-and-one", status); // TODO(review): I'm not convinced this one should succeed. :)
     MeasureUnit kilometer2 = one2.product(kilometer, status);
     status.errIfFailureAndReset();
 
@@ -3396,7 +3395,6 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     verifySingleUnit(squareKiloOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
     verifySingleUnit(onePerSquareKiloOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
     verifySingleUnit(oneOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
-    // verifySingleUnit(onePlusOne, UMEASURE_SI_PREFIX_ONE, 1, "one");
     verifySingleUnit(kilometer2, UMEASURE_SI_PREFIX_KILO, 1, "kilometer");
 
     assertTrue("one equality", one1 == one2);
@@ -3444,6 +3442,7 @@ void MeasureFormatTest::TestIdentifiers() {
 
         // We don't currently allow "one" in a mixed unit: we don't have a use
         // case for it ("one" doesn't mix well with other units).
+        {false, "one-and-one", ""},
         {false, "mile-and-one", ""},
         {false, "one-and-mile", ""},
         {false, "mile-and-one-and-yard", ""},
