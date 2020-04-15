@@ -3447,11 +3447,11 @@ void MeasureFormatTest::TestIdentifiers() {
         {false, "one-and-mile", ""},
         {false, "mile-and-one-and-yard", ""},
 
-        // These are debatable: if "square-one" is just "one", what is
-        // "square-kiloone"? It's not clear we should even support these?
-        {true, "square-one", "one"},
-        {true, "kiloone", "one"},
-        {true, "square-kiloone", "one"},
+        // We also ban dimensionality other than 1, as well as SI prefixes, for
+        // "one":
+        {false, "square-one", ""},
+        {false, "kiloone", ""},
+        {false, "square-kiloone", ""},
 
         // TODO(ICU-20920): Add more test cases once the proper ranking is available.
     };

@@ -497,6 +497,10 @@ private:
                     break;
 
                 case Token::TYPE_ONE:
+                    if (result.siPrefix != UMEASURE_SI_PREFIX_ONE || result.dimensionality != 1) {
+                        status = kUnitIdentifierSyntaxError;
+                        return;
+                    }
                     // Skip "one" and go to the next unit, valid if it's a
                     // product or a -per-:
                     nextSingleUnit(result, sawAnd, status);
