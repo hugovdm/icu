@@ -95,7 +95,8 @@ struct MeasureUnitImpl : public UMemory {
      *
      * @param identifier The unit identifier string.
      * @param status Set if the identifier string is not valid.
-     * @return A newly parsed value object.
+     * @return A newly parsed value object. Behaviour of this unit is
+     * unspecified if an error is returned via status.
      */
     static MeasureUnitImpl forIdentifier(StringPiece identifier, UErrorCode& status);
 

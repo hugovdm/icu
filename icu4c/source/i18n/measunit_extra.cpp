@@ -230,6 +230,7 @@ void U_CALLCONV initUnitExtras(UErrorCode& status) {
 
     // Add syntax parts (compound, power prefixes)
     b.add(u"-per-", COMPOUND_PART_PER, status);
+    b.add(u"per-", COMPOUND_PART_PER, status);
     b.add(u"-", COMPOUND_PART_TIMES, status);
     b.add(u"-and-", COMPOUND_PART_AND, status);
     b.add(u"square-", POWER_PART_P2, status);
@@ -278,14 +279,14 @@ public:
         // Token type for "-per-", "-", and "-and-".
         TYPE_COMPOUND_PART,
         TYPE_POWER_PART,
-        TYPE_ONE,
+        TYPE_ONE, // WIP/TODO(hugovdm,review): delete?
         TYPE_SIMPLE_UNIT,
     };
 
+    // Calling getType() is invalid, resulting in an assertion failure, if Token
+    // value isn't positive.
     Type getType() const {
-        if (fMatch <= 0) {
-            UPRV_UNREACHABLE;
-        }
+        U_ASSERT(fMatch > 0);
         if (fMatch < kCompoundPartOffset) {
             return TYPE_SI_PREFIX;
         }
@@ -306,6 +307,7 @@ public:
         return static_cast<UMeasureSIPrefix>(fMatch - kSIPrefixOffset);
     }
 
+    // Valid only for tokens with type TYPE_COMPOUND_PART.
     int32_t getMatch() const {
         U_ASSERT(getType() == TYPE_COMPOUND_PART);
         return fMatch;
@@ -345,6 +347,7 @@ public:
     }
 
 private:
+    // Tracks parser progress: the offset into fSource.
     int32_t fIndex = 0;
     StringPiece fSource;
     UCharsTrie fTrie;
@@ -363,8 +366,9 @@ private:
         return fIndex < fSource.length();
     }
 
-    // Returns the next Token parsed from fSource, advanceing fIndex to the end
-    // of that token in fSource.
+    // Returns the next Token parsed from fSource, advancing fIndex to the end
+    // of that token in fSource. In case of U_FAILURE(status), the token
+    // returned will cause an abort if getType() is called on it.
     Token nextToken(UErrorCode& status) {
         fTrie.reset();
         int32_t match = -1;
@@ -414,11 +418,6 @@ private:
             return;
         }
 
-        if (!hasNext()) {
-            // probably "one"
-            return;
-        }
-
         // state:
         // 0 = no tokens seen yet (will accept power, SI prefix, or simple unit)
         // 1 = power token seen (will not accept another power token)
@@ -426,18 +425,15 @@ private:
         int32_t state = 0;
         int32_t previ = fIndex;
 
-        // If this is not the start of the string, we expect a COMPOUND_PART
-        // token next (separating the previous single unit and the next).
-        if (fIndex != 0) {
+        // Read a unit
+        while (hasNext()) {
             Token token = nextToken(status);
             if (U_FAILURE(status)) {
                 return;
             }
-            if (token.getType() != Token::TYPE_COMPOUND_PART) {
-                status = kUnitIdentifierSyntaxError;
-                return;
-            }
-            switch (token.getMatch()) {
+
+            if (token.getType() == Token::TYPE_COMPOUND_PART) {
+                switch (token.getMatch()) {
                 case COMPOUND_PART_PER:
                     if (sawAnd) {
                         // Mixed compound units not yet supported,
@@ -450,29 +446,28 @@ private:
                     break;
 
                 case COMPOUND_PART_TIMES:
-                    if (fAfterPer) {
-                        result.dimensionality = -1;
+                    if (previ == 0) {
+                        // Can't start with "-".
+                        status = kUnitIdentifierSyntaxError;
+                        return;
                     }
+                    if (fAfterPer) { result.dimensionality = -1; }
                     break;
 
                 case COMPOUND_PART_AND:
-                    if (fAfterPer) {
-                        // Mixed compound units not yet supported,
-                        // TODO(CLDR-13700).
+                    if (previ == 0 || fAfterPer) {
+                        // Can't start with "-and-", and mixed compound units
+                        // not yet supported, TODO(CLDR-13700).
                         status = kUnitIdentifierSyntaxError;
                         return;
                     }
                     sawAnd = true;
                     break;
-            }
-            previ = fIndex;
-        }
+                }
+                previ = fIndex;
 
-        // Read a unit
-        while (hasNext()) {
-            Token token = nextToken(status);
-            if (U_FAILURE(status)) {
-                return;
+                token = nextToken(status);
+                if (U_FAILURE(status)) { return; }
             }
 
             switch (token.getType()) {
@@ -497,20 +492,8 @@ private:
                     break;
 
                 case Token::TYPE_ONE:
-                    if (result.siPrefix != UMEASURE_SI_PREFIX_ONE || result.dimensionality != 1) {
-                        status = kUnitIdentifierSyntaxError;
-                        return;
-                    }
-                    // Skip "one" and go to the next unit, valid if it's a
-                    // product or a -per-:
-                    nextSingleUnit(result, sawAnd, status);
-                    if (sawAnd) {
-                        // Since we don't allow "-per-"" in mixed units yet -
-                        // TODO(CLDR-13700) - and "one-and-mile" does not have a
-                        // reasonable use-case, we consdier it an error to ever
-                        // see "one" in a mixed unit.
-                        status = kUnitIdentifierSyntaxError;
-                    }
+                    // WIP/TODO(hugovdm,review): remove TYPE_ONE entirely?
+                    status = kUnitIdentifierSyntaxError;
                     return;
 
                 case Token::TYPE_SIMPLE_UNIT:
@@ -533,6 +516,11 @@ private:
             return;
         }
         int32_t unitNum = 0;
+        if (!hasNext()) {
+            // We don't support the empty string.
+            status = kUnitIdentifierSyntaxError;
+            return;
+        }
         while (hasNext()) {
             bool sawAnd = false;
             SingleUnitImpl singleUnit;
@@ -577,11 +565,12 @@ compareSingleUnits(const void* /*context*/, const void* left, const void* right)
  */
 void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& output, UErrorCode& status) {
     if (first && singleUnit.dimensionality < 0) {
-        output.append("one-per-", status);
+        output.append("per-", status);
     }
 
     if (singleUnit.index == 0) {
         // Don't propagate SI prefixes and powers on one
+        // WIP/TODO(hugovdm,review): don't support one at all.
         output.append("one", status);
         return;
     }
