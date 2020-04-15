@@ -3237,6 +3237,7 @@ void MeasureFormatTest::TestNumericTimeSomeSpecialFormats() {
     verifyFormat("Danish fhoursFminutes", fmtDa, fhoursFminutes, 2, "2.03,877");
 }
 
+// See also: MeasureFormatTest::TestIdentifiers() - maybe merge?
 void MeasureFormatTest::TestInvalidIdentifiers() {
     IcuTestErrorCode status(*this, "TestInvalidIdentifiers");
 
@@ -3419,6 +3420,7 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
 }
 
+// See also: MeasureFormatTest::TestInvalidIdentifiers()
 void MeasureFormatTest::TestIdentifiers() {
     IcuTestErrorCode status(*this, "TestIdentifiers");
     struct TestCase {
