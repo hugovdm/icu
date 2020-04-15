@@ -570,7 +570,9 @@ void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& o
 
     if (singleUnit.index == 0) {
         // Don't propagate SI prefixes and powers on one
-        // WIP/TODO(hugovdm,review): don't support one at all.
+        // WIP/TODO(hugovdm,review): don't support one at all? But we need to
+        // return something that can be recognised and handled by
+        // MeasureUnitImpl::forMeasureUnitMaybeCopy().
         output.append("one", status);
         return;
     }
@@ -729,7 +731,11 @@ MeasureUnitImpl MeasureUnitImpl::forMeasureUnitMaybeCopy(
     if (measureUnit.fImpl) {
         return measureUnit.fImpl->copy(status);
     } else {
-        return Parser::from(measureUnit.getIdentifier(), status).parse(status);
+        const char *identifier = measureUnit.getIdentifier();
+        // WIP/TODO(hugovdm,review): we need to somehow handle the "identity"
+        // MeasureUnit here:
+        if (uprv_strcmp(identifier, "one") == 0) { return MeasureUnitImpl(); }
+        return Parser::from(identifier, status).parse(status);
     }
 }
 

@@ -337,6 +337,12 @@ class U_I18N_API MeasureUnit: public UObject {
     /**
      * Get the CLDR Unit Identifier for this MeasureUnit, as defined in UTS 35.
      *
+     * WIP/TODO(hugovdm,review): currently getIdentifier() might return "one",
+     * even though MeasureUnit::forIdentifier("one"); is not supported.
+     * Inconsistent - what should getIdentifier() do, or should
+     * forMeasureUnitMaybeCopy perhaps handle the identity unit via a
+     * private/internal API?
+     *
      * @return The string form of this unit, owned by this MeasureUnit.
      * @draft ICU 67
      */

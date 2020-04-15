@@ -3394,10 +3394,13 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "empty string not supported");
     MeasureUnit oneOne = MeasureUnit::forIdentifier("one-one", status);
     status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "one-one not supported");
-    // WIP/TODO(hugovdm,review): this is broken, maybe needs to be fixed:
-    // MeasureUnit kilometer2 = one1.product(kilometer, status);
-    // verifySingleUnit(kilometer2, UMEASURE_SI_PREFIX_KILO, 1, "kilometer");
-    // assertTrue("kilometer equality", kilometer == kilometer2);
+
+    // We support starting from an "identity" MeasureUnit and then combining it
+    // with others via product:
+    MeasureUnit kilometer2 = one1.product(kilometer, status);
+    status.errIfFailureAndReset("one1.product");
+    verifySingleUnit(kilometer2, UMEASURE_SI_PREFIX_KILO, 1, "kilometer");
+    assertTrue("kilometer equality", kilometer == kilometer2);
 
     // Test out-of-range powers
     MeasureUnit power15 = MeasureUnit::forIdentifier("p15-kilometer", status);
