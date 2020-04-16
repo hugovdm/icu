@@ -613,9 +613,14 @@ compareSingleUnits(const void* /*context*/, const void* left, const void* right)
  *
  * Does not support the dimensionless SingleUnitImpl: calling serializeSingle
  * with the dimensionless unit results in an U_ILLEGAL_ARGUMENT_ERROR.
+ *
+ * @param first If singleUnit is part of a compound unit, and not its first
+ * single unit, set this to false. Otherwise: set to true.
  */
 void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& output, UErrorCode& status) {
     if (first && singleUnit.dimensionality < 0) {
+        // Essentially the "unary per". For compound units with a numerator, the
+        // caller takes care of the "binary per".
         output.append("per-", status);
     }
 
@@ -702,8 +707,6 @@ void serialize(MeasureUnitImpl& impl, UErrorCode& status) {
         } else {
             if (prev.dimensionality > 0 && curr.dimensionality < 0) {
                 impl.identifier.append("-per-", status);
-                // FIXME/WIP: somehow test/generate "per-mile" output from this
-                // serialize function?
             } else {
                 impl.identifier.append('-', status);
             }
