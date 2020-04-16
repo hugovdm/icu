@@ -364,9 +364,9 @@ private:
     StringPiece fSource;
     UCharsTrie fTrie;
 
-    // Set to true when we've seen a "-per-", after which all units are in the
-    // denominator. Until we find an "-and-", at which point the identifier is
-    // invalid pending TODO(CLDR-13700).
+    // Set to true when we've seen a "-per-" or a "per-", after which all units
+    // are in the denominator. Until we find an "-and-", at which point the
+    // identifier is invalid pending TODO(CLDR-13700).
     bool fAfterPer = false;
 
     Parser() : fSource(""), fTrie(u"") {}
@@ -477,7 +477,9 @@ private:
                         status = kUnitIdentifierSyntaxError;
                         return;
                     }
-                    if (fAfterPer) { result.dimensionality = -1; }
+                    if (fAfterPer) {
+                        result.dimensionality = -1;
+                    }
                     break;
 
                 case COMPOUND_PART_AND:
