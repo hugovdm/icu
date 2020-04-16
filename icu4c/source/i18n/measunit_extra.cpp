@@ -548,11 +548,12 @@ private:
 
             previ = fIndex;
             token = nextToken(status);
-            if (U_FAILURE(status)) { return; }
-        };
-
-        // We ran out of tokens before finding a complete single unit.
-        status = kUnitIdentifierSyntaxError;
+            if (U_FAILURE(status)) {
+                // We have run out of (valid) tokens before finding a complete
+                // single unit.
+                return;
+            }
+        }
     }
 
     /// @param result is modified, not overridden. Caller must pass in a
