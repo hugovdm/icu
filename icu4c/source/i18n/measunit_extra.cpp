@@ -555,8 +555,14 @@ private:
         status = kUnitIdentifierSyntaxError;
     }
 
+    /// @param result is modified, not overridden. Caller must pass in a
+    /// default-constructed (empty) MeasureUnitImpl instance.
     void parseImpl(MeasureUnitImpl& result, UErrorCode& status) {
         if (U_FAILURE(status)) {
+            return;
+        }
+        if (fSource.empty()) {
+            // The dimenionless unit: nothing to parse. leave result as is.
             return;
         }
         int32_t unitNum = 0;
@@ -604,6 +610,9 @@ compareSingleUnits(const void* /*context*/, const void* left, const void* right)
 
 /**
  * Generate the identifier string for a single unit in place.
+ *
+ * Does not support the dimensionless SingleUnitImpl: calling serializeSingle
+ * with the dimensionless unit results in an U_ILLEGAL_ARGUMENT_ERROR.
  */
 void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& output, UErrorCode& status) {
     if (first && singleUnit.dimensionality < 0) {
@@ -611,17 +620,7 @@ void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& o
     }
 
     if (singleUnit.isDimensionless()) {
-        // FIXME/WIP(hugovdm): I think this never happens, but I want to go
-        // through the code and convince myself why and how. And then decide
-        // whether no code, or an assert, would be better.
-        //
-        //     U_ASSERT(!singleUnit.isDimensionless());
-        //
-        // Instantiating a SingleUnitImpl with a default constructor should
-        // leave isDimensionless true, can we be confident that they're always
-        // populated by the time we get here though?
-        fprintf(stderr, "============ SO THIS DOES STILL HAPPEN, SURPRISE! ============\n");
-        // No appending to output, we wish to return the zero-length string.
+        status = U_ILLEGAL_ARGUMENT_ERROR;
         return;
     }
     int8_t posPower = std::abs(singleUnit.dimensionality);
@@ -714,8 +713,17 @@ void serialize(MeasureUnitImpl& impl, UErrorCode& status) {
 
 }
 
-/** @return true if a new item was added */
+/**
+ * Appends a SingleUnitImpl to a MeasureUnitImpl.
+ *
+ * @return true if a new item was added. If unit is the dimensionless unit, it
+ * is never added: the return value will always be false.
+ */
 bool appendImpl(MeasureUnitImpl& impl, const SingleUnitImpl& unit, UErrorCode& status) {
+    if (unit.isDimensionless()) {
+        // We don't append dimensionless units.
+        return false;
+    }
     // Find a similar unit that already exists, to attempt to coalesce
     SingleUnitImpl* oldUnit = nullptr;
     for (int32_t i = 0; i < impl.units.length(); i++) {
@@ -772,7 +780,6 @@ const MeasureUnitImpl& MeasureUnitImpl::forMeasureUnit(
     if (measureUnit.fImpl) {
         return *measureUnit.fImpl;
     } else {
-        // FIXME test this code path.
         memory = Parser::from(measureUnit.getIdentifier(), status).parse(status);
         return memory;
     }

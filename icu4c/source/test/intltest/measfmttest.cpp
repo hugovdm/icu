@@ -81,6 +81,7 @@ private:
     void TestNumericTimeSomeSpecialFormats();
     void TestInvalidIdentifiers();
     void TestCompoundUnitOperations();
+    void TestDimensionlessBehaviour();
     void TestIdentifiers();
     void Test21060_AddressSanitizerProblem();
 
@@ -204,6 +205,7 @@ void MeasureFormatTest::runIndexedTest(
     TESTCASE_AUTO(TestNumericTimeSomeSpecialFormats);
     TESTCASE_AUTO(TestInvalidIdentifiers);
     TESTCASE_AUTO(TestCompoundUnitOperations);
+    TESTCASE_AUTO(TestDimensionlessBehaviour);
     TESTCASE_AUTO(TestIdentifiers);
     TESTCASE_AUTO(Test21060_AddressSanitizerProblem);
     TESTCASE_AUTO_END;
@@ -3263,7 +3265,6 @@ void MeasureFormatTest::TestInvalidIdentifiers() {
         "-mile",
         "-and-mile",
         "-per-mile",
-        "",
         "one",
         "one-one",
         "one-per-mile",
@@ -3390,9 +3391,9 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     assertTrue("order matters inequality", footInch != inchFoot);
 
     MeasureUnit dimensionless;
-    MeasureUnit dimensionless2;
-    assertTrue("dimensionless equality", dimensionless == dimensionless2);
+    MeasureUnit dimensionless2 = MeasureUnit::forIdentifier("", status);
     status.errIfFailureAndReset("Dimensionless MeasureUnit.");
+    assertTrue("dimensionless equality", dimensionless == dimensionless2);
 
     // We support starting from an "identity" MeasureUnit and then combining it
     // with others via product:
@@ -3418,6 +3419,60 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
 }
 
+void MeasureFormatTest::TestDimensionlessBehaviour() {
+    IcuTestErrorCode status(*this, "TestDimensionlessBehaviour");
+    MeasureUnit dimensionless;
+    MeasureUnit modified;
+
+    // At the time of writing, each of the seven groups below caused
+    // Parser::from("") to be called:
+
+    // splitToSingleUnits
+    int32_t count;
+    LocalArray<MeasureUnit> singles = dimensionless.splitToSingleUnits(count, status);
+    status.errIfFailureAndReset("dimensionless.splitToSingleUnits(...)");
+    assertEquals("no singles in dimensionless", 0, count);
+
+    // product(dimensionless)
+    MeasureUnit mile = MeasureUnit::getMile();
+    mile = mile.product(dimensionless, status);
+    status.errIfFailureAndReset("mile.product(dimensionless, ...)");
+    verifySingleUnit(mile, UMEASURE_SI_PREFIX_ONE, 1, "mile");
+
+    // dimensionless.getComplexity()
+    UMeasureUnitComplexity complexity = dimensionless.getComplexity(status);
+    status.errIfFailureAndReset("dimensionless.getComplexity(...)");
+    assertEquals("dimensionless complexity", UMEASURE_UNIT_SINGLE, complexity);
+
+    // dimensionless.getSIPrefix()
+    UMeasureSIPrefix siPrefix = dimensionless.getSIPrefix(status);
+    status.errIfFailureAndReset("dimensionless.getSIPrefix(...)");
+    assertEquals("dimensionless SIPrefix", UMEASURE_SI_PREFIX_ONE, siPrefix);
+
+    // dimensionless.withSIPrefix()
+    modified = dimensionless.withSIPrefix(UMEASURE_SI_PREFIX_KILO, status);
+    status.errIfFailureAndReset("dimensionless.withSIPrefix(...)");
+    singles = modified.splitToSingleUnits(count, status);
+    assertEquals("no singles in modified", 0, count);
+    siPrefix = modified.getSIPrefix(status);
+    status.errIfFailureAndReset("modified.getSIPrefix(...)");
+    assertEquals("modified SIPrefix", UMEASURE_SI_PREFIX_ONE, siPrefix);
+
+    // dimensionless.getDimensionality()
+    int32_t dimensionality = dimensionless.getDimensionality(status);
+    status.errIfFailureAndReset("dimensionless.getDimensionality(...)");
+    assertEquals("dimensionless dimensionality", 1, dimensionality);
+
+    // dimensionless.withDimensionality()
+    modified = dimensionless.withDimensionality(-1, status);
+    status.errIfFailureAndReset("dimensionless.withDimensionality(...)");
+    singles = modified.splitToSingleUnits(count, status);
+    assertEquals("no singles in modified", 0, count);
+    dimensionality = modified.getDimensionality(status);
+    status.errIfFailureAndReset("modified.getDimensionality(...)");
+    assertEquals("modified dimensionality", 1, dimensionality);
+}
+
 // See also: MeasureFormatTest::TestInvalidIdentifiers() - TODO: maybe merge?
 void MeasureFormatTest::TestIdentifiers() {
     IcuTestErrorCode status(*this, "TestIdentifiers");
@@ -3426,6 +3481,7 @@ void MeasureFormatTest::TestIdentifiers() {
         const char* id;
         const char* normalized;
     } cases[] = {
+        {true, "", ""},
         {false, "one", ""},
 
         {true, "square-meter-per-square-meter", "square-meter-per-square-meter"},
