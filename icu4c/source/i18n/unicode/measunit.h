@@ -37,7 +37,7 @@ struct MeasureUnitImpl;
  * Enumeration for unit complexity. There are three levels:
  * 
  * - SINGLE: A single unit, optionally with a power and/or SI prefix. Examples: hectare,
- *           square-kilometer, kilojoule, one-per-second.
+ *           square-kilometer, kilojoule, per-second.
  * - COMPOUND: A unit composed of the product of multiple single units. Examples:
  *             meter-per-second, kilowatt-hour, kilogram-meter-per-square-second.
  * - MIXED: A unit composed of the sum of multiple single units. Examples: foot+inch,
@@ -337,12 +337,6 @@ class U_I18N_API MeasureUnit: public UObject {
     /**
      * Get the CLDR Unit Identifier for this MeasureUnit, as defined in UTS 35.
      *
-     * WIP/TODO(hugovdm,review): currently getIdentifier() might return "one",
-     * even though MeasureUnit::forIdentifier("one"); is not supported.
-     * Inconsistent - what should getIdentifier() do, or should
-     * forMeasureUnitMaybeCopy perhaps handle the identity unit via a
-     * private/internal API?
-     *
      * @return The string form of this unit, owned by this MeasureUnit.
      * @draft ICU 67
      */
@@ -453,7 +447,7 @@ class U_I18N_API MeasureUnit: public UObject {
      *
      * Examples:
      * - Given "meter-kilogram-per-second", three units will be returned: "meter",
-     *   "kilogram", and "one-per-second".
+     *   "kilogram", and "per-second".
      * - Given "hour+minute+second", three units will be returned: "hour", "minute",
      *   and "second".
      *
@@ -3381,11 +3375,15 @@ class U_I18N_API MeasureUnit: public UObject {
 
 private:
 
-    // If non-null, fImpl is owned by the MeasureUnit.
+    // Used by new draft APIs in ICU 67. If non-null, fImpl is owned by the
+    // MeasureUnit.
     MeasureUnitImpl* fImpl;
 
-    // These two ints are indices into static string lists in measunit.cpp
+    // An index into a static string list in measunit.cpp. If set to -1, fImpl
+    // is in use instead of fTypeId and fSubTypeId.
     int16_t fSubTypeId;
+    // An index into a static string list in measunit.cpp. If set to -1, fImpl
+    // is in use instead of fTypeId and fSubTypeId.
     int8_t fTypeId;
 
     MeasureUnit(int32_t typeId, int32_t subTypeId);
@@ -3395,7 +3393,11 @@ private:
     static MeasureUnit *create(int typeId, int subTypeId, UErrorCode &status);
 
     /**
-     * @return Whether subType is known to ICU.
+     * Sets output's typeId and subTypeId according to subType, if subType is a
+     * valid/known identifier.
+     *
+     * @return Whether subType is known to ICU. If false, output was not
+     * modified.
      */
     static bool findBySubType(StringPiece subType, MeasureUnit* output);
 

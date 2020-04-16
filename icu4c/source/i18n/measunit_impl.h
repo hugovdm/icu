@@ -66,8 +66,20 @@ struct SingleUnitImpl : public UMemory {
         return (compareTo(other) == 0);
     }
 
-    /** Simple unit index, unique for every simple unit. */
-    int32_t index = 0;
+    /**
+     * Returns true if this unit is the "dimensionless base unit", as produced
+     * by the MeasureUnit() default constructor. (This does not include the
+     * likes of concentrations or angles.)
+     */
+    bool isDimensionless() const {
+        return index == -1;
+    }
+
+    /**
+     * Simple unit index, unique for every simple unit, -1 for the dimensionless
+     * unit. This is an index into a string list in measunit_extra.cpp.
+     */
+    int32_t index = -1;
 
     /** Simple unit identifier; memory not owned by the SimpleUnit. */
     StringPiece identifier;

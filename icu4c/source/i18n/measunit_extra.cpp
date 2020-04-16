@@ -42,8 +42,13 @@ constexpr int32_t kSIPrefixOffset = 64;
 constexpr int32_t kCompoundPartOffset = 128;
 
 enum CompoundPart {
+    // Represents "-per-"
     COMPOUND_PART_PER = kCompoundPartOffset,
+    // Represents "per-"
+    COMPOUND_PART_PER_AT_START,
+    // Represents "-"
     COMPOUND_PART_TIMES,
+    // Represents "-and-"
     COMPOUND_PART_AND,
 };
 
@@ -99,7 +104,6 @@ const struct SIPrefixStrings {
 
 // TODO(ICU-21059): Get this list from data
 const char16_t* const gSimpleUnits[] = {
-    u"one", // note: expected to be index 0
     u"candela",
     u"carat",
     u"gram",
@@ -230,7 +234,7 @@ void U_CALLCONV initUnitExtras(UErrorCode& status) {
 
     // Add syntax parts (compound, power prefixes)
     b.add(u"-per-", COMPOUND_PART_PER, status);
-    b.add(u"per-", COMPOUND_PART_PER, status);
+    b.add(u"per-", COMPOUND_PART_PER_AT_START, status);
     b.add(u"-", COMPOUND_PART_TIMES, status);
     b.add(u"-and-", COMPOUND_PART_AND, status);
     b.add(u"square-", POWER_PART_P2, status);
@@ -279,7 +283,6 @@ public:
         // Token type for "-per-", "-", and "-and-".
         TYPE_COMPOUND_PART,
         TYPE_POWER_PART,
-        TYPE_ONE, // WIP/TODO(hugovdm,review): delete?
         TYPE_SIMPLE_UNIT,
     };
 
@@ -295,9 +298,6 @@ public:
         }
         if (fMatch < kSimpleUnitOffset) {
             return TYPE_POWER_PART;
-        }
-        if (fMatch == kSimpleUnitOffset) {
-            return TYPE_ONE;
         }
         return TYPE_SIMPLE_UNIT;
     }
@@ -407,8 +407,7 @@ private:
      * If a "-per-" was parsed, the result will have appropriate negative
      * dimensionality.
      *
-     * @param result Should be set to "one" when passed in: will usually be
-     * overwritten, but will be left as is if "one" is parsed.
+     * @param result Will be overwritten by the result, if status shows success.
      * @param sawAnd If an "-and-" was parsed prior to finding the "single
      * unit", sawAnd is set to true. If not, it is left as is.
      * @param status ICU error code.
@@ -434,7 +433,22 @@ private:
 
             if (token.getType() == Token::TYPE_COMPOUND_PART) {
                 switch (token.getMatch()) {
+                case COMPOUND_PART_PER_AT_START:
+                    if (previ != 0) {
+                        // "per-" is only valid as the first token.
+                        status = kUnitIdentifierSyntaxError;
+                        return;
+                    }
+                    fAfterPer = true;
+                    result.dimensionality = -1;
+                    break;
+
                 case COMPOUND_PART_PER:
+                    if (previ == 0) {
+                        // Identifiers can't start with "-per-".
+                        status = kUnitIdentifierSyntaxError;
+                        return;
+                    }
                     if (sawAnd) {
                         // Mixed compound units not yet supported,
                         // TODO(CLDR-13700).
@@ -491,11 +505,6 @@ private:
                     state = 2;
                     break;
 
-                case Token::TYPE_ONE:
-                    // WIP/TODO(hugovdm,review): remove TYPE_ONE entirely?
-                    status = kUnitIdentifierSyntaxError;
-                    return;
-
                 case Token::TYPE_SIMPLE_UNIT:
                     result.index = token.getSimpleUnitIndex();
                     result.identifier = fSource.substr(previ, fIndex - previ);
@@ -528,9 +537,7 @@ private:
             if (U_FAILURE(status)) {
                 return;
             }
-            if (singleUnit.index == 0) {
-                continue;
-            }
+            U_ASSERT(!singleUnit.isDimensionless());
             bool added = result.append(singleUnit, status);
             if (sawAnd && !added) {
                 // Two similar units are not allowed in a mixed unit
@@ -568,12 +575,18 @@ void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& o
         output.append("per-", status);
     }
 
-    if (singleUnit.index == 0) {
-        // Don't propagate SI prefixes and powers on one
-        // WIP/TODO(hugovdm,review): don't support one at all? But we need to
-        // return something that can be recognised and handled by
-        // MeasureUnitImpl::forMeasureUnitMaybeCopy().
-        output.append("one", status);
+    if (singleUnit.isDimensionless()) {
+        // FIXME/WIP(hugovdm): I think this never happens, but I want to go
+        // through the code and convince myself why and how. And then decide
+        // whether no code, or an assert, would be better.
+        //
+        //     U_ASSERT(!singleUnit.isDimensionless());
+        //
+        // Instantiating a SingleUnitImpl with a default constructor should
+        // leave isDimensionless true, can we be confident that they're always
+        // populated by the time we get here though?
+        fprintf(stderr, "============ SO THIS DOES STILL HAPPEN, SURPRISE! ============\n");
+        // No appending to output, we wish to return the zero-length string.
         return;
     }
     int8_t posPower = std::abs(singleUnit.dimensionality);
@@ -624,7 +637,8 @@ void serialize(MeasureUnitImpl& impl, UErrorCode& status) {
     }
     U_ASSERT(impl.identifier.isEmpty());
     if (impl.units.length() == 0) {
-        impl.identifier.append("one", status);
+        // Dimensionless, constructed by the default constructor: no appending
+        // to impl.identifier, we wish it to contain the zero-length string.
         return;
     }
     if (impl.complexity == UMEASURE_UNIT_COMPOUND) {
@@ -654,6 +668,8 @@ void serialize(MeasureUnitImpl& impl, UErrorCode& status) {
         } else {
             if (prev.dimensionality > 0 && curr.dimensionality < 0) {
                 impl.identifier.append("-per-", status);
+                // FIXME/WIP: somehow test/generate "per-mile" output from this
+                // serialize function?
             } else {
                 impl.identifier.append('-', status);
             }
@@ -721,6 +737,7 @@ const MeasureUnitImpl& MeasureUnitImpl::forMeasureUnit(
     if (measureUnit.fImpl) {
         return *measureUnit.fImpl;
     } else {
+        // FIXME test this code path.
         memory = Parser::from(measureUnit.getIdentifier(), status).parse(status);
         return memory;
     }
@@ -732,9 +749,7 @@ MeasureUnitImpl MeasureUnitImpl::forMeasureUnitMaybeCopy(
         return measureUnit.fImpl->copy(status);
     } else {
         const char *identifier = measureUnit.getIdentifier();
-        // WIP/TODO(hugovdm,review): we need to somehow handle the "identity"
-        // MeasureUnit here:
-        if (uprv_strcmp(identifier, "one") == 0) { return MeasureUnitImpl(); }
+        if (identifier[0] == 0) { return MeasureUnitImpl(); }
         return Parser::from(identifier, status).parse(status);
     }
 }
