@@ -44,12 +44,19 @@ constexpr int32_t kCompoundPartOffset = 128;
 enum CompoundPart {
     // Represents "-per-"
     COMPOUND_PART_PER = kCompoundPartOffset,
-    // Represents "per-"
-    COMPOUND_PART_PER_AT_START,
     // Represents "-"
     COMPOUND_PART_TIMES,
     // Represents "-and-"
     COMPOUND_PART_AND,
+};
+
+// Trie value offset for "per-".
+constexpr int32_t kInitialCompoundPartOffset = 192;
+
+enum InitialCompoundPart {
+    // Represents "per-", the only compound part that can appear at the start of
+    // an identifier.
+    INITIAL_COMPOUND_PART_PER = kInitialCompoundPartOffset,
 };
 
 // Trie value offset for powers like "square-", "cubic-", "p2-" etc.
@@ -234,9 +241,9 @@ void U_CALLCONV initUnitExtras(UErrorCode& status) {
 
     // Add syntax parts (compound, power prefixes)
     b.add(u"-per-", COMPOUND_PART_PER, status);
-    b.add(u"per-", COMPOUND_PART_PER_AT_START, status);
     b.add(u"-", COMPOUND_PART_TIMES, status);
     b.add(u"-and-", COMPOUND_PART_AND, status);
+    b.add(u"per-", INITIAL_COMPOUND_PART_PER, status);
     b.add(u"square-", POWER_PART_P2, status);
     b.add(u"cubic-", POWER_PART_P3, status);
     b.add(u"p2-", POWER_PART_P2, status);
@@ -280,8 +287,10 @@ public:
     enum Type {
         TYPE_UNDEFINED,
         TYPE_SI_PREFIX,
-        // Token type for "-per-", "-", and "-and-".
+        // Token type for "-per-", "-", "-and-", as well as "per-".
         TYPE_COMPOUND_PART,
+        // Token type for "per-".
+        TYPE_INITIAL_COMPOUND_PART,
         TYPE_POWER_PART,
         TYPE_SIMPLE_UNIT,
     };
@@ -293,8 +302,11 @@ public:
         if (fMatch < kCompoundPartOffset) {
             return TYPE_SI_PREFIX;
         }
-        if (fMatch < kPowerPartOffset) {
+        if (fMatch < kInitialCompoundPartOffset) {
             return TYPE_COMPOUND_PART;
+        }
+        if (fMatch < kPowerPartOffset) {
+            return TYPE_INITIAL_COMPOUND_PART;
         }
         if (fMatch < kSimpleUnitOffset) {
             return TYPE_POWER_PART;
@@ -310,6 +322,16 @@ public:
     // Valid only for tokens with type TYPE_COMPOUND_PART.
     int32_t getMatch() const {
         U_ASSERT(getType() == TYPE_COMPOUND_PART);
+        return fMatch;
+    }
+
+    int32_t getInitialCompoundPart() const {
+        // Even if there is only one InitialCompoundPart value, we have this
+        // function for the simplicity of code consistency.
+        U_ASSERT(getType() == TYPE_INITIAL_COMPOUND_PART);
+        // Defensive: if this assert fails, code using this function also needs
+        // to change.
+        U_ASSERT(fMatch == INITIAL_COMPOUND_PART_PER);
         return fMatch;
     }
 
@@ -434,70 +456,68 @@ private:
         // 1 = power token seen (will not accept another power token)
         // 2 = SI prefix token seen (will not accept a power or SI prefix token)
         int32_t state = 0;
+
+        // Tracks the starting offset of the token currently under
+        // consideration.
         int32_t previ = fIndex;
+        Token token = nextToken(status);
+        if (U_FAILURE(status)) { return; }
 
-        // Read a unit
-        while (hasNext()) {
-            Token token = nextToken(status);
-            if (U_FAILURE(status)) {
-                return;
-            }
+        if (previ == 0) {
+            // Optional initial "per-"
+            if (token.getType() == Token::TYPE_INITIAL_COMPOUND_PART) {
+                U_ASSERT(token.getInitialCompoundPart() == INITIAL_COMPOUND_PART_PER);
+                fAfterPer = true;
+                result.dimensionality = -1;
 
-            if (token.getType() == Token::TYPE_COMPOUND_PART) {
-                switch (token.getMatch()) {
-                case COMPOUND_PART_PER_AT_START:
-                    if (previ != 0) {
-                        // "per-" is only valid as the first token.
-                        status = kUnitIdentifierSyntaxError;
-                        return;
-                    }
-                    fAfterPer = true;
-                    result.dimensionality = -1;
-                    break;
-
-                case COMPOUND_PART_PER:
-                    if (previ == 0) {
-                        // Identifiers can't start with "-per-".
-                        status = kUnitIdentifierSyntaxError;
-                        return;
-                    }
-                    if (sawAnd) {
-                        // Mixed compound units not yet supported,
-                        // TODO(CLDR-13700).
-                        status = kUnitIdentifierSyntaxError;
-                        return;
-                    }
-                    fAfterPer = true;
-                    result.dimensionality = -1;
-                    break;
-
-                case COMPOUND_PART_TIMES:
-                    if (previ == 0) {
-                        // Can't start with "-".
-                        status = kUnitIdentifierSyntaxError;
-                        return;
-                    }
-                    if (fAfterPer) {
-                        result.dimensionality = -1;
-                    }
-                    break;
-
-                case COMPOUND_PART_AND:
-                    if (previ == 0 || fAfterPer) {
-                        // Can't start with "-and-", and mixed compound units
-                        // not yet supported, TODO(CLDR-13700).
-                        status = kUnitIdentifierSyntaxError;
-                        return;
-                    }
-                    sawAnd = true;
-                    break;
-                }
                 previ = fIndex;
-
                 token = nextToken(status);
                 if (U_FAILURE(status)) { return; }
             }
+        } else {
+            // All other SingleUnit's are separated from previous SingleUnit's
+            // via a compound part:
+            if (token.getType() != Token::TYPE_COMPOUND_PART) {
+                status = kUnitIdentifierSyntaxError;
+                return;
+            }
 
+            switch (token.getMatch()) {
+            case COMPOUND_PART_PER:
+                if (sawAnd) {
+                    // Mixed compound units not yet supported,
+                    // TODO(CLDR-13700).
+                    status = kUnitIdentifierSyntaxError;
+                    return;
+                }
+                fAfterPer = true;
+                result.dimensionality = -1;
+                break;
+
+            case COMPOUND_PART_TIMES:
+                if (fAfterPer) {
+                    result.dimensionality = -1;
+                }
+                break;
+
+            case COMPOUND_PART_AND:
+                if (fAfterPer) {
+                    // Can't start with "-and-", and mixed compound units
+                    // not yet supported, TODO(CLDR-13700).
+                    status = kUnitIdentifierSyntaxError;
+                    return;
+                }
+                sawAnd = true;
+                break;
+            }
+
+            previ = fIndex;
+            token = nextToken(status);
+            if (U_FAILURE(status)) { return; }
+        }
+
+        // Read tokens until we have a complete SingleUnit or we reach the end.
+        while (true) {
             switch (token.getType()) {
                 case Token::TYPE_POWER_PART:
                     if (state > 0) {
@@ -505,7 +525,6 @@ private:
                         return;
                     }
                     result.dimensionality *= token.getPower();
-                    previ = fIndex;
                     state = 1;
                     break;
 
@@ -515,7 +534,6 @@ private:
                         return;
                     }
                     result.siPrefix = token.getSIPrefix();
-                    previ = fIndex;
                     state = 2;
                     break;
 
@@ -527,7 +545,11 @@ private:
                     status = kUnitIdentifierSyntaxError;
                     return;
             }
-        }
+
+            previ = fIndex;
+            token = nextToken(status);
+            if (U_FAILURE(status)) { return; }
+        };
 
         // We ran out of tokens before finding a complete single unit.
         status = kUnitIdentifierSyntaxError;

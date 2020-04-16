@@ -3268,6 +3268,8 @@ void MeasureFormatTest::TestInvalidIdentifiers() {
         "one-one",
         "one-per-mile",
         "one-per-cubic-centimeter",
+        "square--per-meter",
+        "metersecond", // Must have compound part in between single units
     };
 
     for (const auto& input : inputs) {
@@ -3396,7 +3398,6 @@ void MeasureFormatTest::TestCompoundUnitOperations() {
     // with others via product:
     MeasureUnit kilometer2 = dimensionless.product(kilometer, status);
     status.errIfFailureAndReset("dimensionless.product(kilometer, status)");
-    return;
     verifySingleUnit(kilometer2, UMEASURE_SI_PREFIX_KILO, 1, "kilometer");
     assertTrue("kilometer equality", kilometer == kilometer2);
 
