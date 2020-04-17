@@ -95,7 +95,11 @@ struct SingleUnitImpl : public UMemory {
      */
     int32_t index = -1;
 
-    /** SI prefix. **/
+    /**
+     * SI prefix.
+     *
+     * This is ignored for the dimensionless unit.
+     */
     UMeasureSIPrefix siPrefix = UMEASURE_SI_PREFIX_ONE;
 
     /**

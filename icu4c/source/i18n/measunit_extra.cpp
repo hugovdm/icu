@@ -848,11 +848,6 @@ int32_t MeasureUnit::getDimensionality(UErrorCode& status) const {
 
 MeasureUnit MeasureUnit::withDimensionality(int32_t dimensionality, UErrorCode& status) const {
     SingleUnitImpl singleUnit = SingleUnitImpl::forMeasureUnit(*this, status);
-    if (U_FAILURE(status)) { return MeasureUnit(); }
-    if (singleUnit.isDimensionless()) {
-        // Dimensionality is meaningless for dimensionless units.
-        return MeasureUnit();
-    }
     singleUnit.dimensionality = dimensionality;
     return singleUnit.build(status);
 }
