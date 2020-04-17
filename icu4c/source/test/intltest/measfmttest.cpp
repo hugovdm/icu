@@ -3458,19 +3458,24 @@ void MeasureFormatTest::TestDimensionlessBehaviour() {
     status.errIfFailureAndReset("modified.getSIPrefix(...)");
     assertEquals("modified SIPrefix", UMEASURE_SI_PREFIX_ONE, siPrefix);
 
-    // dimensionless.getDimensionality()
-    int32_t dimensionality = dimensionless.getDimensionality(status);
-    status.errIfFailureAndReset("dimensionless.getDimensionality(...)");
-    assertEquals("dimensionless dimensionality", 1, dimensionality);
+    // For reference, dimensionality is meaningless for compound units:
+    MeasureUnit compound = MeasureUnit::forIdentifier("newton-meter", status);
+    status.errIfFailureAndReset("MeasureUnit::forIdentifier(\"newton-meter\", ...)");
+    // compound.getDimensionality()
+    int32_t dimensionality = compound.getDimensionality(status);
+    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "compound.getDimensionality(...)");
+    // compound.withDimensionality()
+    compound.withDimensionality(-1, status);
+    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "compound.withDimensionality(...)");
 
+    // The same applies to dimensionless: dimentionality is meaningless:
+    // dimensionless.getDimensionality()
+    dimensionality = dimensionless.getDimensionality(status);
+    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "dimensionless.getDimensionality(...)");
     // dimensionless.withDimensionality()
-    modified = dimensionless.withDimensionality(-1, status);
-    status.errIfFailureAndReset("dimensionless.withDimensionality(...)");
-    singles = modified.splitToSingleUnits(count, status);
-    assertEquals("no singles in modified", 0, count);
-    dimensionality = modified.getDimensionality(status);
-    status.errIfFailureAndReset("modified.getDimensionality(...)");
-    assertEquals("modified dimensionality", 1, dimensionality);
+    dimensionless.withDimensionality(-1, status);
+    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "dimensionless.withDimensionality(...)");
+
 }
 
 // See also: MeasureFormatTest::TestInvalidIdentifiers() - TODO: maybe merge?

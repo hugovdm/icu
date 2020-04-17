@@ -25,14 +25,25 @@ static const char kDefaultCurrency8[] = "XXX";
 struct SingleUnitImpl : public UMemory {
     /**
      * Gets a single unit from the MeasureUnit. If there are multiple single units, sets an error
-     * code and return the base dimensionless unit. Parses if necessary.
+     * code and returns the base dimensionless unit. Parses if necessary.
      */
     static SingleUnitImpl forMeasureUnit(const MeasureUnit& measureUnit, UErrorCode& status);
 
     /** Transform this SingleUnitImpl into a MeasureUnit, simplifying if possible. */
     MeasureUnit build(UErrorCode& status) const;
 
-    /** Compare this SingleUnitImpl to another SingleUnitImpl. */
+    /**
+     * Compare this SingleUnitImpl to another SingleUnitImpl for the sake of
+     * sorting and coalescing.
+     *
+     * Takes the sign of dimensionality into account, but not the absolute
+     * value: per-meter is not considered the same as meter, but meter is
+     * considered the same as square-meter.
+     *
+     * The dimensionless unit generally does not get compared, but if it did, it
+     * would sort before other units by virtue of dimensionality being 0 and
+     * index being < 0.
+     */
     int32_t compareTo(const SingleUnitImpl& other) const {
         if (dimensionality < 0 && other.dimensionality > 0) {
             // Positive dimensions first
@@ -78,13 +89,20 @@ struct SingleUnitImpl : public UMemory {
     /**
      * Simple unit index, unique for every simple unit, -1 for the dimensionless
      * unit. This is an index into a string list in measunit_extra.cpp.
+     *
+     * The default value is -1, meaning the dimensionless unit:
+     * isDimensionless() will return true, until index is changed.
      */
     int32_t index = -1;
 
     /** SI prefix. **/
     UMeasureSIPrefix siPrefix = UMEASURE_SI_PREFIX_ONE;
-    
-    /** Dimensionality. **/
+
+    /**
+     * Dimensionality.
+     *
+     * This is meaningless for the dimensionless unit.
+     */
     int32_t dimensionality = 1;
 };
 

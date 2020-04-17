@@ -597,7 +597,6 @@ private:
                     status = kUnitIdentifierSyntaxError;
                     return;
                 }
-                result.complexity = sawAnd ? UMEASURE_UNIT_MIXED : UMEASURE_UNIT_COMPOUND;
             }
         }
     }
@@ -614,7 +613,7 @@ compareSingleUnits(const void* /*context*/, const void* left, const void* right)
  * Generate the identifier string for a single unit in place.
  *
  * Does not support the dimensionless SingleUnitImpl: calling serializeSingle
- * with the dimensionless unit results in an U_ILLEGAL_ARGUMENT_ERROR.
+ * with the dimensionless unit results in an U_INTERNAL_PROGRAM_ERROR.
  *
  * @param first If singleUnit is part of a compound unit, and not its first
  * single unit, set this to false. Otherwise: set to true.
@@ -627,7 +626,7 @@ void serializeSingle(const SingleUnitImpl& singleUnit, bool first, CharString& o
     }
 
     if (singleUnit.isDimensionless()) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
+        status = U_INTERNAL_PROGRAM_ERROR;
         return;
     }
     int8_t posPower = std::abs(singleUnit.dimensionality);
@@ -738,6 +737,8 @@ bool appendImpl(MeasureUnitImpl& impl, const SingleUnitImpl& unit, UErrorCode& s
         }
     }
     if (oldUnit) {
+        // Both dimensionalities will be positive, or both will be negative, by
+        // virtue of isCompatibleWith().
         oldUnit->dimensionality += unit.dimensionality;
     } else {
         SingleUnitImpl* destination = impl.units.emplaceBack();
@@ -837,11 +838,23 @@ MeasureUnit MeasureUnit::withSIPrefix(UMeasureSIPrefix prefix, UErrorCode& statu
 }
 
 int32_t MeasureUnit::getDimensionality(UErrorCode& status) const {
-    return SingleUnitImpl::forMeasureUnit(*this, status).dimensionality;
+    SingleUnitImpl singleUnit = SingleUnitImpl::forMeasureUnit(*this, status);
+    if (U_FAILURE(status)) { return 0; }
+    if (singleUnit.isDimensionless()) {
+        // Fail for dimensionless, as with for compound:
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return 0;
+    }
+    return singleUnit.dimensionality;
 }
 
 MeasureUnit MeasureUnit::withDimensionality(int32_t dimensionality, UErrorCode& status) const {
     SingleUnitImpl singleUnit = SingleUnitImpl::forMeasureUnit(*this, status);
+    if (U_FAILURE(status)) { return MeasureUnit(); }
+    if (singleUnit.isDimensionless()) {
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return MeasureUnit();
+    }
     singleUnit.dimensionality = dimensionality;
     return singleUnit.build(status);
 }
