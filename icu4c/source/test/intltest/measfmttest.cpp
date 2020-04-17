@@ -79,10 +79,10 @@ private:
     void Test20332_PersonUnits();
     void TestNumericTime();
     void TestNumericTimeSomeSpecialFormats();
+    void TestIdentifiers();
     void TestInvalidIdentifiers();
     void TestCompoundUnitOperations();
     void TestDimensionlessBehaviour();
-    void TestIdentifiers();
     void Test21060_AddressSanitizerProblem();
 
     void verifyFormat(
@@ -203,10 +203,10 @@ void MeasureFormatTest::runIndexedTest(
     TESTCASE_AUTO(Test20332_PersonUnits);
     TESTCASE_AUTO(TestNumericTime);
     TESTCASE_AUTO(TestNumericTimeSomeSpecialFormats);
+    TESTCASE_AUTO(TestIdentifiers);
     TESTCASE_AUTO(TestInvalidIdentifiers);
     TESTCASE_AUTO(TestCompoundUnitOperations);
     TESTCASE_AUTO(TestDimensionlessBehaviour);
-    TESTCASE_AUTO(TestIdentifiers);
     TESTCASE_AUTO(Test21060_AddressSanitizerProblem);
     TESTCASE_AUTO_END;
 }
@@ -3241,7 +3241,48 @@ void MeasureFormatTest::TestNumericTimeSomeSpecialFormats() {
     verifyFormat("Danish fhoursFminutes", fmtDa, fhoursFminutes, 2, "2.03,877");
 }
 
-// See also: MeasureFormatTest::TestIdentifiers() - TODO: maybe merge?
+void MeasureFormatTest::TestIdentifiers() {
+    IcuTestErrorCode status(*this, "TestIdentifiers");
+    struct TestCase {
+        bool valid;
+        const char* id;
+        const char* normalized;
+    } cases[] = {
+        {true, "", ""},
+        {false, "one", ""},
+
+        {true, "square-meter-per-square-meter", "square-meter-per-square-meter"},
+        {true, "kilogram-meter-per-square-meter-square-second",
+         "kilogram-meter-per-square-meter-square-second"},
+        {true, "square-mile-and-square-foot", "square-mile-and-square-foot"}, // mixed with >1 power
+        {true, "kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
+
+        {true, "per-cubic-centimeter", "per-cubic-centimeter"},
+        {true, "per-kilometer", "per-kilometer"},
+
+        // Negative powers not supported in mixed units yet. TODO(CLDR-13701).
+        {false, "per-hour-and-hertz", ""},
+        {false, "hertz-and-per-hour", ""},
+
+        // Compound units not supported in mixed units yet. TODO(CLDR-13700).
+        {false, "kilonewton-meter-and-newton-meter", ""},
+
+        // TODO(ICU-20920): Add more test cases once the proper ranking is available.
+    };
+    for (const auto &cas : cases) {
+        status.setScope(cas.id);
+        MeasureUnit unit = MeasureUnit::forIdentifier(cas.id, status);
+        if (!cas.valid) {
+            status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
+            continue;
+        }
+        status.errIfFailureAndReset();
+        const char* actual = unit.getIdentifier();
+        assertEquals(cas.id, cas.normalized, actual);
+        status.errIfFailureAndReset();
+    }
+}
+
 void MeasureFormatTest::TestInvalidIdentifiers() {
     IcuTestErrorCode status(*this, "TestInvalidIdentifiers");
 
@@ -3476,49 +3517,6 @@ void MeasureFormatTest::TestDimensionlessBehaviour() {
     dimensionless.withDimensionality(-1, status);
     status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "dimensionless.withDimensionality(...)");
 
-}
-
-// See also: MeasureFormatTest::TestInvalidIdentifiers() - TODO: maybe merge?
-void MeasureFormatTest::TestIdentifiers() {
-    IcuTestErrorCode status(*this, "TestIdentifiers");
-    struct TestCase {
-        bool valid;
-        const char* id;
-        const char* normalized;
-    } cases[] = {
-        {true, "", ""},
-        {false, "one", ""},
-
-        {true, "square-meter-per-square-meter", "square-meter-per-square-meter"},
-        {true, "kilogram-meter-per-square-meter-square-second",
-         "kilogram-meter-per-square-meter-square-second"},
-        {true, "square-mile-and-square-foot", "square-mile-and-square-foot"}, // mixed with >1 power
-        {true, "kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
-
-        {true, "per-cubic-centimeter", "per-cubic-centimeter"},
-        {true, "per-kilometer", "per-kilometer"},
-
-        // Negative powers not supported in mixed units yet. TODO(CLDR-13701).
-        {false, "per-hour-and-hertz", ""},
-        {false, "hertz-and-per-hour", ""},
-
-        // Compound units not supported in mixed units yet. TODO(CLDR-13700).
-        {false, "kilonewton-meter-and-newton-meter", ""},
-
-        // TODO(ICU-20920): Add more test cases once the proper ranking is available.
-    };
-    for (const auto &cas : cases) {
-        status.setScope(cas.id);
-        MeasureUnit unit = MeasureUnit::forIdentifier(cas.id, status);
-        if (!cas.valid) {
-            status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
-            continue;
-        }
-        status.errIfFailureAndReset();
-        const char* actual = unit.getIdentifier();
-        assertEquals(cas.id, cas.normalized, actual);
-        status.errIfFailureAndReset();
-    }
 }
 
 // ICU-21060
