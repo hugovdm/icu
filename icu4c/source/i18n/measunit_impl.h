@@ -41,8 +41,8 @@ struct SingleUnitImpl : public UMemory {
      * considered the same as square-meter.
      *
      * The dimensionless unit generally does not get compared, but if it did, it
-     * would sort before other units by virtue of dimensionality being 0 and
-     * index being < 0.
+     * would sort before other units by virtue of index being < 0 and
+     * dimensionality not being negative.
      */
     int32_t compareTo(const SingleUnitImpl& other) const {
         if (dimensionality < 0 && other.dimensionality > 0) {
