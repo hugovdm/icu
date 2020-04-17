@@ -3244,38 +3244,25 @@ void MeasureFormatTest::TestNumericTimeSomeSpecialFormats() {
 void MeasureFormatTest::TestIdentifiers() {
     IcuTestErrorCode status(*this, "TestIdentifiers");
     struct TestCase {
-        bool valid;
         const char* id;
         const char* normalized;
     } cases[] = {
-        {true, "", ""},
-        {false, "one", ""},
+        {"", ""},
 
-        {true, "square-meter-per-square-meter", "square-meter-per-square-meter"},
-        {true, "kilogram-meter-per-square-meter-square-second",
+        {"square-meter-per-square-meter", "square-meter-per-square-meter"},
+        {"kilogram-meter-per-square-meter-square-second",
          "kilogram-meter-per-square-meter-square-second"},
-        {true, "square-mile-and-square-foot", "square-mile-and-square-foot"}, // mixed with >1 power
-        {true, "kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
+        {"square-mile-and-square-foot", "square-mile-and-square-foot"}, // mixed with >1 power
+        {"kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
 
-        {true, "per-cubic-centimeter", "per-cubic-centimeter"},
-        {true, "per-kilometer", "per-kilometer"},
-
-        // Negative powers not supported in mixed units yet. TODO(CLDR-13701).
-        {false, "per-hour-and-hertz", ""},
-        {false, "hertz-and-per-hour", ""},
-
-        // Compound units not supported in mixed units yet. TODO(CLDR-13700).
-        {false, "kilonewton-meter-and-newton-meter", ""},
+        {"per-cubic-centimeter", "per-cubic-centimeter"},
+        {"per-kilometer", "per-kilometer"},
 
         // TODO(ICU-20920): Add more test cases once the proper ranking is available.
     };
     for (const auto &cas : cases) {
         status.setScope(cas.id);
         MeasureUnit unit = MeasureUnit::forIdentifier(cas.id, status);
-        if (!cas.valid) {
-            status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
-            continue;
-        }
         status.errIfFailureAndReset();
         const char* actual = unit.getIdentifier();
         assertEquals(cas.id, cas.normalized, actual);
@@ -3312,6 +3299,13 @@ void MeasureFormatTest::TestInvalidIdentifiers() {
         "one-per-cubic-centimeter",
         "square--per-meter",
         "metersecond", // Must have compound part in between single units
+
+        // Negative powers not supported in mixed units yet. TODO(CLDR-13701).
+        "per-hour-and-hertz",
+        "hertz-and-per-hour",
+
+        // Compound units not supported in mixed units yet. TODO(CLDR-13700).
+        "kilonewton-meter-and-newton-meter",
     };
 
     for (const auto& input : inputs) {
