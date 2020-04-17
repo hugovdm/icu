@@ -3478,11 +3478,6 @@ void MeasureFormatTest::TestDimensionlessBehaviour() {
     status.errIfFailureAndReset("mile.product(dimensionless, ...)");
     verifySingleUnit(mile, UMEASURE_SI_PREFIX_ONE, 1, "mile");
 
-    // dimensionless.getComplexity()
-    UMeasureUnitComplexity complexity = dimensionless.getComplexity(status);
-    status.errIfFailureAndReset("dimensionless.getComplexity(...)");
-    assertEquals("dimensionless complexity", UMEASURE_UNIT_SINGLE, complexity);
-
     // dimensionless.getSIPrefix()
     UMeasureSIPrefix siPrefix = dimensionless.getSIPrefix(status);
     status.errIfFailureAndReset("dimensionless.getSIPrefix(...)");
@@ -3497,24 +3492,25 @@ void MeasureFormatTest::TestDimensionlessBehaviour() {
     status.errIfFailureAndReset("modified.getSIPrefix(...)");
     assertEquals("modified SIPrefix", UMEASURE_SI_PREFIX_ONE, siPrefix);
 
-    // For reference, dimensionality is meaningless for compound units:
-    MeasureUnit compound = MeasureUnit::forIdentifier("newton-meter", status);
-    status.errIfFailureAndReset("MeasureUnit::forIdentifier(\"newton-meter\", ...)");
-    // compound.getDimensionality()
-    int32_t dimensionality = compound.getDimensionality(status);
-    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "compound.getDimensionality(...)");
-    // compound.withDimensionality()
-    compound.withDimensionality(-1, status);
-    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "compound.withDimensionality(...)");
+    // dimensionless.getComplexity()
+    UMeasureUnitComplexity complexity = dimensionless.getComplexity(status);
+    status.errIfFailureAndReset("dimensionless.getComplexity(...)");
+    assertEquals("dimensionless complexity", UMEASURE_UNIT_SINGLE, complexity);
 
-    // The same applies to dimensionless: dimentionality is meaningless:
+    // Dimensionality is mostly meaningless for dimensionless units, but it's
+    // still considered a SINGLE unit, so this code doesn't throw errors:
+
     // dimensionless.getDimensionality()
-    dimensionality = dimensionless.getDimensionality(status);
-    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "dimensionless.getDimensionality(...)");
+    int32_t dimensionality = dimensionless.getDimensionality(status);
+    status.errIfFailureAndReset("dimensionless.getDimensionality(...)");
+    assertEquals("dimensionless dimensionality", 0, dimensionality);
+
     // dimensionless.withDimensionality()
     dimensionless.withDimensionality(-1, status);
-    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR, "dimensionless.withDimensionality(...)");
-
+    status.errIfFailureAndReset("dimensionless.withDimensionality(...)");
+    dimensionality = dimensionless.getDimensionality(status);
+    status.errIfFailureAndReset("dimensionless.getDimensionality(...)");
+    assertEquals("dimensionless dimensionality", 0, dimensionality);
 }
 
 // ICU-21060

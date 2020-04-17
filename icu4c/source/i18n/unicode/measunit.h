@@ -387,6 +387,8 @@ class U_I18N_API MeasureUnit: public UObject {
      * NOTE: Only works on SINGLE units. If this is a COMPOUND or MIXED unit, an error will
      * occur. For more information, see UMeasureUnitComplexity.
      *
+     * For the base dimensionless unit, withDimensionality does nothing.
+     *
      * @param dimensionality The dimensionality (power).
      * @param status Set if this is not a SINGLE unit or if another error occurs.
      * @return A new SINGLE unit.
@@ -400,6 +402,8 @@ class U_I18N_API MeasureUnit: public UObject {
      *
      * NOTE: Only works on SINGLE units. If this is a COMPOUND or MIXED unit, an error will
      * occur. For more information, see UMeasureUnitComplexity.
+     *
+     * For the base dimensionless unit, getDimensionality returns 0.
      *
      * @param status Set if this is not a SINGLE unit or if another error occurs.
      * @return The dimensionality (power) of this simple unit.

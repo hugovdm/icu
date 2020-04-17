@@ -841,8 +841,6 @@ int32_t MeasureUnit::getDimensionality(UErrorCode& status) const {
     SingleUnitImpl singleUnit = SingleUnitImpl::forMeasureUnit(*this, status);
     if (U_FAILURE(status)) { return 0; }
     if (singleUnit.isDimensionless()) {
-        // Fail for dimensionless, as with for compound:
-        status = U_ILLEGAL_ARGUMENT_ERROR;
         return 0;
     }
     return singleUnit.dimensionality;
@@ -852,7 +850,7 @@ MeasureUnit MeasureUnit::withDimensionality(int32_t dimensionality, UErrorCode& 
     SingleUnitImpl singleUnit = SingleUnitImpl::forMeasureUnit(*this, status);
     if (U_FAILURE(status)) { return MeasureUnit(); }
     if (singleUnit.isDimensionless()) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
+        // Dimensionality is meaningless for dimensionless units.
         return MeasureUnit();
     }
     singleUnit.dimensionality = dimensionality;
