@@ -287,7 +287,7 @@ public:
     enum Type {
         TYPE_UNDEFINED,
         TYPE_SI_PREFIX,
-        // Token type for "-per-", "-", "-and-", as well as "per-".
+        // Token type for "-per-", "-", and "-and-".
         TYPE_COMPOUND_PART,
         // Token type for "per-".
         TYPE_INITIAL_COMPOUND_PART,
@@ -410,7 +410,7 @@ private:
         // recent matching token.
         int32_t previ = -1;
         // Find the longest token that matches a value in the trie:
-        do {
+        while (fIndex < fSource.length()) {
             auto result = fTrie.next(fSource.data()[fIndex++]);
             if (result == USTRINGTRIE_NO_MATCH) {
                 break;
@@ -425,7 +425,7 @@ private:
             }
             U_ASSERT(result == USTRINGTRIE_INTERMEDIATE_VALUE);
             // continue;
-        } while (fIndex < fSource.length());
+        }
 
         if (match < 0) {
             status = kUnitIdentifierSyntaxError;
@@ -440,6 +440,9 @@ private:
      *
      * If a "-per-" was parsed, the result will have appropriate negative
      * dimensionality.
+     *
+     * Returns an error if we parse both compound units and "-and-", since mixed
+     * compound units are not yet supported - TODO(CLDR-13700).
      *
      * @param result Will be overwritten by the result, if status shows success.
      * @param sawAnd If an "-and-" was parsed prior to finding the "single
@@ -457,20 +460,17 @@ private:
         // 2 = SI prefix token seen (will not accept a power or SI prefix token)
         int32_t state = 0;
 
-        // Tracks the starting offset of the token currently under
-        // consideration.
-        int32_t previ = fIndex;
+        bool atStart = fIndex == 0;
         Token token = nextToken(status);
         if (U_FAILURE(status)) { return; }
 
-        if (previ == 0) {
-            // Optional initial "per-"
+        if (atStart) {
+            // Identifiers optionally start with "per-".
             if (token.getType() == Token::TYPE_INITIAL_COMPOUND_PART) {
                 U_ASSERT(token.getInitialCompoundPart() == INITIAL_COMPOUND_PART_PER);
                 fAfterPer = true;
                 result.dimensionality = -1;
 
-                previ = fIndex;
                 token = nextToken(status);
                 if (U_FAILURE(status)) { return; }
             }
@@ -511,7 +511,6 @@ private:
                 break;
             }
 
-            previ = fIndex;
             token = nextToken(status);
             if (U_FAILURE(status)) { return; }
         }
@@ -546,11 +545,13 @@ private:
                     return;
             }
 
-            previ = fIndex;
+            if (!hasNext()) {
+                // We ran out of tokens before finding a complete single unit.
+                status = kUnitIdentifierSyntaxError;
+                return;
+            }
             token = nextToken(status);
             if (U_FAILURE(status)) {
-                // We have run out of (valid) tokens before finding a complete
-                // single unit.
                 return;
             }
         }
@@ -567,11 +568,6 @@ private:
             return;
         }
         int32_t unitNum = 0;
-        if (!hasNext()) {
-            // We don't support the empty string.
-            status = kUnitIdentifierSyntaxError;
-            return;
-        }
         while (hasNext()) {
             bool sawAnd = false;
             SingleUnitImpl singleUnit;
@@ -587,6 +583,10 @@ private:
                 return;
             }
             if ((++unitNum) >= 2) {
+                // nextSingleUnit fails appropriately for "per" and "and" in the
+                // same identifier. It doesn't fail for other compound units
+                // (COMPOUND_PART_TIMES). Consequently we take care of that
+                // here.
                 UMeasureUnitComplexity complexity =
                     sawAnd ? UMEASURE_UNIT_MIXED : UMEASURE_UNIT_COMPOUND;
                 if (unitNum == 2) {
@@ -597,6 +597,7 @@ private:
                     status = kUnitIdentifierSyntaxError;
                     return;
                 }
+                result.complexity = sawAnd ? UMEASURE_UNIT_MIXED : UMEASURE_UNIT_COMPOUND;
             }
         }
     }
@@ -794,9 +795,7 @@ MeasureUnitImpl MeasureUnitImpl::forMeasureUnitMaybeCopy(
     if (measureUnit.fImpl) {
         return measureUnit.fImpl->copy(status);
     } else {
-        const char *identifier = measureUnit.getIdentifier();
-        if (identifier[0] == 0) { return MeasureUnitImpl(); }
-        return Parser::from(identifier, status).parse(status);
+        return Parser::from(measureUnit.getIdentifier(), status).parse(status);
     }
 }
 
