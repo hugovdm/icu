@@ -3247,16 +3247,20 @@ void MeasureFormatTest::TestIdentifiers() {
         const char* id;
         const char* normalized;
     } cases[] = {
+        // Correctly normalized identifiers should not change
         {"", ""},
-
         {"square-meter-per-square-meter", "square-meter-per-square-meter"},
         {"kilogram-meter-per-square-meter-square-second",
          "kilogram-meter-per-square-meter-square-second"},
-        {"square-mile-and-square-foot", "square-mile-and-square-foot"}, // mixed with >1 power
-        {"kilogram-per-meter-per-second", "kilogram-per-meter-second"}, // double per
-
+        {"square-mile-and-square-foot", "square-mile-and-square-foot"},
+        {"square-foot-and-square-mile", "square-foot-and-square-mile"},
         {"per-cubic-centimeter", "per-cubic-centimeter"},
         {"per-kilometer", "per-kilometer"},
+
+        // Normalization of power and per
+        {"p2-foot-and-p2-mile", "square-foot-and-square-mile"},
+        {"gram-square-gram-per-dekagram", "cubic-gram-per-dekagram"},
+        {"kilogram-per-meter-per-second", "kilogram-per-meter-second"},
 
         // TODO(ICU-20920): Add more test cases once the proper ranking is available.
     };
