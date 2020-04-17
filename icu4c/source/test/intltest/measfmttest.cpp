@@ -3494,24 +3494,11 @@ void MeasureFormatTest::TestIdentifiers() {
         {true, "per-kilometer", "per-kilometer"},
 
         // Negative powers not supported in mixed units yet. TODO(CLDR-13701).
-        {false, "one-per-hour-and-hertz", ""},
-        {false, "hertz-and-one-per-hour", ""},
+        {false, "per-hour-and-hertz", ""},
+        {false, "hertz-and-per-hour", ""},
 
         // Compound units not supported in mixed units yet. TODO(CLDR-13700).
         {false, "kilonewton-meter-and-newton-meter", ""},
-
-        // We don't currently allow "one" in a mixed unit: we don't have a use
-        // case for it ("one" doesn't mix well with other units).
-        {false, "one-and-one", ""},
-        {false, "mile-and-one", ""},
-        {false, "one-and-mile", ""},
-        {false, "mile-and-one-and-yard", ""},
-
-        // We also ban dimensionality other than 1, as well as SI prefixes, for
-        // "one":
-        {false, "square-one", ""},
-        {false, "kiloone", ""},
-        {false, "square-kiloone", ""},
 
         // TODO(ICU-20920): Add more test cases once the proper ranking is available.
     };
@@ -3531,13 +3518,15 @@ void MeasureFormatTest::TestIdentifiers() {
 
 // ICU-21060
 void MeasureFormatTest::Test21060_AddressSanitizerProblem() {
-    UErrorCode status = U_ZERO_ERROR;
-    MeasureUnit first = MeasureUnit::forIdentifier("one", status);
+    IcuTestErrorCode status(*this, "Test21060_AddressSanitizerProblem");
+
+    MeasureUnit first = MeasureUnit::forIdentifier("", status);
+    status.errIfFailureAndReset();
 
     // Experimentally, a compound unit like "kilogram-meter" failed. A single
     // unit like "kilogram" or "meter" did not fail, did not trigger the
     // problem.
-    MeasureUnit crux = MeasureUnit::forIdentifier("one-per-meter", status);
+    MeasureUnit crux = MeasureUnit::forIdentifier("per-meter", status);
 
     // Heap allocation of a new CharString for first.identifier happens here:
     first = first.product(crux, status);
@@ -3551,12 +3540,14 @@ void MeasureFormatTest::Test21060_AddressSanitizerProblem() {
     first = first.product(crux, status);
 
     // Proving we've had no failure yet:
-    if (U_FAILURE(status)) return;
+    status.errIfFailureAndReset();
 
     // heap-use-after-free failure happened here, since a SingleUnitImpl had
     // held onto a StringPiece pointing at a substring of an identifier that was
     // freed above:
     second = second.product(crux, status);
+
+    status.errIfFailureAndReset();
 }
 
 
