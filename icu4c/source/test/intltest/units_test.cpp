@@ -123,6 +123,8 @@ void UnitsTest::testUnitConstantFreshness() {
 }
 
 void UnitsTest::testConversionCapability() {
+    IcuTestErrorCode status(*this, "UnitsTest::testConversionCapability");
+
     struct TestCase {
         const char *const source;
         const char *const target;
@@ -140,13 +142,26 @@ void UnitsTest::testConversionCapability() {
     };
 
     for (const auto &testCase : testCases) {
-        UErrorCode status = U_ZERO_ERROR;
-
         MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
+        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.source)) {
+            continue;
+        }
         MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
+        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.target)) {
+            continue;
+        }
 
         ConversionRates conversionRates(status);
+        if (status.errIfFailureAndReset("conversionRates(status)")) {
+            continue;
+        }
         auto convertibility = extractConvertibility(source, target, conversionRates, status);
+        if (status.errIfFailureAndReset("extractConvertibility(<%s>, <%s>, ...)", testCase.source,
+                                        testCase.target)) {
+            continue;
+        }
 
         assertEquals(UnicodeString("Conversion Capability: ") + testCase.source + " to " +
                          testCase.target,
@@ -155,7 +170,8 @@ void UnitsTest::testConversionCapability() {
 }
 
 void UnitsTest::testSiPrefixes() {
-    IcuTestErrorCode status(*this, "Units testSiPrefixes");
+    IcuTestErrorCode status(*this, "UnitsTest::testSiPrefixes");
+
     // Test Cases
     struct TestCase {
         const char *source;
@@ -169,19 +185,31 @@ void UnitsTest::testSiPrefixes() {
         {"megagram", "gram", 1.0, 1000000},          //
         {"megagram", "kilogram", 1.0, 1000},         //
         {"gigabyte", "byte", 1.0, 1000000000},       //
-        // TODO: Fix `watt` probelms.
-        // {"megawatt", "watt", 1.0, 1000000},          //
-        // {"megawatt", "kilowatt", 1.0, 1000},         //
+        {"megawatt", "watt", 1.0, 1000000},          //
+        {"megawatt", "kilowatt", 1.0, 1000},         //
     };
 
     for (const auto &testCase : testCases) {
-        UErrorCode status = U_ZERO_ERROR;
-
         MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
+        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.source)) {
+            continue;
+        }
         MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
+        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.target)) {
+            continue;
+        }
 
         ConversionRates conversionRates(status);
+        if (status.errIfFailureAndReset("conversionRates(status)")) {
+            continue;
+        }
         UnitConverter converter(source, target, conversionRates, status);
+        if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", testCase.source,
+                                        testCase.target)) {
+            continue;
+        }
 
         assertEqualsNear(UnicodeString("testSiPrefixes: ") + testCase.source + " to " + testCase.target,
                          testCase.expectedValue, converter.convert(testCase.inputValue),
@@ -190,7 +218,7 @@ void UnitsTest::testSiPrefixes() {
 }
 
 void UnitsTest::testMass() {
-    IcuTestErrorCode status(*this, "Units testMass");
+    IcuTestErrorCode status(*this, "UnitsTest::testMass");
 
     // Test Cases
     struct TestCase {
@@ -210,13 +238,26 @@ void UnitsTest::testMass() {
     };
 
     for (const auto &testCase : testCases) {
-        UErrorCode status = U_ZERO_ERROR;
-
         MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
+        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.source)) {
+            continue;
+        }
         MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
+        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.target)) {
+            continue;
+        }
 
         ConversionRates conversionRates(status);
+        if (status.errIfFailureAndReset("conversionRates(status)")) {
+            continue;
+        }
         UnitConverter converter(source, target, conversionRates, status);
+        if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", testCase.source,
+                                        testCase.target)) {
+            continue;
+        }
 
         assertEqualsNear(UnicodeString("testMass: ") + testCase.source + " to " + testCase.target,
                          testCase.expectedValue, converter.convert(testCase.inputValue),
@@ -244,13 +285,26 @@ void UnitsTest::testTemperature() {
     };
 
     for (const auto &testCase : testCases) {
-        UErrorCode status = U_ZERO_ERROR;
-
         MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
+        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.source)) {
+            continue;
+        }
         MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
+        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.target)) {
+            continue;
+        }
 
         ConversionRates conversionRates(status);
+        if (status.errIfFailureAndReset("conversionRates(status)")) {
+            continue;
+        }
         UnitConverter converter(source, target, conversionRates, status);
+        if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", testCase.source,
+                                        testCase.target)) {
+            continue;
+        }
 
         assertEqualsNear(UnicodeString("testTemperature: ") + testCase.source + " to " + testCase.target,
                          testCase.expectedValue, converter.convert(testCase.inputValue),
@@ -282,13 +336,26 @@ void UnitsTest::testArea() {
     };
 
     for (const auto &testCase : testCases) {
-        UErrorCode status = U_ZERO_ERROR;
-
         MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
+        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.source)) {
+            continue;
+        }
         MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
+        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
+                                        testCase.target)) {
+            continue;
+        }
 
         ConversionRates conversionRates(status);
+        if (status.errIfFailureAndReset("conversionRates(status)")) {
+            continue;
+        }
         UnitConverter converter(source, target, conversionRates, status);
+        if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", testCase.source,
+                                        testCase.target)) {
+            continue;
+        }
 
         assertEqualsNear(UnicodeString("testArea: ") + testCase.source + " to " + testCase.target,
                          testCase.expectedValue, converter.convert(testCase.inputValue),
@@ -400,8 +467,8 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
 
     // Conversion:
     UnitConverter converter(sourceUnit, targetUnit, *ctx->conversionRates, status);
-    if (status.errIfFailureAndReset("constructor: UnitConverter(<%s>, <%s>, status)",
-                                    sourceIdent.data(), targetIdent.data())) {
+    if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", sourceIdent.data(),
+                                    targetIdent.data())) {
         return;
     }
     double got = converter.convert(1000);
