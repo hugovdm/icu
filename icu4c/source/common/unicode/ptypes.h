@@ -49,7 +49,7 @@
  */
 
 /* Find out if we have stdint.h etc. */
-#include "unicode/platform.h"
+#include "unicode/platform.h" // IWYU pragma: export
 
 /*===========================================================================*/
 /* Generic data types                                                        */
@@ -65,7 +65,7 @@
  * <inttypes.h> includes <stdint.h> and adds the printf/scanf helpers PRId32, SCNx16 etc.
  * which we almost never use, plus stuff like imaxabs() which we never use.
  */
-#include <stdint.h>
+#include <stdint.h> // IWYU pragma: export
 
 #if U_PLATFORM == U_PF_OS390
 /* The features header is needed to get (u)int64_t sometimes. */

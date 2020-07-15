@@ -43,13 +43,13 @@
 /* which are contained in the platform-specific file platform.h             */
 /*==========================================================================*/
 
-#include "unicode/ptypes.h" /* platform.h is included in ptypes.h */
+#include "unicode/ptypes.h" /* platform.h is included in ptypes.h */ // IWYU pragma: export
 
 /*
  * ANSI C headers:
  * stddef.h defines wchar_t
  */
-#include <stddef.h>
+#include <stddef.h> // IWYU pragma: export
 
 /*==========================================================================*/
 /* For C wrappers, we use the symbol U_STABLE.                                */
@@ -444,6 +444,6 @@ typedef int32_t UChar32;
  */
 #define U_SENTINEL (-1)
 
-#include "unicode/urename.h"
+#include "unicode/urename.h" // IWYU pragma: export
 
 #endif

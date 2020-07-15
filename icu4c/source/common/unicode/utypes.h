@@ -35,9 +35,9 @@
 #define UTYPES_H
 
 
-#include "unicode/umachine.h"
-#include "unicode/uversion.h"
-#include "unicode/uconfig.h"
+#include "unicode/umachine.h" // IWYU pragma: export
+#include "unicode/uversion.h" // IWYU pragma: export
+#include "unicode/uconfig.h" // IWYU pragma: export
 #include <float.h>
 
 #if !U_NO_DEFAULT_INCLUDE_UTF_HEADERS
