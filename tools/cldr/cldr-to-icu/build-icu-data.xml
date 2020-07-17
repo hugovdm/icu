@@ -15,7 +15,7 @@
       inconsistent state when the conversion is cancelled). -->
 <project name="Convert" default="all" basedir=".">
 
-    <target name="all" depends="init-args, prepare-jar, clean, convert"/>
+    <target name="all" depends="init-args, prepare-jar, clean, convert, clean-cldrtestdata, copy-cldrtestdata"/>
 
     <!-- Initialize the properties which were not already set on the command line. -->
     <target name="init-args">
@@ -37,6 +37,9 @@
              this will overwrite (without deletion) the ICU data files in this ICU release,
              so it is recommended that for testing, it be set to another value.  -->
         <property name="outDir" value="${basedir}/../../../icu4c/source/data/"/>
+
+        <!-- The directory for testdata.  -->
+        <property name="testDataDir" value="${basedir}/../../../icu4c/source/test/testdata"/>
 
         <!-- The directory in which the additional ICU XML data is stored. -->
         <property name="specialsDir" value="${basedir}/../../../icu4c/source/data/xml"/>
@@ -330,6 +333,16 @@
                           source="//path/to/value[@attr='bar']"
                           locales="xx,yy_ZZ"/> -->
         </convert>
+    </target>
+
+    <target name="copy-cldrtestdata" depends="init-args">
+        <copy todir="${testDataDir}/cldr_testdata">
+            <fileset dir="${cldrDir}/common/testData"/>
+        </copy>
+    </target>
+
+    <target name="clean-cldrtestdata" depends="init-args">
+        <delete dir="${testDataDir}/cldr_testdata"/>
     </target>
 
     <target name="clean" depends="init-args, prepare-jar">
