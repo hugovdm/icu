@@ -588,6 +588,9 @@
     <ClCompile Include="formatted_string_builder.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
+    <ClCompile Include="number_usageprefs.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
     <ClCompile Include="number_utils.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
@@ -601,6 +604,9 @@
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="number_skeletons.cpp">
+      <Filter>formatting</Filter>
+    </ClCompile>
+    <ClCompile Include="number_symbolswrapper.cpp">
       <Filter>formatting</Filter>
     </ClCompile>
     <ClCompile Include="number_capi.cpp">
@@ -914,6 +920,9 @@
     <ClInclude Include="number_utypes.h">
       <Filter>formatting</Filter>
     </ClInclude>
+    <ClInclude Include="number_usageprefs.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
     <ClInclude Include="number_utils.h">
       <Filter>formatting</Filter>
     </ClInclude>
@@ -927,6 +936,9 @@
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="number_skeletons.h">
+      <Filter>formatting</Filter>
+    </ClInclude>
+    <ClInclude Include="number_symbolswrapper.h">
       <Filter>formatting</Filter>
     </ClInclude>
     <ClInclude Include="string_segment.h">
