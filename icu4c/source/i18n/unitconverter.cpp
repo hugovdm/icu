@@ -341,7 +341,7 @@ Factor loadCompoundFactor(const MeasureUnit &source, const ConversionRates &rate
     for (int32_t i = 0, n = compoundSourceUnit.units.length(); i < n; i++) {
         auto singleUnit = *compoundSourceUnit.units[i]; // a SingleUnitImpl
 
-        Factor singleFactor = loadSingleFactor(singleUnit.identifier, ratesInfo, status);
+        Factor singleFactor = loadSingleFactor(singleUnit.getSimpleUnitID(), ratesInfo, status);
         if (U_FAILURE(status)) return result;
 
         // Apply SiPrefix before the power, because the power may be will flip the factor.

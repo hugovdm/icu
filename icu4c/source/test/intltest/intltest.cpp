@@ -2156,17 +2156,18 @@ UBool IntlTest::assertEquals(const char* message,
     return TRUE;
 }
 
-UBool IntlTest::assertEqualsNear(const char *message, double expected, double actual, double precision) {
-    double diff = std::abs(expected - actual);
-    double diffPercent = expected != 0? diff / expected : diff; // If the expected is equals zero, we 
-
-    if (diffPercent > precision) {
-        errln((UnicodeString) "FAIL: " + message + "; got " + actual + "; expected " + expected);
+UBool IntlTest::assertNotEquals(const char* message,
+                                int32_t expectedNot,
+                                int32_t actual) {
+    if (expectedNot == actual) {
+        errln((UnicodeString)("FAIL: ") + message + "; got " + actual + "=0x" + toHex(actual) +
+              "; expected != " + expectedNot);
         return FALSE;
     }
 #ifdef VERBOSE_ASSERTIONS
     else {
-        logln((UnicodeString) "Ok: " + message + "; got " + expected);
+        logln((UnicodeString)("Ok: ") + message + "; got " + actual + "=0x" + toHex(actual) +
+              " != " + expectedNot);
     }
 #endif
     return TRUE;
@@ -2175,7 +2176,7 @@ UBool IntlTest::assertEqualsNear(const char *message, double expected, double ac
 // http://junit.sourceforge.net/javadoc/org/junit/Assert.html#assertEquals(java.lang.String,%20double,%20double,%20double)
 UBool IntlTest::assertEqualsNear(const char *message, double expected, double actual, double precision) {
     double diff = std::abs(expected - actual);
-    double diffPercent = expected != 0? diff / expected : diff; // If the expected is equals zero, we
+    double diffPercent = expected != 0? diff / expected : diff; // If the expected is equals zero, we 
 
     if (diffPercent > precision) {
         errln((UnicodeString) "FAIL: " + message + "; got " + actual + "; expected " + expected);

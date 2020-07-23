@@ -105,9 +105,8 @@ void UnitsTest::testBasic() {
         units.emplaceBack(source);
         units.emplaceBack(target);
 
-        const auto &conversionRateInfoList = getConversionRatesInfo(units, status);
-
-        UnitConverter converter(source, target, conversionRateInfoList, status);
+        ConversionRates conversionRates(status);
+        UnitConverter converter(source, target, conversionRates, status);
 
         assertEqualsNear("test conversion", testCase.expectedValue,
                          converter.convert(testCase.inputValue), 0.001);
@@ -144,9 +143,8 @@ void UnitsTest::testSiPrefixes() {
         units.emplaceBack(source);
         units.emplaceBack(target);
 
-        const auto &conversionRateInfoList = getConversionRatesInfo(units, status);
-
-        UnitConverter converter(source, target, conversionRateInfoList, status);
+        ConversionRates conversionRates(status);
+        UnitConverter converter(source, target, conversionRates, status);
 
         assertEqualsNear("test conversion", testCase.expectedValue,
                          converter.convert(testCase.inputValue), 0.001);
@@ -183,9 +181,8 @@ void UnitsTest::testMass() {
         units.emplaceBack(source);
         units.emplaceBack(target);
 
-        const auto &conversionRateInfoList = getConversionRatesInfo(units, status);
-
-        UnitConverter converter(source, target, conversionRateInfoList, status);
+        ConversionRates conversionRates(status);
+        UnitConverter converter(source, target, conversionRates, status);
 
         assertEqualsNear("test conversion", testCase.expectedValue,
                          converter.convert(testCase.inputValue), 0.001);
@@ -221,9 +218,8 @@ void UnitsTest::testTemperature() {
         units.emplaceBack(source);
         units.emplaceBack(target);
 
-        const auto &conversionRateInfoList = getConversionRatesInfo(units, status);
-
-        UnitConverter converter(source, target, conversionRateInfoList, status);
+        ConversionRates conversionRates(status);
+        UnitConverter converter(source, target, conversionRates, status);
 
         assertEqualsNear("test conversion", testCase.expectedValue,
                          converter.convert(testCase.inputValue), 0.001);
@@ -255,9 +251,8 @@ void UnitsTest::testArea() {
         units.emplaceBack(source);
         units.emplaceBack(target);
 
-        const auto &conversionRateInfoList = getConversionRatesInfo(units, status);
-
-        UnitConverter converter(source, target, conversionRateInfoList, status);
+        ConversionRates conversionRates(status);
+        UnitConverter converter(source, target, conversionRates, status);
 
         assertEqualsNear("test conversion", testCase.expectedValue,
                          converter.convert(testCase.inputValue), 0.001);
