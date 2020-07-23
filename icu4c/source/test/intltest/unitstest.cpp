@@ -88,7 +88,7 @@ void UnitsTest::testConversionCapability() {
         MeasureUnit target = MeasureUnit::forIdentifier(testCase.target, status);
 
         ConversionRates conversionRates(status);
-        auto convertibility = icu::checkConvertibility(source, target, conversionRates, status);
+        auto convertibility = checkConvertibility(source, target, conversionRates, status);
 
         assertEquals(UnicodeString("Conversion Capability: ") + testCase.source + " to " +
                          testCase.target,
