@@ -31,7 +31,7 @@ MeasureUnit extractCompoundBaseUnit(const MeasureUnit &source, const ConversionR
         // Extract `ConversionRateInfo` using the absolute unit. For example: in case of `square-meter`,
         // we will use `meter`
         const auto singleUnitImpl = SingleUnitImpl::forMeasureUnit(singleUnit, status);
-        const auto rateInfo = conversionRates.extractConversionInfo(singleUnitImpl.identifier, status);
+        const auto rateInfo = conversionRates.extractConversionInfo(singleUnitImpl.getSimpleUnitID(), status);
         if (U_FAILURE(status)) return result;
         if (rateInfo == nullptr) {
             status = U_INTERNAL_PROGRAM_ERROR;
