@@ -5,10 +5,11 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include <math.h>
+#include <cmath>
 
 #include "cmemory.h"
 #include "complexunitsconverter.h"
+#include "uarrsort.h"
 #include "uassert.h"
 #include "unicode/fmtable.h"
 #include "unicode/localpointer.h"
@@ -26,11 +27,41 @@ ComplexUnitsConverter::ComplexUnitsConverter(const MeasureUnitImpl &inputUnit,
     if (U_FAILURE(status)) {
         return;
     }
-    
-    if (units_.length() == 0) {
-        status = U_ILLEGAL_ARGUMENT_ERROR;
-        return;
-    }
+
+    U_ASSERT(units_.length() != 0);
+
+    // NOTE:
+    //  This comparator is used to short the units in a descending order. Therefore, we return -1 if
+    //  the left is bigger than right and so on.
+    auto descendingCompareUnits = [](const void *context, const void *left, const void *right) {
+        UErrorCode status = U_ZERO_ERROR;
+
+        const auto *leftPointer = static_cast<const MeasureUnitImpl *const *>(left);
+        const auto *rightPointer = static_cast<const MeasureUnitImpl *const *>(right);
+
+        UnitConverter fromLeftToRight(**leftPointer,                                  //
+                                      **rightPointer,                                 //
+                                      *static_cast<const ConversionRates *>(context), //
+                                      status);
+
+        double rightFromOneLeft = fromLeftToRight.convert(1.0);
+        if (std::abs(rightFromOneLeft - 1.0) < 0.0000000001) { // Equals To
+            return 0;
+        } else if (rightFromOneLeft > 1.0) { // Greater Than
+            return -1;
+        }
+
+        return 1; // Less Than
+    };
+
+    uprv_sortArray(units_.getAlias(),                                                                  //
+                   units_.length(),                                                                    //
+                   sizeof units_[0], /* NOTE: we have already asserted that the units_ is not empty.*/ //
+                   descendingCompareUnits,                                                             //
+                   &ratesInfo,                                                                         //
+                   false,                                                                              //
+                   &status                                                                             //
+    );
 
     // In case the `outputUnits` are `UMEASURE_UNIT_MIXED` such as `foot+inch`. In this case we need more
     // converters to convert from the `inputUnit` to the first unit in the `outputUnits`. Then, a
