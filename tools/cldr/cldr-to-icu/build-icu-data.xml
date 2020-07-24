@@ -39,7 +39,7 @@
         <property name="outDir" value="${basedir}/../../../icu4c/source/data/"/>
 
         <!-- The directory for testdata.  -->
-        <property name="testDataDir" value="${basedir}/../../../icu4c/source/test/testdata"/>
+        <property name="testDataDir" value="${basedir}/../../../testdata"/>
 
         <!-- The directory in which the additional ICU XML data is stored. -->
         <property name="specialsDir" value="${basedir}/../../../icu4c/source/data/xml"/>
@@ -336,13 +336,13 @@
     </target>
 
     <target name="copy-cldrtestdata" depends="init-args">
-        <copy todir="${testDataDir}/cldr_testdata">
+        <copy todir="${testDataDir}/cldr-testData">
             <fileset dir="${cldrDir}/common/testData"/>
         </copy>
     </target>
 
     <target name="clean-cldrtestdata" depends="init-args">
-        <delete dir="${testDataDir}/cldr_testdata"/>
+        <delete dir="${testDataDir}/cldr-testData"/>
     </target>
 
     <target name="clean" depends="init-args, prepare-jar">

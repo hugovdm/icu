@@ -109,8 +109,8 @@ tools/unicodetools/*
 #
 # CLDR - TODO(review): verify that _readme.txt copyright notice is sufficient?
 #
-icu4c/source/testdata/cldr_testdata/transforms/*.txt
-icu4c/source/testdata/cldr_testdata/segmentation/graphemeCluster/*.txt
+testdata/cldr-testData/transforms/*.txt
+testdata/cldr-testData/segmentation/graphemeCluster/*.txt
 #
 # vendor
 #
