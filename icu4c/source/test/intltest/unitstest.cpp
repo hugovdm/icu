@@ -44,6 +44,7 @@ class UnitsTest : public IntlTest {
     void testUnitConstantFreshness();
     void testConversionCapability();
     void testConversions();
+    void testComplexUnitConverterSorting();
     void testPreferences();
     void testSiPrefixes();
     void testMass();
@@ -61,6 +62,7 @@ void UnitsTest::runIndexedTest(int32_t index, UBool exec, const char *&name, cha
     TESTCASE_AUTO(testUnitConstantFreshness);
     TESTCASE_AUTO(testConversionCapability);
     TESTCASE_AUTO(testConversions);
+    TESTCASE_AUTO(testComplexUnitConverterSorting);
     TESTCASE_AUTO(testPreferences);
     TESTCASE_AUTO(testSiPrefixes);
     TESTCASE_AUTO(testMass);
@@ -427,6 +429,24 @@ void UnitsTest::testConversions() {
     if (errorCode.errIfFailureAndReset("error parsing %s: %s\n", path.data(), u_errorName(errorCode))) {
         return;
     }
+}
+
+void UnitsTest::testComplexUnitConverterSorting() {
+    IcuTestErrorCode status(*this, "UnitsTest::testComplexUnitConverterSorting");
+
+    MeasureUnitImpl source = MeasureUnitImpl::forIdentifier("meter", status);
+    MeasureUnitImpl target = MeasureUnitImpl::forIdentifier("inch-and-foot", status);
+    ConversionRates conversionRates(status);
+
+    ComplexUnitsConverter complexConverter(source, target, conversionRates, status);
+    auto measures = complexConverter.convert(10.0, status);
+
+    U_ASSERT(measures.length() == 2);
+    assertEquals("Sorted Data", "foot", measures[0]->getUnit().getIdentifier());
+    assertEquals("Sorted Data", "inch", measures[1]->getUnit().getIdentifier());
+
+    assertEqualsNear("Sorted Data", 32, measures[0]->getNumber().getInt64(), 0.00001);
+    assertEqualsNear("Sorted Data", 9.7008, measures[1]->getNumber().getDouble(), 0.0001);
 }
 
 /**
