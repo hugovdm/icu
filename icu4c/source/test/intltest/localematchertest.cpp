@@ -643,11 +643,12 @@ UBool LocaleMatcherTest::dataDriven(const TestCase &test, IcuTestErrorCode &erro
 
 void LocaleMatcherTest::testDataDriven() {
     IcuTestErrorCode errorCode(*this, "testDataDriven");
-    CharString path(getSourceTestData(errorCode), errorCode);
+    CharString path(getCommonTestData(errorCode), errorCode);
+    path.append("core" U_FILE_SEP_STRING, errorCode);
     path.appendPathPart("localeMatcherTest.txt", errorCode);
     const char *codePage = "UTF-8";
     LocalUCHARBUFPointer f(ucbuf_open(path.data(), &codePage, TRUE, FALSE, errorCode));
-    if(errorCode.errIfFailureAndReset("ucbuf_open(localeMatcherTest.txt)")) {
+    if(errorCode.errIfFailureAndReset("ucbuf_open(localeMatcherTest.txt): %s", path.data())) {
         return;
     }
     int32_t lineLength;

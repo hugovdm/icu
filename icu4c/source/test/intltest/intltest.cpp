@@ -1654,16 +1654,42 @@ const char *IntlTest::getSourceTestData(UErrorCode& /*err*/) {
     srcDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "test" U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
     FILE *f = fopen(".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "test" U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING "rbbitst.txt", "r");
     if (f) {
-        /* We're in icu/source/test/intltest/ */
+        /* We're in icu4c/source/test/intltest/ */
         fclose(f);
     }
     else {
-        /* We're in icu/source/test/intltest/Platform/(Debug|Release) */
+        /* We're in icu4c/source/test/intltest/Platform/(Debug|Release) */
         srcDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING
                      "test" U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
     }
 #endif
     return srcDataDir;
+}
+
+/* Returns the path to icu/testdata/ */
+const char *IntlTest::getCommonTestData(UErrorCode & /*err*/) {
+    const char *testDataDir = NULL;
+#ifdef U_TOPSRCDIR
+    testDataDir = U_TOPSRCDIR U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING
+                                                "testdata" U_FILE_SEP_STRING;
+#else
+    testDataDir = ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING
+                  ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
+    FILE *f =
+        fopen(".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING
+              "testdata" U_FILE_SEP_STRING "core" U_FILE_SEP_STRING "localeMatcherTest.txt",
+              "r");
+    if (f) {
+        /* We're in icu4c/source/test/intltest/ */
+        fclose(f);
+    } else {
+        /* We're in icu4c/source/test/intltest/Platform/(Debug|Release) */
+        testDataDir =
+            ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING
+            ".." U_FILE_SEP_STRING ".." U_FILE_SEP_STRING "testdata" U_FILE_SEP_STRING;
+    }
+#endif
+    return testDataDir;
 }
 
 char *IntlTest::getUnidataPath(char path[]) {
