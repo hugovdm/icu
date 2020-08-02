@@ -480,6 +480,10 @@ is only one statement.
 
 #### Function Declarations
 
+**Obsolete, first paragraph below?** *New code is not following this, I see
+return types are on the same line. Maybe because we're not targetting 80 columns
+anymore? (105?)*
+
 Have one line that has the return type and place all the import declarations,
 extern declarations, export declarations, the function name, and function
 signature at the beginning of the next line.
