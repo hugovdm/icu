@@ -1587,6 +1587,13 @@ class U_I18N_API NumberFormatterSettings {
      * NumberFormatter::with().unit(NoUnit.percent())
      * </pre>
      *
+     * Mixed units will interpret the input value as being measured in the
+     * biggest unit (foot, in this example):
+     *
+     * <pre>
+     * NumberFormatter::with().unit(MeasureUnit::forIdentifier("foot-and-inch", status))
+     * </pre>
+     *
      * See {@link #perUnit} for information on how to format strings like "5 meters per second".
      *
      * The default is to render without units (equivalent to NoUnit.base()).
