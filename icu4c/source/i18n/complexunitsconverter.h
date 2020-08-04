@@ -27,7 +27,7 @@ namespace units {
  *    single unit to another single unit). Therefore, `ComplexUnitsConverter` class contains multiple
  *    instances of the `UnitConverter` to perform the conversion.
  */
-class U_I18N_API ComplexUnitsConverter : UMemory {
+class U_I18N_API ComplexUnitsConverter : public UMemory {
   public:
     /**
      * Constructor of `ComplexUnitsConverter`.
