@@ -17,10 +17,13 @@
 #include "unicode/platform.h"
 #include "unicode/unum.h"
 #include "unicode/urename.h"
+#include "unitsdata.h"
 
+using namespace icu;
 using namespace icu::number;
 using namespace icu::number::impl;
 using icu::StringSegment;
+using icu::units::ConversionRates;
 
 // Copy constructor
 Usage::Usage(const Usage &other) : fUsage(nullptr), fLength(other.fLength), fError(other.fError) {
@@ -81,8 +84,43 @@ void Usage::set(StringPiece value) {
     fUsage[fLength] = 0;
 }
 
+void mixedMeasuresToMicros(const MaybeStackVector<Measure> &measures, DecimalQuantity *quantity,
+                           MicroProps *micros, UErrorCode status) {
+    micros->mixedMeasuresCount = measures.length() - 1;
+    if (micros->mixedMeasuresCount > 0) {
+#ifdef U_DEBUG
+        U_ASSERT(micros->outputUnit.getComplexity(status) == UMEASURE_UNIT_MIXED);
+        U_ASSERT(U_SUCCESS(status));
+        // Check that we received measurements with the expected MeasureUnits:
+        int32_t singleUnitsCount;
+        LocalArray<MeasureUnit> singleUnits =
+            micros->outputUnit.splitToSingleUnits(singleUnitsCount, status);
+        U_ASSERT(U_SUCCESS(status));
+        U_ASSERT(measures.length() == singleUnitsCount);
+        for (int32_t i = 0; i < measures.length(); i++) {
+            U_ASSERT(measures[i]->getUnit() == singleUnits[i]);
+        }
+#endif
+        // Mixed units: except for the last value, we pass all values to the
+        // LongNameHandler via micros->mixedMeasures.
+        if (micros->mixedMeasures.getCapacity() < micros->mixedMeasuresCount) {
+            if (micros->mixedMeasures.resize(micros->mixedMeasuresCount) == nullptr) {
+                status = U_MEMORY_ALLOCATION_ERROR;
+                return;
+            }
+        }
+        for (int32_t i = 0; i < micros->mixedMeasuresCount; i++) {
+            micros->mixedMeasures[i] = measures[i]->getNumber().getInt64();
+        }
+    } else {
+        micros->mixedMeasuresCount = 0;
+    }
+    // The last value (potentially the only value) gets passed on via quantity.
+    quantity->setToDouble(measures[measures.length() - 1]->getNumber().getDouble());
+}
+
 UsagePrefsHandler::UsagePrefsHandler(const Locale &locale,
-                                     const MeasureUnit inputUnit,
+                                     const MeasureUnit &inputUnit,
                                      const StringPiece usage,
                                      const MicroPropsGenerator *parent,
                                      UErrorCode &status)
@@ -108,37 +146,7 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
         return;
     }
 
-    micros.mixedMeasuresCount = routedUnits.length() - 1;
-    if (micros.mixedMeasuresCount > 0) {
-#ifdef U_DEBUG
-        U_ASSERT(micros.outputUnit.getComplexity(status) == UMEASURE_UNIT_MIXED);
-        U_ASSERT(U_SUCCESS(status));
-        // Check that we received measurements with the expected MeasureUnits:
-        int32_t singleUnitsCount;
-        LocalArray<MeasureUnit> singleUnits =
-            micros.outputUnit.splitToSingleUnits(singleUnitsCount, status);
-        U_ASSERT(U_SUCCESS(status));
-        U_ASSERT(routedUnits.length() == singleUnitsCount);
-        for (int32_t i = 0; i < routedUnits.length(); i++) {
-            U_ASSERT(routedUnits[i]->getUnit() == singleUnits[i]);
-        }
-#endif
-        // Mixed units: except for the last value, we pass all values to the
-        // LongNameHandler via micros.mixedMeasures.
-        if (micros.mixedMeasures.getCapacity() < micros.mixedMeasuresCount) {
-            if (micros.mixedMeasures.resize(micros.mixedMeasuresCount) == nullptr) {
-                status = U_MEMORY_ALLOCATION_ERROR;
-                return;
-            }
-        }
-        for (int32_t i = 0; i < micros.mixedMeasuresCount; i++) {
-            micros.mixedMeasures[i] = routedUnits[i]->getNumber().getInt64();
-        }
-    } else {
-        micros.mixedMeasuresCount = 0;
-    }
-    // The last value (potentially the only value) gets passed on via quantity.
-    quantity.setToDouble(routedUnits[routedUnits.length() - 1]->getNumber().getDouble());
+    mixedMeasuresToMicros(routedUnits, &quantity, &micros, status);
 
     UnicodeString precisionSkeleton = routed.precision;
     if (micros.rounder.fPrecision.isBogus()) {
@@ -171,6 +179,53 @@ Precision UsagePrefsHandler::parseSkeletonToPrecision(icu::UnicodeString precisi
     MacroProps macros;
     blueprint_helpers::parseIncrementOption(segment, macros, status);
     return macros.precision;
+}
+
+UnitConversionHandler::UnitConversionHandler(const MeasureUnit &unit, const MicroPropsGenerator *parent,
+                                             UErrorCode &status)
+    : fOutputUnit(unit), fParent(parent) {
+    MeasureUnitImpl temp;
+    const MeasureUnitImpl &outputUnit = MeasureUnitImpl::forMeasureUnit(unit, temp, status);
+    const MeasureUnitImpl *inputUnit = &outputUnit;
+    MaybeStackVector<MeasureUnitImpl> singleUnits;
+    U_ASSERT(outputUnit.complexity == UMEASURE_UNIT_MIXED);
+    // When we wish to support unit conversion, replace the above assert with this if:
+    // if (outputUnit.complexity == UMEASURE_UNIT_MIXED) {
+    {
+        singleUnits = outputUnit.extractIndividualUnits(status);
+        U_ASSERT(singleUnits.length() > 0);
+        inputUnit = singleUnits[0];
+    }
+    // TODO: this should become an initOnce thing? Review with other
+    // ConversionRates usages.
+    ConversionRates conversionRates(status);
+    if (U_FAILURE(status)) {
+        return;
+    }
+    fUnitConverter.adoptInsteadAndCheckErrorCode(
+        new ComplexUnitsConverter(*inputUnit, outputUnit, conversionRates, status), status);
+}
+
+void UnitConversionHandler::processQuantity(DecimalQuantity &quantity, MicroProps &micros,
+                                            UErrorCode &status) const {
+    fParent->processQuantity(quantity, micros, status);
+    if (U_FAILURE(status)) {
+        return;
+    }
+    quantity.roundToInfinity(); // Enables toDouble
+    MaybeStackVector<Measure> measures = fUnitConverter->convert(quantity.toDouble(), status);
+    micros.outputUnit = fOutputUnit;
+    if (U_FAILURE(status)) {
+        return;
+    }
+
+    mixedMeasuresToMicros(measures, &quantity, &micros, status);
+
+    // TODO: add tests to explore behaviour that may suggest a more
+    // human-centric default rounder?
+    // if (micros.rounder.fPrecision.isBogus()) {
+    //     micros.rounder.fPrecision = Precision::integer().withMinDigits(2);
+    // }
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

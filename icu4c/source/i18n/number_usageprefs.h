@@ -8,6 +8,7 @@
 #define __NUMBER_USAGEPREFS_H__
 
 #include "cmemory.h"
+#include "complexunitsconverter.h"
 #include "number_types.h"
 #include "unicode/listformatter.h"
 #include "unicode/localpointer.h"
@@ -21,6 +22,7 @@ U_NAMESPACE_BEGIN
 namespace number {
 namespace impl {
 
+using ::icu::units::ComplexUnitsConverter;
 using ::icu::units::UnitsRouter;
 
 /**
@@ -30,7 +32,7 @@ using ::icu::units::UnitsRouter;
  */
 class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory {
   public:
-    UsagePrefsHandler(const Locale &locale, const MeasureUnit inputUnit, const StringPiece usage,
+    UsagePrefsHandler(const Locale &locale, const MeasureUnit &inputUnit, const StringPiece usage,
                       const MicroPropsGenerator *parent, UErrorCode &status);
 
     /**
@@ -59,6 +61,35 @@ class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory 
     const MicroPropsGenerator *fParent;
 
     static Precision parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton, UErrorCode status);
+};
+
+/**
+ * A MicroPropsGenerator which converts a measurement from a simple MeasureUnit
+ * to a Mixed MeasureUnit.
+ */
+class U_I18N_API UnitConversionHandler : public MicroPropsGenerator, public UMemory {
+  public:
+    /**
+     * Constructor.
+     *
+     * @param unit Specifies both the input and output MeasureUnit: if it is a
+     *     MIXED unit, the input MeasureUnit will be just the biggest unit of
+     *     the sequence.
+     * @param parent The parent MicroPropsGenerator.
+     * @param status Receives status.
+     */
+    UnitConversionHandler(const MeasureUnit &unit, const MicroPropsGenerator *parent,
+                          UErrorCode &status);
+
+    /**
+     * Obtains the appropraite output values from the Unit Converter.
+     */
+    void processQuantity(DecimalQuantity &quantity, MicroProps &micros,
+                         UErrorCode &status) const U_OVERRIDE;
+  private:
+    MeasureUnit fOutputUnit;
+    LocalPointer<ComplexUnitsConverter> fUnitConverter;
+    const MicroPropsGenerator *fParent;
 };
 
 } // namespace impl
