@@ -1520,10 +1520,14 @@ bool GeneratorHelpers::unit(const MacroProps& macros, UnicodeString& sb, UErrorC
     } else if (utils::unitIsPermille(macros.unit)) {
         sb.append(u"permille", -1);
         return true;
-    } else {
+    } else if (uprv_strcmp(macros.unit.getType(), "") != 0) {
         sb.append(u"measure-unit/", -1);
         blueprint_helpers::generateMeasureUnitOption(macros.unit, sb, status);
         return true;
+    } else {
+        // TODO(icu-units#35): add support for not-built-in units.
+        status = U_UNSUPPORTED_ERROR;
+        return false;
     }
 }
 
