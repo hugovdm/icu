@@ -148,6 +148,8 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
     }
     bool isCldrUnit = !isCurrency && !isNoUnit &&
         (unitWidth == UNUM_UNIT_WIDTH_FULL_NAME || !(isPercent || isPermille));
+    bool isMixedUnit = isCldrUnit && (uprv_strcmp(macros.unit.getType(), "") == 0) &&
+                       macros.unit.getComplexity(status) == UMEASURE_UNIT_MIXED;
 
     // Select the numbering system.
     LocalPointer<const NumberingSystem> nsLocal;
@@ -236,6 +238,10 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
             new UsagePrefsHandler(macros.locale, macros.unit, macros.usage.fUsage, chain, status);
         fUsagePrefsHandler.adoptInsteadAndCheckErrorCode(usagePrefsHandler, status);
         chain = fUsagePrefsHandler.getAlias();
+    } else if (isMixedUnit) {
+        auto unitConversionHandler = new UnitConversionHandler(macros.unit, chain, status);
+        fUnitConversionHandler.adoptInsteadAndCheckErrorCode(unitConversionHandler, status);
+        chain = fUnitConversionHandler.getAlias();
     }
 
     // Multiplier
@@ -360,6 +366,14 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
                     resolvePluralRules(macros.rules, macros.locale, status), chain, status),
                 status);
             chain = fLongNameMultiplexer.getAlias();
+        } else if (isMixedUnit) {
+            fMixedUnitLongNameHandler.adoptInsteadAndCheckErrorCode(new MixedUnitLongNameHandler(),
+                                                                    status);
+            MixedUnitLongNameHandler::forMeasureUnit(
+                macros.locale, macros.unit, unitWidth,
+                resolvePluralRules(macros.rules, macros.locale, status), chain,
+                fMixedUnitLongNameHandler.getAlias(), status);
+            chain = fMixedUnitLongNameHandler.getAlias();
         } else {
             fLongNameHandler.adoptInsteadAndCheckErrorCode(new LongNameHandler(), status);
             LongNameHandler::forMeasureUnit(macros.locale, macros.unit, macros.perUnit, unitWidth,

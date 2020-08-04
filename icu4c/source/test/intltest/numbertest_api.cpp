@@ -514,6 +514,8 @@ void NumberFormatterApiTest::notationCompact() {
 }
 
 void NumberFormatterApiTest::unitMeasure() {
+    IcuTestErrorCode status(*this, "unitMeasure()");
+
     assertFormatDescending(
             u"Meters Short and unit() method",
             u"measure-unit/length-meter",
@@ -680,6 +682,81 @@ void NumberFormatterApiTest::unitMeasure() {
             Locale("es-MX"),
             5,
             u"5 a\u00F1os");
+
+    // TODO(icu-units#35): skeleton generation.
+    assertFormatSingle(
+            u"Mixed unit",
+            nullptr,
+            u"unit/yard-and-foot-and-inch",
+            NumberFormatter::with()
+                .unit(MeasureUnit::forIdentifier("yard-and-foot-and-inch", status)),
+            Locale("en-US"),
+            3.65,
+            "3 yd, 1 ft, 11.4 in");
+
+    // TODO(icu-units#35): skeleton generation.
+    assertFormatSingle(
+            u"Mixed unit, Scientific",
+            nullptr,
+            u"unit/yard-and-foot-and-inch E0",
+            NumberFormatter::with()
+                .unit(MeasureUnit::forIdentifier("yard-and-foot-and-inch", status))
+                .notation(Notation::scientific()),
+            Locale("en-US"),
+            3.65,
+            "3 yd, 1 ft, 1.14E1 in");
+
+    // TODO(icu-units#35): skeleton generation.
+    assertFormatSingle(
+            u"Mixed Unit (Narrow Version)",
+            nullptr,
+            u"unit/metric-ton-and-kilogram-and-gram unit-width-narrow",
+            NumberFormatter::with()
+                .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
+                .unitWidth(UNUM_UNIT_WIDTH_NARROW),
+            Locale("en-US"),
+            4.28571,
+            u"4t 285kg 710g");
+
+    // TODO(icu-units#35): skeleton generation.
+    assertFormatSingle(
+            u"Mixed Unit (Short Version)",
+            nullptr,
+            u"unit/metric-ton-and-kilogram-and-gram unit-width-short",
+            NumberFormatter::with()
+                .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
+                .unitWidth(UNUM_UNIT_WIDTH_SHORT),
+            Locale("en-US"),
+            4.28571,
+            u"4 t, 285 kg, 710 g");
+
+    // TODO(icu-units#35): skeleton generation.
+    assertFormatSingle(
+            u"Mixed Unit (Full Name Version)",
+            nullptr,
+            u"unit/metric-ton-and-kilogram-and-gram unit-width-full-name",
+            NumberFormatter::with()
+                .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
+                .unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
+            Locale("en-US"),
+            4.28571,
+            u"4 metric tons, 285 kilograms, 710 grams");
+
+//     // TODO(icu-units#73): deal with this "1 foot 12 inches" problem.
+//     // At the time of writing, this test would pass, but is commented out
+//     // because it reflects undesired behaviour:
+//     assertFormatSingle(
+//             u"Demonstrating the \"1 foot 12 inches\" problem",
+//             nullptr,
+//             u"unit/foot-and-inch",
+//             NumberFormatter::with()
+//                 .unit(MeasureUnit::forIdentifier("foot-and-inch", status))
+//                 .precision(Precision::maxSignificantDigits(4))
+//                 .unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
+//             Locale("en-US"),
+//             1.9999,
+//             // This is undesireable but current behaviour:
+//             u"1 foot, 12 inches");
 }
 
 // TODO(hugovdm): once one of #52 and #61 has been merged into the other, move

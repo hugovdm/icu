@@ -93,6 +93,7 @@ class LongNameHandler : public MicroPropsGenerator, public ModifierStore, public
     // the private constructors.
     friend class MemoryPool<LongNameHandler>;
 
+    // Allow macrosToMicroGenerator to call the private default constructor.
     friend class NumberFormatterImpl;
 
     // Fills in LongNameHandler fields for formatting compound units identified
@@ -179,6 +180,9 @@ class MixedUnitLongNameHandler : public MicroPropsGenerator, public ModifierStor
 
     MixedUnitLongNameHandler() : rules(nullptr), parent(nullptr) {
     }
+
+    // Allow macrosToMicroGenerator to call the private default constructor.
+    friend class NumberFormatterImpl;
 
     // Enables MemoryPool<LongNameHandler>::emplaceBack(): requires access to
     // the private constructors.

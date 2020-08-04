@@ -1525,10 +1525,14 @@ bool GeneratorHelpers::unit(const MacroProps& macros, UnicodeString& sb, UErrorC
             // Default value is not shown in normalized form
             return false;
         }
-    } else {
+    } else if (uprv_strcmp(macros.unit.getType(), "") != 0) {
         sb.append(u"measure-unit/", -1);
         blueprint_helpers::generateMeasureUnitOption(macros.unit, sb, status);
         return true;
+    } else {
+        // TODO(icu-units#35): add support for not-built-in units.
+        status = U_UNSUPPORTED_ERROR;
+        return false;
     }
 }
 
