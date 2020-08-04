@@ -107,11 +107,6 @@ docs/ide4c/vscode/*.json
 tools/trac/IcuCodeTools/*
 tools/unicodetools/*
 #
-# CLDR - TODO(review): verify that _readme.txt copyright notice is sufficient?
-#
-testdata/cldr-testData/transforms/*.txt
-testdata/cldr-testData/segmentation/graphemeCluster/*.txt
-#
 # vendor
 #
 vendor/double-conversion/upstream/*
