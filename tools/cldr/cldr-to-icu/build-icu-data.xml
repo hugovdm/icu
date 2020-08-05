@@ -335,10 +335,12 @@
         </convert>
     </target>
 
-    <target name="copy-cldrtestdata" depends="init-args">
+    <target name="copy-cldrtestdata" depends="init-args, clean-cldrtestdata">
         <copy todir="${testDataDir}/cldr-testData">
             <fileset dir="${cldrDir}/common/testData">
-                <include name="units/**"/>
+                <!-- Use this fileset as an include-list to specify files to
+                     copy from CLDR's testData. -->
+                <include name="units/**"/> <!-- Used in ICU4C UnitsTest tests -->
             </fileset>
         </copy>
     </target>
@@ -347,7 +349,7 @@
         <delete dir="${testDataDir}/cldr-testData"/>
     </target>
 
-    <target name="clean" depends="init-args, prepare-jar">
+    <target name="clean" depends="init-args, prepare-jar, clean-cldrtestdata">
         <taskdef name="outputDirectories" classname="org.unicode.icu.tool.cldrtoicu.ant.CleanOutputDirectoryTask">
             <classpath>
                 <pathelement path="target/cldr-to-icu-1.0-SNAPSHOT-jar-with-dependencies.jar"/>
