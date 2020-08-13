@@ -515,6 +515,8 @@ void NumberFormatterApiTest::notationCompact() {
 }
 
 void NumberFormatterApiTest::unitMeasure() {
+    IcuTestErrorCode status(*this, "unitMeasure()");
+
     assertFormatDescending(
             u"Meters Short and unit() method",
             u"measure-unit/length-meter",
@@ -681,6 +683,30 @@ void NumberFormatterApiTest::unitMeasure() {
             Locale("es-MX"),
             5,
             u"5 a\u00F1os");
+
+    assertFormatSingle(u"Mixed Unit (Narrow Version)",
+                       u"measure-unit/mass-metric-ton-and-kilogram-and-gram unit-width-narrow",
+                       u"unit/metric-ton-and-kilogram-and-gram unit-width-narrow",
+                       NumberFormatter::with()
+                           .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
+                           .unitWidth(UNUM_UNIT_WIDTH_NARROW),
+                       Locale("en-US"), 4.28571, u"4t 285kg 710g");
+
+    assertFormatSingle(u"Mixed Unit (Short Version)",
+                       u"measure-unit/mass-metric-ton-and-kilogram-and-gram unit-width-short",
+                       u"unit/metric-ton-and-kilogram-and-gram unit-width-short",
+                       NumberFormatter::with()
+                           .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
+                           .unitWidth(UNUM_UNIT_WIDTH_SHORT),
+                       Locale("en-US"), 4.28571, u"4 t, 285 kg, 710 g");
+
+    assertFormatSingle(u"Mixed Unit (Full Name Version)",
+                       u"measure-unit/mass-metric-ton-and-kilogram-and-gram unit-width-full-name",
+                       u"unit/metric-ton-and-kilogram-and-gram unit-width-full-name",
+                       NumberFormatter::with()
+                           .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
+                           .unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
+                       Locale("en-US"), 4.28571, u"4 tonnes, 285 kilograms, 710 grams");
 }
 
 // TODO(hugovdm): once one of #52 and #61 has been merged into the other, move

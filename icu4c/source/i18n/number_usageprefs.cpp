@@ -17,10 +17,12 @@
 #include "unicode/platform.h"
 #include "unicode/unum.h"
 #include "unicode/urename.h"
+#include "unitsdata.h"
 
 using namespace icu::number;
 using namespace icu::number::impl;
 using icu::StringSegment;
+using icu::units::ConversionRates;
 
 // Copy constructor
 Usage::Usage(const Usage &other) : fUsage(nullptr), fLength(other.fLength), fError(other.fError) {
@@ -82,7 +84,7 @@ void Usage::set(StringPiece value) {
 }
 
 UsagePrefsHandler::UsagePrefsHandler(const Locale &locale,
-                                     const MeasureUnit inputUnit,
+                                     const MeasureUnit &inputUnit,
                                      const StringPiece usage,
                                      const MicroPropsGenerator *parent,
                                      UErrorCode &status)
@@ -171,6 +173,37 @@ Precision UsagePrefsHandler::parseSkeletonToPrecision(icu::UnicodeString precisi
     MacroProps macros;
     blueprint_helpers::parseIncrementOption(segment, macros, status);
     return macros.precision;
+}
+
+// TODO: this has similarities to UsagePrefsHandler, but doesn't have anything
+// to do with usageprefs. I propose we rename this file?
+UnitConversionHandler::UnitConversionHandler(const MeasureUnit &unit,
+                                             const MicroPropsGenerator *parent, UErrorCode &status)
+    : fParent(parent) {
+    MeasureUnitImpl temp;
+    const MeasureUnitImpl &outputUnit = MeasureUnitImpl::forMeasureUnit(unit, temp, status);
+    const MeasureUnitImpl *inputUnit = &outputUnit;
+    if (outputUnit.complexity == UMEASURE_UNIT_MIXED) {
+        MaybeStackVector<MeasureUnitImpl> singleUnits = outputUnit.extractIndividualUnits(status);
+        inputUnit = singleUnits[0];
+    }
+    // TODO: this should become an initOnce thing? Review with other
+    // ConversionRates usages.
+    ConversionRates conversionRates(status);
+    if (U_FAILURE(status)) {
+        return;
+    }
+    fUnitConverter.adoptInsteadAndCheckErrorCode(
+        new ComplexUnitsConverter(*inputUnit, outputUnit, conversionRates, status), status);
+}
+
+void UnitConversionHandler::processQuantity(DecimalQuantity &quantity, MicroProps &micros,
+                                            UErrorCode &status) const {
+    fParent->processQuantity(quantity, micros, status);
+    if (U_FAILURE(status)) {
+        return;
+    }
+    UPRV_UNREACHABLE;
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

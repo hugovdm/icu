@@ -180,6 +180,9 @@ class MixedUnitLongNameHandler : public MicroPropsGenerator, public ModifierStor
     MixedUnitLongNameHandler() : rules(nullptr), parent(nullptr) {
     }
 
+    // 
+    friend class NumberFormatterImpl;
+
     // Enables MemoryPool<LongNameHandler>::emplaceBack(): requires access to
     // the private constructors.
     friend class MemoryPool<MixedUnitLongNameHandler>;

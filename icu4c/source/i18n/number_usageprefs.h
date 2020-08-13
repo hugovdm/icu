@@ -8,6 +8,7 @@
 #define __NUMBER_USAGEPREFS_H__
 
 #include "cmemory.h"
+#include "complexunitsconverter.h"
 #include "number_types.h"
 #include "unicode/listformatter.h"
 #include "unicode/localpointer.h"
@@ -21,6 +22,7 @@ U_NAMESPACE_BEGIN
 namespace number {
 namespace impl {
 
+using ::icu::units::ComplexUnitsConverter;
 using ::icu::units::UnitsRouter;
 
 /**
@@ -30,7 +32,7 @@ using ::icu::units::UnitsRouter;
  */
 class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory {
   public:
-    UsagePrefsHandler(const Locale &locale, const MeasureUnit inputUnit, const StringPiece usage,
+    UsagePrefsHandler(const Locale &locale, const MeasureUnit &inputUnit, const StringPiece usage,
                       const MicroPropsGenerator *parent, UErrorCode &status);
 
     /**
@@ -59,6 +61,23 @@ class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory 
     const MicroPropsGenerator *fParent;
 
     static Precision parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton, UErrorCode status);
+};
+
+/**
+ * FIXME
+ */
+class U_I18N_API UnitConversionHandler : public MicroPropsGenerator, public UMemory {
+  public:
+    /** FIXME */
+    UnitConversionHandler(const MeasureUnit &unit, const MicroPropsGenerator *parent,
+                          UErrorCode &status);
+
+    /** FIXME */
+    void processQuantity(DecimalQuantity &quantity, MicroProps &micros,
+                         UErrorCode &status) const U_OVERRIDE;
+  private:
+    LocalPointer<ComplexUnitsConverter> fUnitConverter;
+    const MicroPropsGenerator *fParent;
 };
 
 } // namespace impl
