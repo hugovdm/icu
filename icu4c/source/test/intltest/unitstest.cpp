@@ -405,7 +405,7 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
 
 /**
  * Runs data-driven unit tests for unit conversion. It looks for the test cases
- * in source/test/testdata/units/unitsTest.txt, which originates in CLDR.
+ * in source/test/testdata/cldr/units/unitsTest.txt, which originates in CLDR.
  */
 void UnitsTest::testConversions() {
     const char *filename = "unitsTest.txt";
@@ -420,7 +420,7 @@ void UnitsTest::testConversions() {
     }
 
     CharString path(sourceTestDataPath, errorCode);
-    path.appendPathPart("units", errorCode);
+    path.appendPathPart("cldr/units", errorCode);
     path.appendPathPart(filename, errorCode);
 
     ConversionRates rates(errorCode);
@@ -750,7 +750,9 @@ void parsePreferencesTests(const char *filename, char delimiter, char *fields[][
 }
 
 /**
- * Runs data-driven unit tests for unit preferences.
+ * Runs data-driven unit tests for unit preferences. It looks for the test cases
+ * in source/test/testdata/cldr/units/unitPreferencesTest.txt, which originates
+ * in CLDR.
  */
 void UnitsTest::testPreferences() {
     const char *filename = "unitPreferencesTest.txt";
@@ -765,7 +767,7 @@ void UnitsTest::testPreferences() {
     }
 
     CharString path(sourceTestDataPath, errorCode);
-    path.appendPathPart("units", errorCode);
+    path.appendPathPart("cldr/units", errorCode);
     path.appendPathPart(filename, errorCode);
 
     parsePreferencesTests(path.data(), ';', fields, maxFields, unitPreferencesTestDataLineFn, this,
