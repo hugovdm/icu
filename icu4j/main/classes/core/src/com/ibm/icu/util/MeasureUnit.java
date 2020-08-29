@@ -14,17 +14,16 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.ibm.icu.impl.CollectionSet;
 import com.ibm.icu.impl.ICUData;
 import com.ibm.icu.impl.ICUResourceBundle;
 import com.ibm.icu.impl.Pair;
 import com.ibm.icu.impl.UResource;
+import com.ibm.icu.impl.units.MeasureUnitImpl;
+import com.ibm.icu.impl.units.SingleUnitImpl;
+import com.ibm.icu.impl.units.UnitsData;
 import com.ibm.icu.text.UnicodeSet;
 
 /**
@@ -46,6 +45,188 @@ public class MeasureUnit implements Serializable {
     private static final Map<String, Map<String,MeasureUnit>> cache
         = new HashMap<>();
     private static boolean cacheIsPopulated = false;
+    private static Factory UNIT_FACTORY = new Factory() {
+        @Override
+        public MeasureUnit create(String type, String subType) {
+            return new MeasureUnit(type, subType);
+        }
+    };
+    /**
+     * Constant for unit of acceleration: g-force
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit G_FORCE = MeasureUnit.internalGetInstance("acceleration", "g-force");
+    /**
+     * Constant for unit of acceleration: meter-per-square-second
+     *
+     * @stable ICU 54
+     */
+    public static final MeasureUnit METER_PER_SECOND_SQUARED = MeasureUnit.internalGetInstance("acceleration", "meter-per-square-second");
+    /**
+     * Constant for unit of angle: arc-minute
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit ARC_MINUTE = MeasureUnit.internalGetInstance("angle", "arc-minute");
+    /**
+     * Constant for unit of angle: arc-second
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit ARC_SECOND = MeasureUnit.internalGetInstance("angle", "arc-second");
+    /**
+     * Constant for unit of angle: degree
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit DEGREE = MeasureUnit.internalGetInstance("angle", "degree");
+    /**
+     * Constant for unit of angle: radian
+     *
+     * @stable ICU 54
+     */
+    public static final MeasureUnit RADIAN = MeasureUnit.internalGetInstance("angle", "radian");
+    /**
+     * Constant for unit of angle: revolution
+     *
+     * @stable ICU 56
+     */
+    public static final MeasureUnit REVOLUTION_ANGLE = MeasureUnit.internalGetInstance("angle", "revolution");
+    /**
+     * Constant for unit of area: acre
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit ACRE = MeasureUnit.internalGetInstance("area", "acre");
+    /**
+     * Constant for unit of area: dunam
+     *
+     * @stable ICU 64
+     */
+    public static final MeasureUnit DUNAM = MeasureUnit.internalGetInstance("area", "dunam");
+    /**
+     * Constant for unit of area: hectare
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit HECTARE = MeasureUnit.internalGetInstance("area", "hectare");
+    /**
+     * Constant for unit of area: square-centimeter
+     *
+     * @stable ICU 54
+     */
+    public static final MeasureUnit SQUARE_CENTIMETER = MeasureUnit.internalGetInstance("area", "square-centimeter");
+    /**
+     * Constant for unit of area: square-foot
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit SQUARE_FOOT = MeasureUnit.internalGetInstance("area", "square-foot");
+    /**
+     * Constant for unit of area: square-inch
+     *
+     * @stable ICU 54
+     */
+    @Deprecated
+    public static MeasureUnit internalGetInstance(String type, String subType) {
+        if (type == null || subType == null) {
+            throw new NullPointerException("Type and subType must be non-null");
+        }
+        if (!"currency".equals(type)) {
+            if (!ASCII.containsAll(type) || !ASCII_HYPHEN_DIGITS.containsAll(subType)) {
+                throw new IllegalArgumentException("The type or subType are invalid.");
+            }
+        }
+        Factory factory;
+        if ("currency".equals(type)) {
+            factory = CURRENCY_FACTORY;
+        } else if ("duration".equals(type)) {
+            factory = TIMEUNIT_FACTORY;
+        } else {
+            factory = UNIT_FACTORY;
+        }
+        return MeasureUnit.addUnit(type, subType, factory);
+    }
+
+    private static MeasureUnit findBySubType(String subType) {
+        populateCache();
+        for (Map<String, MeasureUnit> unitsForType : cache.values()) {
+            if (unitsForType.containsKey(subType)) {
+                return unitsForType.get(subType);
+            }
+        }
+        return null;
+    }
+
+    public static final MeasureUnit SQUARE_INCH = MeasureUnit.internalGetInstance("area", "square-inch");
+    /**
+     * Constant for unit of area: square-kilometer
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit SQUARE_KILOMETER = MeasureUnit.internalGetInstance("area", "square-kilometer");
+    /**
+     * Constant for unit of area: square-meter
+     *
+     * @stable ICU 53
+     */
+    public static final MeasureUnit SQUARE_METER = MeasureUnit.internalGetInstance("area", "square-meter");
+    /**
+     * Constant for unit of area: square-mile
+     *
+     * @stable ICU 53
+     */
+    @Deprecated
+    protected interface Factory {
+        /**
+         * @internal
+         * @deprecated This API is ICU internal only.
+         */
+        @Deprecated
+        MeasureUnit create(String type, String subType);
+    }
+
+    private static Factory UNIT_FACTORY = new Factory() {
+        @Override
+        public MeasureUnit create(String type, String subType) {
+            return new MeasureUnit(type, subType);
+        }
+    };
+
+    static Factory CURRENCY_FACTORY = new Factory() {
+        @Override
+        public MeasureUnit create(String unusedType, String subType) {
+            return new Currency(subType);
+        }
+    };
+
+    static Factory TIMEUNIT_FACTORY = new Factory() {
+        @Override
+        public MeasureUnit create(String type, String subType) {
+           return new TimeUnit(type, subType);
+        }
+    };
+
+    public static final MeasureUnit SQUARE_MILE = MeasureUnit.internalGetInstance("area", "square-mile");
+    /**
+     * Constant for unit of area: square-yard
+     *
+     * @stable ICU 54
+     */
+    public static final MeasureUnit SQUARE_YARD = MeasureUnit.internalGetInstance("area", "square-yard");
+    /**
+     * Constant for unit of concentr: karat
+     *
+     * @stable ICU 54
+     */
+    public static final MeasureUnit KARAT = MeasureUnit.internalGetInstance("concentr", "karat");
+    /**
+     * Constant for unit of concentr: milligram-per-deciliter
+     *
+     * @stable ICU 57
+     */
+    public static final MeasureUnit MILLIGRAM_PER_DECILITER = MeasureUnit.internalGetInstance("concentr", "milligram-per-deciliter");
 
     /**
      * @internal
@@ -62,6 +243,243 @@ public class MeasureUnit implements Serializable {
     protected final String subType;
 
     /**
+     * Used by new draft APIs in ICU 68.
+     *
+     * @internal
+     */
+    private MeasureUnitImpl measureUnitImpl = null;
+
+    /**
+     * Enumeration for unit complexity. There are three levels:
+     * <p>
+     * - SINGLE: A single unit, optionally with a power and/or SI prefix. Examples: hectare,
+     * square-kilometer, kilojoule, one-per-second.
+     * - COMPOUND: A unit composed of the product of multiple single units. Examples:
+     * meter-per-second, kilowatt-hour, kilogram-meter-per-square-second.
+     * - MIXED: A unit composed of the sum of multiple single units. Examples: foot-and-inch,
+     * hour-and-minute-and-second, degree-and-arcminute-and-arcsecond.
+     * <p>
+     * The complexity determines which operations are available. For example, you cannot set the power
+     * or SI prefix of a compound unit.
+     *
+     * @draft ICU 68
+     */
+    public enum Complexity {
+        /**
+         * A single unit, like kilojoule.
+         *
+         * @draft ICU 68
+         */
+        SINGLE,
+
+        /**
+         * A compound unit, like meter-per-second.
+         *
+         * @draft ICU 68
+         */
+        COMPOUND,
+
+        /**
+         * A mixed unit, like hour+minute.
+         *
+         * @draft ICU 68
+         */
+        MIXED
+    }
+
+        /**
+     * Enumeration for SI prefixes, such as "kilo".
+     *
+     * @draft ICU 68
+     */
+    public enum SIPrefix {
+
+        /**
+         * SI prefix: yotta, 10^24.
+         *
+         * @draft ICU 68
+         */
+        YOTTA(24, "yotta"),
+
+        /**
+         * SI prefix: zetta, 10^21.
+         *
+         * @draft ICU 68
+         */
+        ZETTA(21, "zetta"),
+
+        /**
+         * SI prefix: exa, 10^18.
+         *
+         * @draft ICU 68
+         */
+        EXA(18, "exa"),
+
+        /**
+         * SI prefix: peta, 10^15.
+         *
+         * @draft ICU 68
+         */
+        PETA(15, "peta"),
+
+        /**
+         * SI prefix: tera, 10^12.
+         *
+         * @draft ICU 68
+         */
+        TERA(12, "tera"),
+
+        /**
+         * SI prefix: giga, 10^9.
+         *
+         * @draft ICU 68
+         */
+        GIGA(9, "giga"),
+
+        /**
+         * SI prefix: mega, 10^6.
+         *
+         * @draft ICU 68
+         */
+        MEGA(6, "mega"),
+
+        /**
+         * SI prefix: kilo, 10^3.
+         *
+         * @draft ICU 68
+         */
+        KILO(3, "kilo"),
+
+        /**
+         * SI prefix: hecto, 10^2.
+         *
+         * @draft ICU 68
+         */
+        HECTO(2, "hecto"),
+
+        /**
+         * SI prefix: deka, 10^1.
+         *
+         * @draft ICU 68
+         */
+        DEKA(1, "deka"),
+
+        /**
+         * The absence of an SI prefix.
+         *
+         * @draft ICU 68
+         */
+        ONE(0, ""),
+
+        /**
+         * SI prefix: deci, 10^-1.
+         *
+         * @draft ICU 68
+         */
+        DECI(-1, "deci"),
+
+        /**
+         * SI prefix: centi, 10^-2.
+         *
+         * @draft ICU 68
+         */
+        CENTI(-2, "centi"),
+
+        /**
+         * SI prefix: milli, 10^-3.
+         *
+         * @draft ICU 68
+         */
+        MILLI(-3, "milli"),
+
+        /**
+         * SI prefix: micro, 10^-6.
+         *
+         * @draft ICU 68
+         */
+        MICRO(-6, "micro"),
+
+        /**
+         * SI prefix: nano, 10^-9.
+         *
+         * @draft ICU 68
+         */
+        NANO(-9, "nano"),
+
+        /**
+         * SI prefix: pico, 10^-12.
+         *
+         * @draft ICU 68
+         */
+        PICO(-12, "pico"),
+
+        /**
+         * SI prefix: femto, 10^-15.
+         *
+         * @draft ICU 68
+         */
+        FEMTO(-15, "femto"),
+
+        /**
+         * SI prefix: atto, 10^-18.
+         *
+         * @draft ICU 68
+         */
+        ATTO(-18, "atto"),
+
+        /**
+         * SI prefix: zepto, 10^-21.
+         *
+         * @draft ICU 68
+         */
+        ZEPTO(-21, "zepto"),
+
+        /**
+         * SI prefix: yocto, 10^-24.
+         *
+         * @draft ICU 68
+         */
+        YOCTO(-24, "yocto");
+
+        private final int siPrefixPower;
+        private final String identifier;
+
+        SIPrefix(int siPrefixPower, String identifier) {
+            this.siPrefixPower = siPrefixPower;
+            this.identifier = identifier;
+        }
+
+        public String getIdentifier() {
+            return identifier;
+        }
+
+        public int getSiPrefixPower() {
+            return siPrefixPower;
+        }
+
+        /**
+         * @internal
+         */
+        public int getTrieIndex() {
+            return siPrefixPower + UnitsData.Constants.kSIPrefixOffset;
+        }
+
+        /**
+         * @internal
+         */
+        public static SIPrefix getSiPrefixFromTrieIndex(int trieIndex) {
+            for (SIPrefix element :
+                    SIPrefix.values()) {
+                if (element.getTrieIndex() == trieIndex)
+                    return element;
+            }
+
+            throw new InternalError("Incorrect trieIndex");
+        }
+    }
+
+
+    /**
      * @internal
      * @deprecated This API is ICU internal only.
      */
@@ -69,6 +487,35 @@ public class MeasureUnit implements Serializable {
     protected MeasureUnit(String type, String subType) {
         this.type = type;
         this.subType = subType;
+    }
+
+    /**
+     * Construct a MeasureUnit from a CLDR Sequence Unit Identifier, defined in UTS 35.
+     * Validates and canonicalizes the identifier.
+     *
+     * <pre>
+     * MeasureUnit example = MeasureUnit::forIdentifier("furlong-per-nanosecond")
+     * </pre>
+     *
+     * @param identifier The CLDR Sequence Unit Identifier
+     * @throws IllegalArgumentException if the identifier is invalid.
+     * @draft ICU 68
+     */
+    public static MeasureUnit forIdentifier(String identifier) {
+        return MeasureUnitImpl.forIdentifier(identifier).build();
+    }
+
+    /**
+     * @internal
+     * @param measureUnitImpl
+     */
+    public MeasureUnit(MeasureUnitImpl measureUnitImpl) {
+        this.subType = null;
+        this.type = null;
+
+        if (MeasureUnit.findBySubType(measureUnitImpl.getIdentifier()) == null) {
+            this.measureUnitImpl = measureUnitImpl;
+        }
     }
 
     /**
@@ -80,7 +527,6 @@ public class MeasureUnit implements Serializable {
         return type;
     }
 
-
     /**
      * Get the subType, such as “foot”.
      *
@@ -90,7 +536,179 @@ public class MeasureUnit implements Serializable {
         return subType;
     }
 
+    /**
+     * Gets the CLDR Sequence Unit Identifier for this MeasureUnit, as defined in UTS 35.
+     *
+     * @return The string form of this unit.
+     * @draft ICU 68
+     */
+    public String getIdentifier() {
+        String result = measureUnitImpl == null ? getSubtype() : measureUnitImpl.getIdentifier();
+        return result == null ? "" : result;
+    }
 
+    /**
+     * Compute the complexity of the unit. See Complexity for more information.
+     *
+     * @return The unit complexity.
+     * @draft ICU 68
+     */
+    public Complexity getComplexity() {
+        if (measureUnitImpl == null) {
+            return MeasureUnitImpl.forIdentifier(getIdentifier()).getComplexity();
+        }
+
+        return measureUnitImpl.getComplexity();
+    }
+
+    /**
+     * Creates a MeasureUnit which is this SINGLE unit augmented with the specified SI prefix.
+     * For example, SI_PREFIX_KILO for "kilo".
+     * May return this if this unit already has that prefix.
+     * <p>
+     * There is sufficient locale data to format all standard SI prefixes.
+     * <p>
+     * NOTE: Only works on SINGLE units. If this is a COMPOUND or MIXED unit, an error will
+     * occur. For more information, see `Complexity`.
+     *
+     * @param prefix The SI prefix, from SIPrefix.
+     * @return A new SINGLE unit.
+     * @throws UnsupportedOperationException if this unit is a COMPOUND or MIXED unit.
+     * @draft ICU 68
+     */
+    public MeasureUnit withSIPrefix(SIPrefix prefix) {
+        SingleUnitImpl singleUnit = getSingleUnitImpl();
+        singleUnit.setSiPrefix(prefix);
+        return singleUnit.build();
+    }
+
+    /**
+     * Returns the current SI prefix of this SINGLE unit. For example, if the unit has the SI prefix
+     * "kilo", then SI_PREFIX_KILO is returned.
+     * <p>
+     * NOTE: Only works on SINGLE units. If this is a COMPOUND or MIXED unit, an error will
+     * occur. For more information, see `Complexity`.
+     *
+     * @return The SI prefix of this SINGLE unit, from SIPrefix.
+     * @throws UnsupportedOperationException if the unit is COMPOUND or MIXED.
+     * @draft ICU 68
+     */
+    public SIPrefix getSIPrefix() {
+        return getSingleUnitImpl().getSiPrefix();
+    }
+
+    /**
+     * Returns the dimensionality (power) of this MeasureUnit. For example, if the unit is square,
+     * then 2 is returned.
+     * <p>
+     * NOTE: Only works on SINGLE units. If this is a COMPOUND or MIXED unit, an exception will be thrown.
+     * For more information, see `Complexity`.
+     *
+     * @return The dimensionality (power) of this simple unit.
+     * @throws UnsupportedOperationException if the unit is COMPOUND or MIXED.
+     * @draft ICU 68
+     */
+    public int getDimensionality() {
+        SingleUnitImpl singleUnit = getSingleUnitImpl();
+        if (singleUnit.isDimensionless()) {
+            return 0;
+        }
+
+        return singleUnit.getDimensionality();
+    }
+
+    /**
+     * Creates a MeasureUnit which is this SINGLE unit augmented with the specified dimensionality
+     * (power). For example, if dimensionality is 2, the unit will be squared.
+     * <p>
+     * NOTE: Only works on SINGLE units. If this is a COMPOUND or MIXED unit, an exception is thrown.
+     * For more information, see `Complexity`.
+     *
+     * @param dimensionality The dimensionality (power).
+     * @return A new SINGLE unit.
+     * @throws UnsupportedOperationException if the unit is COMPOUND or MIXED.
+     * @draft ICU 68
+     */
+    public MeasureUnit withDimensionality(int dimensionality) {
+        SingleUnitImpl singleUnit = getSingleUnitImpl();
+        singleUnit.setDimensionality(dimensionality);
+        return singleUnit.build();
+    }
+
+    /**
+     * Computes the reciprocal of this MeasureUnit, with the numerator and denominator flipped.
+     * <p>
+     * For example, if the receiver is "meter-per-second", the unit "second-per-meter" is returned.
+     * <p>
+     * NOTE: Only works on SINGLE and COMPOUND units. If this is a MIXED unit, an error will
+     * occur. For more information, see `Complexity`.
+     *
+     * @return The reciprocal of the target unit.
+     * @throws UnsupportedOperationException if the unit is MIXED.
+     * @draft ICU 68
+     */
+    public MeasureUnit reciprocal() {
+        MeasureUnitImpl measureUnit = getCopyOfMeasureUnitImpl();
+        measureUnit.takeReciprocal();
+        return measureUnit.build();
+    }
+
+    /**
+     * Computes the product of this unit with another unit. This is a way to build units from
+     * constituent parts.
+     * <p>
+     * The numerator and denominator are preserved through this operation.
+     * <p>
+     * For example, if the receiver is "kilowatt" and the argument is "hour-per-day", then the
+     * unit "kilowatt-hour-per-day" is returned.
+     * <p>
+     * NOTE: Only works on SINGLE and COMPOUND units. If either unit (receivee and argument) is a
+     * MIXED unit, an error will occur. For more information, see `Complexity`.
+     *
+     * @param other The MeasureUnit to multiply with the target.
+     * @return The product of the target unit with the provided unit.
+     * @throws UnsupportedOperationException if the unit is MIXED.
+     * @draft ICU 68
+     */
+    public MeasureUnit product(MeasureUnit other) {
+        MeasureUnitImpl implCopy = getCopyOfMeasureUnitImpl();
+        MeasureUnitImpl otherImplCopy = other.getCopyOfMeasureUnitImpl();
+        if (implCopy.getComplexity() == Complexity.MIXED || otherImplCopy.getComplexity() == Complexity.MIXED) {
+            throw new UnsupportedOperationException();
+        }
+
+        for (SingleUnitImpl singleUnit :
+                otherImplCopy.getSingleUnits()) {
+            implCopy.appendSingleUnit(singleUnit);
+
+        }
+
+        return implCopy.build();
+    }
+
+    /**
+     * Returns the list of SINGLE units contained within a sequence of COMPOUND units.
+     * <p>
+     * Examples:
+     * - Given "meter-kilogram-per-second", three units will be returned: "meter",
+     * "kilogram", and "one-per-second".
+     * - Given "hour+minute+second", three units will be returned: "hour", "minute",
+     * and "second".
+     * <p>
+     * If this is a SINGLE unit, a list of length 1 will be returned.
+     *
+     * @return An unmodifiable list of single units
+     * @internal ICU 68 Technology Preview
+     */
+    public List<MeasureUnit> splitToSingleUnits() {
+        ArrayList<SingleUnitImpl> singleUnits = getCopyOfMeasureUnitImpl().getSingleUnits();
+        ArrayList<MeasureUnit> result = new ArrayList<>(singleUnits.size());
+        for (SingleUnitImpl singleUnit : singleUnits) {
+            result.add(singleUnit.build());
+        }
+
+        return result;
+    }
 
     /**
      * {@inheritDoc}
@@ -197,6 +815,8 @@ public class MeasureUnit implements Serializable {
             factory = CURRENCY_FACTORY;
         } else if ("duration".equals(type)) {
             factory = TIMEUNIT_FACTORY;
+        } else if ("none".equals(type)) {
+            factory = NOUNIT_FACTORY;
         } else {
             factory = UNIT_FACTORY;
         }
@@ -289,6 +909,13 @@ public class MeasureUnit implements Serializable {
         @Override
         public MeasureUnit create(String type, String subType) {
            return new TimeUnit(type, subType);
+        }
+    };
+
+    static Factory NOUNIT_FACTORY = new Factory() {
+        @Override
+        public MeasureUnit create(String type, String subType) {
+           return new NoUnit(subType);
         }
     };
 
@@ -1469,6 +2096,29 @@ public class MeasureUnit implements Serializable {
 
     private Object writeReplace() throws ObjectStreamException {
         return new MeasureUnitProxy(type, subType);
+    }
+
+    /**
+     *
+     * @return this object as a SingleUnitImpl.
+     * @throws UnsupportedOperationException if this object could not be converted to a single unit.
+     */
+    private SingleUnitImpl getSingleUnitImpl() {
+        if (measureUnitImpl == null) {
+            return MeasureUnitImpl.forIdentifier(getIdentifier()).getSingleUnitImpl();
+        }
+
+        return measureUnitImpl.getSingleUnitImpl();
+    }
+
+    /**
+     *
+     * @return this object in a MeasureUnitImpl form.
+     */
+    private MeasureUnitImpl getCopyOfMeasureUnitImpl() {
+        return this.measureUnitImpl == null ?
+                MeasureUnitImpl.forIdentifier(getIdentifier()) :
+                this.measureUnitImpl.clone();
     }
 
     static final class MeasureUnitProxy implements Externalizable {
