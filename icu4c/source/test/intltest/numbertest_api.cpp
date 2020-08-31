@@ -709,7 +709,7 @@ void NumberFormatterApiTest::unitUsage() {
             Locale("en-ZA"),
             u"87\u00A0650 km",
             u"8\u00A0765 km",
-            u"877 km",
+            u"876 km", // 6.5 rounds down, 7.5 rounds up.
             u"88 km",
             u"8,8 km",
             u"900 m",
@@ -989,8 +989,8 @@ void NumberFormatterApiTest::unitUsageSkeletons() {
                 .notation(Notation::scientific())
                 .precision(Precision::maxSignificantDigits(4)),
             Locale("en-ZA"),
-            321.45,
-            u"3,215E2 m");
+            321.45, // 0.45 rounds down, 0.55 rounds up.
+            u"3,214E2 m");
 
     assertFormatSingle(
             u"Scientific notation with Usage: possible when using a reasonable Precision",
