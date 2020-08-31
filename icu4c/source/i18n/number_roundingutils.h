@@ -193,6 +193,9 @@ class RoundingImpl {
 
     // Permits access to fPrecision.
     friend class UsagePrefsHandler;
+
+    // Permits access to fPrecision.
+    friend class UnitConversionHandler;
 };
 
 

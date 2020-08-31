@@ -259,20 +259,8 @@ void UnitConversionHandler::processQuantity(DecimalQuantity &quantity, MicroProp
 
     MixedMeasuresToMicros(measures, &quantity, &micros, status);
 
-    // TODO(units): here we are always overriding Precision. (1) get precision
-    // from fUnitsRouter, (2) ensure we use the UnitPreference skeleton's
-    // precision only when there isn't an explicit override we prefer to use.
-    // This needs to be handled within
-    // NumberFormatterImpl::macrosToMicroGenerator in number_formatimpl.cpp
-    // TODO: Use precision from `routed` result.
-    Precision precision = Precision::integer().withMinDigits(2);
-    UNumberFormatRoundingMode roundingMode;
-    // Temporary until ICU 64?
-    roundingMode = precision.fRoundingMode;
-    CurrencyUnit currency(u"", status);
-    micros.rounder = {precision, roundingMode, currency, status};
-    if (U_FAILURE(status)) {
-        return;
+    if (micros.rounder.fPrecision.isBogus()) {
+        micros.rounder.fPrecision = Precision::integer().withMinDigits(2);
     }
 }
 
