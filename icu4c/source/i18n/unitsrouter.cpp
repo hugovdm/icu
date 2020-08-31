@@ -70,8 +70,8 @@ UnitsRouter::UnitsRouter(MeasureUnit inputUnit, StringPiece region, StringPiece 
 RouteResult UnitsRouter::route(double quantity, UErrorCode &status) const {
     for (int i = 0, n = converterPreferences_.length(); i < n; i++) {
         const auto &converterPreference = *converterPreferences_[i];
-
-        if (converterPreference.converter.greaterThanOrEqual(quantity, converterPreference.limit)) {
+        if (converterPreference.converter.greaterThanOrEqual(quantity * (1 + DBL_EPSILON),
+                                                             converterPreference.limit)) {
             return RouteResult(converterPreference.converter.convert(quantity, status),
                                converterPreference.precision,
                                converterPreference.targetUnit.copy(status));
