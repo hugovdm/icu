@@ -709,7 +709,7 @@ void NumberFormatterApiTest::unitMeasure() {
                        NumberFormatter::with()
                            .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
                            .unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
-                       Locale("en-US"), 4.28571, u"4 tonnes, 285 kilograms, 710 grams");
+                       Locale("en-US"), 4.28571, u"4 metric tons, 285 kilograms, 710 grams");
 }
 
 // TODO(hugovdm): once one of #52 and #61 has been merged into the other, move
