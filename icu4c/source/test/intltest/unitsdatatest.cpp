@@ -1,6 +1,8 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html#License
 
+#include "unicode/utypes.h"
+
 #if !UCONFIG_NO_FORMATTING
 
 #include "unitsdata.h"
@@ -70,7 +72,7 @@ void UnitsDataTest::testGetAllConversionRates() {
 
 class UnitPreferencesOpenedUp : public UnitPreferences {
   public:
-    UnitPreferencesOpenedUp(UErrorCode &status) : UnitPreferences(status) {};
+    UnitPreferencesOpenedUp(UErrorCode &status) : UnitPreferences(status) {}
     const MaybeStackVector<UnitPreferenceMetadata> *getInternalMetadata() const { return &metadata_; }
     const MaybeStackVector<UnitPreference> *getInternalUnitPrefs() const { return &unitPrefs_; }
 };
