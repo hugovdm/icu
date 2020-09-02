@@ -81,7 +81,7 @@ void U_I18N_API addSingleFactorConstant(StringPiece baseStr, int32_t power, Sign
 /**
  * Represents the conversion rate between `source` and `target`.
  */
-struct ConversionRate : public UMemory {
+struct U_I18N_API ConversionRate : public UMemory {
     const MeasureUnitImpl source;
     const MeasureUnitImpl target;
     double factorNum = 1;
