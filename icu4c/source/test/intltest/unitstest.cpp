@@ -361,11 +361,13 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
         return;
     }
 
+    CharString sourceIdent(x, status);
     MeasureUnitImpl sourceUnit = MeasureUnitImpl::forIdentifier(x, status);
     if (status.errIfFailureAndReset("forIdentifier(\"%.*s\")", x.length(), x.data())) {
         return;
     }
 
+    CharString targetIdent(y, status);
     MeasureUnitImpl targetUnit = MeasureUnitImpl::forIdentifier(y, status);
     if (status.errIfFailureAndReset("forIdentifier(\"%.*s\")", y.length(), y.data())) {
         return;
@@ -380,14 +382,14 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
     // Convertibility:
     auto convertibility = extractConvertibility(sourceUnit, targetUnit, *ctx->conversionRates, status);
     if (status.errIfFailureAndReset("extractConvertibility(<%s>, <%s>, ...)",
-                                    sourceUnit.identifier.data(), targetUnit.identifier.data())) {
+                                    sourceIdent.data(), targetIdent.data())) {
         return;
     }
     CharString msg;
     msg.append("convertible: ", status)
-        .append(sourceUnit.identifier.data(), status)
+        .append(sourceIdent.data(), status)
         .append(" -> ", status)
-        .append(targetUnit.identifier.data(), status);
+        .append(targetIdent.data(), status);
     if (status.errIfFailureAndReset("msg construction")) {
         return;
     }
@@ -396,7 +398,7 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
     // Conversion:
     UnitConverter converter(sourceUnit, targetUnit, *ctx->conversionRates, status);
     if (status.errIfFailureAndReset("constructor: UnitConverter(<%s>, <%s>, status)",
-                                    sourceUnit.identifier.data(), targetUnit.identifier.data())) {
+                                    sourceIdent.data(), targetIdent.data())) {
         return;
     }
     double got = converter.convert(1000);
