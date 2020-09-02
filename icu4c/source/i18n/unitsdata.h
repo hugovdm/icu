@@ -44,7 +44,7 @@ CharString U_I18N_API getUnitCategory(const char *baseUnitIdentifier, UErrorCode
  */
 class U_I18N_API ConversionRateInfo : public UMemory {
   public:
-    ConversionRateInfo(){};
+    ConversionRateInfo() {}
     ConversionRateInfo(StringPiece sourceUnit, StringPiece baseUnit, StringPiece factor,
                        StringPiece offset, UErrorCode &status)
         : sourceUnit(), baseUnit(), factor(), offset() {
@@ -52,7 +52,7 @@ class U_I18N_API ConversionRateInfo : public UMemory {
         this->baseUnit.append(baseUnit, status);
         this->factor.append(factor, status);
         this->offset.append(offset, status);
-    };
+    }
     CharString sourceUnit;
     CharString baseUnit;
     CharString factor;
@@ -111,7 +111,7 @@ struct U_I18N_API UnitPreference : public UMemory {
  */
 class U_I18N_API UnitPreferenceMetadata : public UMemory {
   public:
-    UnitPreferenceMetadata(){};
+    UnitPreferenceMetadata() {}
     // Constructor, makes copies of the parameters passed to it.
     UnitPreferenceMetadata(StringPiece category, StringPiece usage, StringPiece region,
                            int32_t prefsOffset, int32_t prefsCount, UErrorCode &status);
