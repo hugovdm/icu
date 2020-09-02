@@ -53,7 +53,6 @@ class NumberFormatterApiTest : public IntlTestWithFieldPosition {
     void notationScientific();
     void notationCompact();
     void unitMeasure();
-    void unitPipeline();
     void unitCompoundMeasure();
     void unitUsage();
     void unitUsageErrorCodes();
