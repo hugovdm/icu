@@ -7,6 +7,5 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 ColumnLimit: 105
 AllowShortBlocksOnASingleLine: false 
-AllowShortFunctionsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: true 
 ...
