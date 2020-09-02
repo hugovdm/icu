@@ -150,10 +150,6 @@ struct MicroProps : public MicroPropsGenerator {
      * this function can be used only once, because the base MicroProps instance
      * will be modified and thus not be available for re-use.
      *
-     * TODO(units,hugovdm): deal with outputUnits: processQuantity may need to
-     * return a MeasurementUnit instance too, in some fashion. Or do we just
-     * keep it in micros.outputUnit?
-     *
      * @param quantity The quantity for consideration and optional mutation.
      * @param micros The MicroProps instance to populate. If this parameter is
      * not already `*this`, it will be overwritten with a copy of `*this`.
@@ -176,7 +172,6 @@ struct MicroProps : public MicroPropsGenerator {
 
   private:
     // Internal fields:
-    // FIXME: describe?
     bool exhausted = false;
 };
 
