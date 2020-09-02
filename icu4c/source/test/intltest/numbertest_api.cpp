@@ -75,7 +75,6 @@ void NumberFormatterApiTest::runIndexedTest(int32_t index, UBool exec, const cha
         TESTCASE_AUTO(notationScientific);
         TESTCASE_AUTO(notationCompact);
         TESTCASE_AUTO(unitMeasure);
-        TESTCASE_AUTO(unitPipeline);
         TESTCASE_AUTO(unitCompoundMeasure);
         TESTCASE_AUTO(unitUsage);
         TESTCASE_AUTO(unitUsageErrorCodes);
@@ -759,74 +758,9 @@ void NumberFormatterApiTest::unitMeasure() {
 //             u"1 foot, 12 inches");
 }
 
-void NumberFormatterApiTest::unitPipeline() {
-    IcuTestErrorCode status(*this, "unitPipeline()");
-
-    assertFormatSingle(
-        u"Built-in unit, meter-per-second",
-        u"measure-unit/speed-meter-per-second",
-        u"~unit/meter-per-second", // TODO(icu-units#35): does not normalize as expected
-        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()),
-        Locale("en-GB"),
-        2.4,
-        u"2.4 m/s");
-
-    assertFormatSingle(
-        u"Built-in unit meter-per-second specified as .unit(built-in).perUnit(built-in)",
-        u"measure-unit/length-meter per-measure-unit/duration-second",
-        u"unit/meter-per-second", // TODO(icu-units#35): check whether desired behaviour?
-        NumberFormatter::with().unit(METER).perUnit(SECOND),
-        Locale("en-GB"),
-        2.4,
-        "2.4 m/s");
-
-    // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
-    // When specifying built-in types, one can give both a unit and a perUnit.
-    // Resolving to a built-in unit does not always work.
-    //
-    // (Unit-testing philosophy: leave enabled to demonstrate current behaviour
-    // and changing behaviour in the future? Comment out to not assert this is
-    // "correct"?)
-    assertFormatSingle(
-        u"DEMONSTRATING BAD BEHAVIOUR, TODO(icu-units#59)",
-        u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-        u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()).perUnit(MeasureUnit::getSecond()),
-        Locale("en-GB"),
-        2.4,
-        "2.4 m/s/s");
-
-    LocalizedNumberFormatter nf;
-    FormattedNumber num;
-
-    // If unit is not a built-in type, perUnit is not allowed
-    nf = NumberFormatter::with()
-             .unit(MeasureUnit::forIdentifier("furlong-pascal", status))
-             .perUnit(METER)
-             .locale("en-GB");
-    status.assertSuccess(); // Error is only returned once we try to format.
-    num = nf.formatDouble(2.4, status);
-    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
-        errln(UnicodeString("Expected failure, got: \"") +
-              nf.formatDouble(2.4, status).toString(status) + "\".");
-        status.assertSuccess();
-    }
-
-    // perUnit is only allowed to be a built-in type
-    nf = NumberFormatter::with()
-             .unit(MeasureUnit::getMeter())
-             .perUnit(MeasureUnit::forIdentifier("square-second", status))
-             .locale("en-GB");
-    status.assertSuccess(); // Error is only returned once we try to format.
-    num = nf.formatDouble(2.4, status);
-    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
-        errln(UnicodeString("Expected failure, got: \"") +
-              nf.formatDouble(2.4, status).toString(status) + "\".");
-        status.assertSuccess();
-    }
-}
-
 void NumberFormatterApiTest::unitCompoundMeasure() {
+    IcuTestErrorCode status(*this, "unitCompoundMeasure()");
+
     assertFormatDescending(
             u"Meters Per Second Short (unit that simplifies) and perUnit method",
             u"measure-unit/length-meter per-measure-unit/duration-second",
@@ -842,6 +776,17 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             u"0.08765 m/s",
             u"0.008765 m/s",
             u"0 m/s");
+
+    // TODO(icu-units#35): does not normalize as desired: while "unit/*" does
+    // get split into unit/perUnit, ".unit(*)" and "measure-unit/*" don't:
+    assertFormatSingle(
+        u"Built-in unit, meter-per-second",
+        u"measure-unit/speed-meter-per-second",
+        u"~unit/meter-per-second",
+        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()),
+        Locale("en-GB"),
+        2.4,
+        u"2.4 m/s");
 
     assertFormatDescending(
             u"Pounds Per Square Mile Short (secondary unit has per-format) and adoptPerUnit method",
@@ -891,6 +836,55 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
     //         u"0.08765 J/fur",
     //         u"0.008765 J/fur",
     //         u"0 J/fur");
+
+    // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
+    // When specifying built-in types, one can give both a unit and a perUnit.
+    // Resolving to a built-in unit does not always work.
+    //
+    // (Unit-testing philosophy: do we leave this enabled to demonstrate current
+    // behaviour, and changing behaviour in the future? Or comment it out to
+    // avoid asserting this is "correct"?)
+    assertFormatSingle(
+            u"DEMONSTRATING BAD BEHAVIOUR, TODO(icu-units#59)",
+            u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+            u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+            NumberFormatter::with()
+                .unit(MeasureUnit::getMeterPerSecond())
+                .perUnit(MeasureUnit::getSecond()),
+            Locale("en-GB"),
+            2.4,
+            "2.4 m/s/s");
+
+    // Testing the rejection of invalid specifications
+
+    // If .unit() is not given a built-in type, .perUnit() is not allowed
+    // (because .unit is now flexible enough to handle compound units,
+    // .perUnit() is supported for backward compatibility).
+    LocalizedNumberFormatter nf = NumberFormatter::with()
+             .unit(MeasureUnit::forIdentifier("furlong-pascal", status))
+             .perUnit(METER)
+             .locale("en-GB");
+    status.assertSuccess(); // Error is only returned once we try to format.
+    FormattedNumber num = nf.formatDouble(2.4, status);
+    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
+        errln(UnicodeString("Expected failure, got: \"") +
+              nf.formatDouble(2.4, status).toString(status) + "\".");
+        status.assertSuccess();
+    }
+
+    // .perUnit() may only be passed a built-in type, "square-second" is not a
+    // built-in type.
+    nf = NumberFormatter::with()
+             .unit(MeasureUnit::getMeter())
+             .perUnit(MeasureUnit::forIdentifier("square-second", status))
+             .locale("en-GB");
+    status.assertSuccess(); // Error is only returned once we try to format.
+    num = nf.formatDouble(2.4, status);
+    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
+        errln(UnicodeString("Expected failure, got: \"") +
+              nf.formatDouble(2.4, status).toString(status) + "\".");
+        status.assertSuccess();
+    }
 }
 
 void NumberFormatterApiTest::unitUsage() {
