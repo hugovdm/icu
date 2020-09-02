@@ -925,23 +925,6 @@ MeasureUnit MeasureUnit::product(const MeasureUnit& other, UErrorCode& status) c
     return std::move(impl).build(status);
 }
 
-MeasureUnit MeasureUnit::simplify(UErrorCode &status) const {
-    if (this->getComplexity(status) == UMeasureUnitComplexity::UMEASURE_UNIT_MIXED) {
-        status = U_INTERNAL_PROGRAM_ERROR;
-        return MeasureUnit();
-    }
-
-    MeasureUnitImpl resultImpl;
-
-    MeasureUnitImpl temp;
-    const auto &units = MeasureUnitImpl::forMeasureUnit(*this, temp, status).units;
-    for (int i = 0, n = units.length(); i < n; ++i) {
-        appendAndMergeImpl(resultImpl, *units[i], status);
-    }
-
-    return std::move(resultImpl).build(status);
-}
-
 LocalArray<MeasureUnit> MeasureUnit::splitToSingleUnits(int32_t& outCount, UErrorCode& status) const {
     MeasureUnitImpl temp;
     const MeasureUnitImpl& impl = MeasureUnitImpl::forMeasureUnit(*this, temp, status);
