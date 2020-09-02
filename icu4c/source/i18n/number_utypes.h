@@ -39,8 +39,8 @@ public:
     DecimalQuantity quantity;
 
     // The output unit for the formatted quantity.
-    // TODO(units,hugovdm): populate this correctly - it's not properly
-    // implemented yet.
+    // TODO(units,hugovdm): populate this correctly for the general case - it's
+    // currently only implemented for the .usage() use case.
     MeasureUnit outputUnit;
 };
 

@@ -31,7 +31,11 @@ namespace {
  */
 constexpr int32_t DNAM_INDEX = StandardPlural::Form::COUNT;
 /**
- * @copydoc DNAM_INDEX
+ * "per" form (e.g. "{0} per day" is day's "per" form).
+ *
+ * Used as an index into the LongNameHandler::simpleFormats array. Units
+ * resources cover the normal set of PluralRules keys, as well as `dnam` and
+ * `per` forms.
  */
 constexpr int32_t PER_INDEX = StandardPlural::Form::COUNT + 1;
 // Number of keys in the array populated by PluralTableSink.
