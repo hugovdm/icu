@@ -296,19 +296,21 @@ void UnitsTest::testArea() {
 }
 
 /**
- * Trims whitespace (spaces only) off of the specified string.
+ * Trims whitespace off of the specified string.
  * @param field is two pointers pointing at the start and end of the string.
  * @return A StringPiece with initial and final space characters trimmed off.
  */
 StringPiece trimField(char *(&field)[2]) {
-    char *start = field[0];
-    while (start < field[1] && (start[0]) == ' ') {
-        start++;
+    const char *start = field[0];
+    start = u_skipWhitespace(start);
+    if (start >= field[1]) {
+        start = field[1];
     }
-    int32_t length = (int32_t)(field[1] - start);
-    while (length > 0 && (start[length - 1]) == ' ') {
-        length--;
+    const char *end = field[1];
+    while ((start < end) && U_IS_INV_WHITESPACE(*(end - 1))) {
+        end--;
     }
+    int32_t length = (int32_t)(end - start);
     return StringPiece(start, length);
 }
 
@@ -361,11 +363,13 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
         return;
     }
 
+    CharString sourceIdent(x, status);
     MeasureUnitImpl sourceUnit = MeasureUnitImpl::forIdentifier(x, status);
     if (status.errIfFailureAndReset("forIdentifier(\"%.*s\")", x.length(), x.data())) {
         return;
     }
 
+    CharString targetIdent(y, status);
     MeasureUnitImpl targetUnit = MeasureUnitImpl::forIdentifier(y, status);
     if (status.errIfFailureAndReset("forIdentifier(\"%.*s\")", y.length(), y.data())) {
         return;
@@ -380,14 +384,14 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
     // Convertibility:
     auto convertibility = extractConvertibility(sourceUnit, targetUnit, *ctx->conversionRates, status);
     if (status.errIfFailureAndReset("extractConvertibility(<%s>, <%s>, ...)",
-                                    sourceUnit.identifier.data(), targetUnit.identifier.data())) {
+                                    sourceIdent.data(), targetIdent.data())) {
         return;
     }
     CharString msg;
     msg.append("convertible: ", status)
-        .append(sourceUnit.identifier.data(), status)
+        .append(sourceIdent.data(), status)
         .append(" -> ", status)
-        .append(targetUnit.identifier.data(), status);
+        .append(targetIdent.data(), status);
     if (status.errIfFailureAndReset("msg construction")) {
         return;
     }
@@ -396,7 +400,7 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
     // Conversion:
     UnitConverter converter(sourceUnit, targetUnit, *ctx->conversionRates, status);
     if (status.errIfFailureAndReset("constructor: UnitConverter(<%s>, <%s>, status)",
-                                    sourceUnit.identifier.data(), targetUnit.identifier.data())) {
+                                    sourceIdent.data(), targetIdent.data())) {
         return;
     }
     double got = converter.convert(1000);
