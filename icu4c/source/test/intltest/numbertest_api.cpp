@@ -759,8 +759,140 @@ void NumberFormatterApiTest::unitMeasure() {
 //             u"1 foot, 12 inches");
 }
 
-// TODO(hugovdm): once one of #52 and #61 has been merged into the other, move
-// down for consistent method order.
+void NumberFormatterApiTest::unitPipeline() {
+    IcuTestErrorCode status(*this, "unitPipeline()");
+
+    assertFormatSingle(
+        u"Built-in unit, meter-per-second",
+        u"measure-unit/speed-meter-per-second",
+        u"~unit/meter-per-second", // TODO(icu-units#35): does not normalize as expected
+        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()),
+        Locale("en-GB"),
+        2.4,
+        u"2.4 m/s");
+
+    assertFormatSingle(
+        u"Built-in unit meter-per-second specified as .unit(built-in).perUnit(built-in)",
+        u"measure-unit/length-meter per-measure-unit/duration-second",
+        u"unit/meter-per-second", // TODO(icu-units#35): check whether desired behaviour?
+        NumberFormatter::with().unit(METER).perUnit(SECOND),
+        Locale("en-GB"),
+        2.4,
+        "2.4 m/s");
+
+    // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
+    // When specifying built-in types, one can give both a unit and a perUnit.
+    // Resolving to a built-in unit does not always work.
+    //
+    // (Unit-testing philosophy: leave enabled to demonstrate current behaviour
+    // and changing behaviour in the future? Comment out to not assert this is
+    // "correct"?)
+    assertFormatSingle(
+        u"DEMONSTRATING BAD BEHAVIOUR, TODO(icu-units#59)",
+        u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+        u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()).perUnit(MeasureUnit::getSecond()),
+        Locale("en-GB"),
+        2.4,
+        "2.4 m/s/s");
+
+    LocalizedNumberFormatter nf;
+    FormattedNumber num;
+
+    // If unit is not a built-in type, perUnit is not allowed
+    nf = NumberFormatter::with()
+             .unit(MeasureUnit::forIdentifier("furlong-pascal", status))
+             .perUnit(METER)
+             .locale("en-GB");
+    status.assertSuccess(); // Error is only returned once we try to format.
+    num = nf.formatDouble(2.4, status);
+    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
+        errln(UnicodeString("Expected failure, got: \"") +
+              nf.formatDouble(2.4, status).toString(status) + "\".");
+        status.assertSuccess();
+    }
+
+    // perUnit is only allowed to be a built-in type
+    nf = NumberFormatter::with()
+             .unit(MeasureUnit::getMeter())
+             .perUnit(MeasureUnit::forIdentifier("square-second", status))
+             .locale("en-GB");
+    status.assertSuccess(); // Error is only returned once we try to format.
+    num = nf.formatDouble(2.4, status);
+    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
+        errln(UnicodeString("Expected failure, got: \"") +
+              nf.formatDouble(2.4, status).toString(status) + "\".");
+        status.assertSuccess();
+    }
+}
+
+void NumberFormatterApiTest::unitCompoundMeasure() {
+    assertFormatDescending(
+            u"Meters Per Second Short (unit that simplifies) and perUnit method",
+            u"measure-unit/length-meter per-measure-unit/duration-second",
+            u"unit/meter-per-second",
+            NumberFormatter::with().unit(METER).perUnit(SECOND),
+            Locale::getEnglish(),
+            u"87,650 m/s",
+            u"8,765 m/s",
+            u"876.5 m/s",
+            u"87.65 m/s",
+            u"8.765 m/s",
+            u"0.8765 m/s",
+            u"0.08765 m/s",
+            u"0.008765 m/s",
+            u"0 m/s");
+
+    assertFormatDescending(
+            u"Pounds Per Square Mile Short (secondary unit has per-format) and adoptPerUnit method",
+            u"measure-unit/mass-pound per-measure-unit/area-square-mile",
+            u"unit/pound-per-square-mile",
+            NumberFormatter::with().unit(POUND).adoptPerUnit(new MeasureUnit(SQUARE_MILE)),
+            Locale::getEnglish(),
+            u"87,650 lb/mi²",
+            u"8,765 lb/mi²",
+            u"876.5 lb/mi²",
+            u"87.65 lb/mi²",
+            u"8.765 lb/mi²",
+            u"0.8765 lb/mi²",
+            u"0.08765 lb/mi²",
+            u"0.008765 lb/mi²",
+            u"0 lb/mi²");
+
+    assertFormatDescending(
+            u"Joules Per Furlong Short (unit with no simplifications or special patterns)",
+            u"measure-unit/energy-joule per-measure-unit/length-furlong",
+            u"unit/joule-per-furlong",
+            NumberFormatter::with().unit(JOULE).perUnit(FURLONG),
+            Locale::getEnglish(),
+            u"87,650 J/fur",
+            u"8,765 J/fur",
+            u"876.5 J/fur",
+            u"87.65 J/fur",
+            u"8.765 J/fur",
+            u"0.8765 J/fur",
+            u"0.08765 J/fur",
+            u"0.008765 J/fur",
+            u"0 J/fur");
+
+    // TODO(ICU-20941): Support constructions such as this one.
+    // assertFormatDescending(
+    //         u"Joules Per Furlong Short with unit identifier via API",
+    //         u"measure-unit/energy-joule per-measure-unit/length-furlong",
+    //         u"unit/joule-per-furlong",
+    //         NumberFormatter::with().unit(MeasureUnit::forIdentifier("joule-per-furlong", status)),
+    //         Locale::getEnglish(),
+    //         u"87,650 J/fur",
+    //         u"8,765 J/fur",
+    //         u"876.5 J/fur",
+    //         u"87.65 J/fur",
+    //         u"8.765 J/fur",
+    //         u"0.8765 J/fur",
+    //         u"0.08765 J/fur",
+    //         u"0.008765 J/fur",
+    //         u"0 J/fur");
+}
+
 void NumberFormatterApiTest::unitUsage() {
     IcuTestErrorCode status(*this, "unitUsage()");
     UnlocalizedNumberFormatter unloc_formatter;
@@ -1083,140 +1215,6 @@ void NumberFormatterApiTest::unitUsageSkeletons() {
             u"1,5E28 kilometres");
 
     status.assertSuccess();
-}
-
-void NumberFormatterApiTest::unitPipeline() {
-    IcuTestErrorCode status(*this, "unitPipeline()");
-
-    assertFormatSingle(
-        u"Built-in unit, meter-per-second",
-        u"measure-unit/speed-meter-per-second",
-        u"~unit/meter-per-second", // TODO(icu-units#35): does not normalize as expected
-        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()),
-        Locale("en-GB"),
-        2.4,
-        u"2.4 m/s");
-
-    assertFormatSingle(
-        u"Built-in unit meter-per-second specified as .unit(built-in).perUnit(built-in)",
-        u"measure-unit/length-meter per-measure-unit/duration-second",
-        u"unit/meter-per-second", // TODO(icu-units#35): check whether desired behaviour?
-        NumberFormatter::with().unit(METER).perUnit(SECOND),
-        Locale("en-GB"),
-        2.4,
-        "2.4 m/s");
-
-    // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
-    // When specifying built-in types, one can give both a unit and a perUnit.
-    // Resolving to a built-in unit does not always work.
-    //
-    // (Unit-testing philosophy: leave enabled to demonstrate current behaviour
-    // and changing behaviour in the future? Comment out to not assert this is
-    // "correct"?)
-    assertFormatSingle(
-        u"DEMONSTRATING BAD BEHAVIOUR, TODO(icu-units#59)",
-        u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-        u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()).perUnit(MeasureUnit::getSecond()),
-        Locale("en-GB"),
-        2.4,
-        "2.4 m/s/s");
-
-    LocalizedNumberFormatter nf;
-    FormattedNumber num;
-
-    // If unit is not a built-in type, perUnit is not allowed
-    nf = NumberFormatter::with()
-             .unit(MeasureUnit::forIdentifier("furlong-pascal", status))
-             .perUnit(METER)
-             .locale("en-GB");
-    status.assertSuccess(); // Error is only returned once we try to format.
-    num = nf.formatDouble(2.4, status);
-    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
-        errln(UnicodeString("Expected failure, got: \"") +
-              nf.formatDouble(2.4, status).toString(status) + "\".");
-        status.assertSuccess();
-    }
-
-    // perUnit is only allowed to be a built-in type
-    nf = NumberFormatter::with()
-             .unit(MeasureUnit::getMeter())
-             .perUnit(MeasureUnit::forIdentifier("square-second", status))
-             .locale("en-GB");
-    status.assertSuccess(); // Error is only returned once we try to format.
-    num = nf.formatDouble(2.4, status);
-    if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
-        errln(UnicodeString("Expected failure, got: \"") +
-              nf.formatDouble(2.4, status).toString(status) + "\".");
-        status.assertSuccess();
-    }
-}
-
-void NumberFormatterApiTest::unitCompoundMeasure() {
-    assertFormatDescending(
-            u"Meters Per Second Short (unit that simplifies) and perUnit method",
-            u"measure-unit/length-meter per-measure-unit/duration-second",
-            u"unit/meter-per-second",
-            NumberFormatter::with().unit(METER).perUnit(SECOND),
-            Locale::getEnglish(),
-            u"87,650 m/s",
-            u"8,765 m/s",
-            u"876.5 m/s",
-            u"87.65 m/s",
-            u"8.765 m/s",
-            u"0.8765 m/s",
-            u"0.08765 m/s",
-            u"0.008765 m/s",
-            u"0 m/s");
-
-    assertFormatDescending(
-            u"Pounds Per Square Mile Short (secondary unit has per-format) and adoptPerUnit method",
-            u"measure-unit/mass-pound per-measure-unit/area-square-mile",
-            u"unit/pound-per-square-mile",
-            NumberFormatter::with().unit(POUND).adoptPerUnit(new MeasureUnit(SQUARE_MILE)),
-            Locale::getEnglish(),
-            u"87,650 lb/mi²",
-            u"8,765 lb/mi²",
-            u"876.5 lb/mi²",
-            u"87.65 lb/mi²",
-            u"8.765 lb/mi²",
-            u"0.8765 lb/mi²",
-            u"0.08765 lb/mi²",
-            u"0.008765 lb/mi²",
-            u"0 lb/mi²");
-
-    assertFormatDescending(
-            u"Joules Per Furlong Short (unit with no simplifications or special patterns)",
-            u"measure-unit/energy-joule per-measure-unit/length-furlong",
-            u"unit/joule-per-furlong",
-            NumberFormatter::with().unit(JOULE).perUnit(FURLONG),
-            Locale::getEnglish(),
-            u"87,650 J/fur",
-            u"8,765 J/fur",
-            u"876.5 J/fur",
-            u"87.65 J/fur",
-            u"8.765 J/fur",
-            u"0.8765 J/fur",
-            u"0.08765 J/fur",
-            u"0.008765 J/fur",
-            u"0 J/fur");
-
-    // TODO(ICU-20941): Support constructions such as this one.
-    // assertFormatDescending(
-    //         u"Joules Per Furlong Short with unit identifier via API",
-    //         u"measure-unit/energy-joule per-measure-unit/length-furlong",
-    //         u"unit/joule-per-furlong",
-    //         NumberFormatter::with().unit(MeasureUnit::forIdentifier("joule-per-furlong", status)),
-    //         Locale::getEnglish(),
-    //         u"87,650 J/fur",
-    //         u"8,765 J/fur",
-    //         u"876.5 J/fur",
-    //         u"87.65 J/fur",
-    //         u"8.765 J/fur",
-    //         u"0.8765 J/fur",
-    //         u"0.08765 J/fur",
-    //         u"0.008765 J/fur",
-    //         u"0 J/fur");
 }
 
 void NumberFormatterApiTest::unitCurrency() {
@@ -3995,7 +3993,7 @@ void NumberFormatterApiTest::toDecimalNumber() {
         "9.8765E+14", fn.toDecimalNumber<std::string>(status).c_str());
 }
 
-void NumberFormatterApiTest::microPropsInternals(void) {
+void NumberFormatterApiTest::microPropsInternals() {
     // Verify copy construction and assignment operators.
     int64_t testValues[2] = {4, 61};
 
