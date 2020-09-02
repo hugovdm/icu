@@ -47,7 +47,7 @@ class IntMeasures : public MaybeStackArray<int64_t, 2> {
      */
     IntMeasures(const IntMeasures &other) {
         this->operator=(other);
-    };
+    }
 
     // Assignment operator
     IntMeasures &operator=(const IntMeasures &rhs) {
@@ -62,7 +62,7 @@ class IntMeasures : public MaybeStackArray<int64_t, 2> {
             status = U_MEMORY_ALLOCATION_ERROR;
         }
         return *this;
-    };
+    }
 
     /** Move constructor */
     IntMeasures(IntMeasures &&src) = default;
