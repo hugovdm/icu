@@ -520,9 +520,6 @@ UnicodeString &MeasureFormat::formatMeasurePerUnit(
     return appendTo;
 }
 
-// TODO(units): add support for mixed units. Or rather: Add tests for the
-// behavior, and if the behavior is reasonable, no reason to touch this
-// function.
 UnicodeString &MeasureFormat::formatMeasures(
         const Measure *measures,
         int32_t measureCount,
