@@ -887,8 +887,6 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
     }
 }
 
-// TODO(hugovdm): once one of #52 and #61 has been merged into the other, move
-// down for consistent method order.
 void NumberFormatterApiTest::unitUsage() {
     IcuTestErrorCode status(*this, "unitUsage()");
     UnlocalizedNumberFormatter unloc_formatter;
@@ -3989,7 +3987,7 @@ void NumberFormatterApiTest::toDecimalNumber() {
         "9.8765E+14", fn.toDecimalNumber<std::string>(status).c_str());
 }
 
-void NumberFormatterApiTest::microPropsInternals(void) {
+void NumberFormatterApiTest::microPropsInternals() {
     // Verify copy construction and assignment operators.
     int64_t testValues[2] = {4, 61};
 
