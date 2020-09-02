@@ -1655,9 +1655,6 @@ class U_I18N_API NumberFormatterSettings {
      *
      * If a per-unit is specified without a primary unit via {@link #unit}, the behavior is undefined.
      *
-     * TODO(units): add proper support for COMPOUND and MIXED units.
-     * Specify behaviour here, test intended behaviour...
-     *
      * @param perUnit
      *            The unit to render in the denominator.
      * @return The fluent chain
@@ -1668,9 +1665,6 @@ class U_I18N_API NumberFormatterSettings {
 
     /**
      * Overload of perUnit() for use on an rvalue reference.
-     *
-     * TODO(units): add proper support for COMPOUND and MIXED units.
-     * Specify behaviour here, test intended behaviour...
      *
      * @param perUnit
      *            The unit to render in the denominator.
@@ -1686,9 +1680,6 @@ class U_I18N_API NumberFormatterSettings {
      *
      * Note: consider using the MeasureFormat factory methods that return by value.
      *
-     * TODO(units): add proper support for COMPOUND and MIXED units.
-     * Specify behaviour here, test intended behaviour...
-     *
      * @param perUnit
      *            The unit to render in the denominator.
      * @return The fluent chain.
@@ -1700,9 +1691,6 @@ class U_I18N_API NumberFormatterSettings {
 
     /**
      * Overload of adoptPerUnit() for use on an rvalue reference.
-     *
-     * TODO(units): add proper support for COMPOUND and MIXED units.
-     * Specify behaviour here, test intended behaviour...
      *
      * @param perUnit
      *            The unit to render in the denominator.
@@ -2144,11 +2132,9 @@ class U_I18N_API NumberFormatterSettings {
      * Setting a usage string but not a correct input unit will result in an
      * U_ILLEGAL_ARGUMENT_ERROR.
      *
-     * TODO(units): When setting both usage and rounding/precision behaviour via
-     * NumberFormatterSetter, we think we want the latter to override any
-     * skeleton in the UnitPreferences. Add unit tests to demontrate desired
-     * behaviour, fix macrosToMicroGenerator to handle this correctly, and
-     * update this documentation.
+     * When using usage, specifying rounding or precision is unnecessary.
+     * Specifying a precision in some manner will override the default
+     * formatting.
      *
      * @param usage A `usage` parameter from the units resource. See the
      * unitPreferenceData in *source/data/misc/units.txt*, generated from
@@ -2652,7 +2638,7 @@ class U_I18N_API FormattedNumber : public UMemory, public FormattedValue {
      * The output unit is dependent upon the localized preferences for the usage
      * specified via NumberFormatterSettings::usage(), and may be a unit with
      * UMEASURE_UNIT_MIXED unit complexity (MeasureUnit::getComplexity()), such
-     * as "foot+inch" or "hour+minute+second".
+     * as "foot-and-inch" or "hour-and-minute-and-second".
      *
      * @return `MeasureUnit`.
      * @draft ICU 68
