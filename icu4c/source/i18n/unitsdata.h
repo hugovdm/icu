@@ -59,6 +59,15 @@ class U_I18N_API ConversionRateInfo : public UMemory {
     CharString offset;
 };
 
+// Export explicit template instantiations of MaybeStackArray, MemoryPool and
+// MaybeStackVector. This is required when building DLLs for Windows. (See
+// datefmt.h, collationiterator.h, erarules.h and others for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API MaybeStackArray<ConversionRateInfo*, 8>;
+template class U_I18N_API MemoryPool<ConversionRateInfo, 8>;
+template class U_I18N_API MaybeStackVector<ConversionRateInfo, 8>;
+#endif
+
 /**
  * Returns ConversionRateInfo for all supported conversions.
  *
@@ -135,6 +144,18 @@ class U_I18N_API UnitPreferenceMetadata : public UMemory {
     int32_t compareTo(const UnitPreferenceMetadata &other, bool *foundCategory, bool *foundUsage,
                       bool *foundRegion) const;
 };
+
+// Export explicit template instantiations of MaybeStackArray, MemoryPool and
+// MaybeStackVector. This is required when building DLLs for Windows. (See
+// datefmt.h, collationiterator.h, erarules.h and others for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API MaybeStackArray<UnitPreferenceMetadata*, 8>;
+template class U_I18N_API MemoryPool<UnitPreferenceMetadata, 8>;
+template class U_I18N_API MaybeStackVector<UnitPreferenceMetadata, 8>;
+template class U_I18N_API MaybeStackArray<UnitPreference*, 8>;
+template class U_I18N_API MemoryPool<UnitPreference, 8>;
+template class U_I18N_API MaybeStackVector<UnitPreference, 8>;
+#endif
 
 /**
  * Unit Preferences information for various locales and usages.

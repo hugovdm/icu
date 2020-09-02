@@ -18,6 +18,18 @@ U_NAMESPACE_BEGIN
 
 namespace units {
 
+// Export explicit template instantiations of MaybeStackArray, MemoryPool and
+// MaybeStackVector. This is required when building DLLs for Windows. (See
+// datefmt.h, collationiterator.h, erarules.h and others for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+template class U_I18N_API MaybeStackArray<UnitConverter*, 8>;
+template class U_I18N_API MemoryPool<UnitConverter, 8>;
+template class U_I18N_API MaybeStackVector<UnitConverter, 8>;
+template class U_I18N_API MaybeStackArray<MeasureUnitImpl*, 8>;
+template class U_I18N_API MemoryPool<MeasureUnitImpl, 8>;
+template class U_I18N_API MaybeStackVector<MeasureUnitImpl, 8>;
+#endif
+
 /**
  *  Converts from single or compound unit to single, compound or mixed units.
  * For example, from `meter` to `foot+inch`.

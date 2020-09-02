@@ -63,6 +63,22 @@ class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory 
     static Precision parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton, UErrorCode status);
 };
 
+// Export explicit template instantiations of LocalPointerBase and LocalPointer.
+// This is required when building DLLs for Windows. (See datefmt.h,
+// collationiterator.h, erarules.h and others for similar examples.)
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+#if defined(_MSC_VER)
+// Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
+#pragma warning(push)
+#pragma warning(disable: 4661)
+#endif
+template class U_I18N_API LocalPointerBase<ComplexUnitsConverter>;
+template class U_I18N_API LocalPointer<ComplexUnitsConverter>;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+
 /**
  * A MicroPropsGenerator which converts a measurement from a simple MeasureUnit
  * to a Mixed MeasureUnit.
