@@ -759,23 +759,6 @@ bool appendImpl(MeasureUnitImpl& impl, const SingleUnitImpl& unit, UErrorCode& s
     return (oldUnit == nullptr);
 }
 
-/**
- * Searches the `impl` for an internal unit with the same base identifier and the same SI prefix as
- * `unit`. (For example, `square-meter` and `cubic-meter` but not `meter` and `centimeter`). After that,
- * the matched units will be merged. Otherwise, the `unit` will be appended.
- */
-void appendAndMergeImpl(MeasureUnitImpl &impl, const SingleUnitImpl &unit, UErrorCode &status) {
-    for (int32_t i = 0, n = impl.units.length(); i < n; i++) {
-        auto *candidate = impl.units[i];
-        if (candidate->index == unit.index && candidate->siPrefix == unit.siPrefix) {
-            candidate->dimensionality += unit.dimensionality;
-            return;
-        }
-    }
-
-    impl.append(unit, status);
-}
-
 } // namespace
 
 
