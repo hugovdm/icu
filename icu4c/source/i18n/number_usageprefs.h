@@ -56,6 +56,13 @@ class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory 
         return fUnitsRouter.getOutputUnits();
     }
 
+    // Cannot be copied, because UnitsRouter cannot be copied.
+    UsagePrefsHandler(const UsagePrefsHandler &) = delete;
+    void operator=(const UsagePrefsHandler & /*other*/) = delete;
+    // Can be moved though!
+    UsagePrefsHandler(UsagePrefsHandler &&other) = default;
+    UsagePrefsHandler &operator=(UsagePrefsHandler &&other) = default;
+
   private:
     UnitsRouter fUnitsRouter;
     const MicroPropsGenerator *fParent;

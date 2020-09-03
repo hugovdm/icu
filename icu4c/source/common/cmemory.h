@@ -788,6 +788,13 @@ public:
     using MemoryPool<T, stackCapacity>::MemoryPool;
     using MemoryPool<T, stackCapacity>::operator=;
 
+    // Cannot be copied, because MemoryPool cannot be copied.
+    MaybeStackVector(const MaybeStackVector &) = delete;
+    void operator=(const MaybeStackVector & /*other*/) = delete;
+    // Can be moved though!
+    MaybeStackVector(MaybeStackVector &&other) = default;
+    MaybeStackVector &operator=(MaybeStackVector &&other) = default;
+
     template<typename... Args>
     T* emplaceBack(Args&&... args) {
         return this->create(args...);

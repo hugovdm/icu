@@ -26,6 +26,7 @@ using namespace icu::number;
 using namespace icu::number::impl;
 using icu::StringSegment;
 using icu::units::ConversionRates;
+using icu::units::RouteResult;
 
 // Copy constructor
 Usage::Usage(const Usage &other) : fUsage(nullptr), fLength(other.fLength), fError(other.fError) {
@@ -138,7 +139,7 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     }
 
     quantity.roundToInfinity(); // Enables toDouble
-    const auto routed = fUnitsRouter.route(quantity.toDouble(), status);
+    RouteResult routed = fUnitsRouter.route(quantity.toDouble(), status);
     if (U_FAILURE(status)) {
         return;
     }

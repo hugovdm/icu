@@ -44,6 +44,13 @@ struct RouteResult : UMemory {
 
     RouteResult(MaybeStackVector<Measure> measures, UnicodeString precision, MeasureUnitImpl outputUnit)
         : measures(std::move(measures)), precision(std::move(precision)), outputUnit(std::move(outputUnit)) {}
+
+    // Cannot be copied, because MaybeStackVector cannot be copied.
+    RouteResult(const RouteResult &) = delete;
+    void operator=(const RouteResult & /*other*/) = delete;
+    // Can be moved though!
+    RouteResult(RouteResult &&other) = default;
+    RouteResult &operator=(RouteResult &&other) = default;
 };
 
 /**
@@ -75,6 +82,13 @@ struct ConverterPreference : UMemory {
                         UErrorCode &status)
         : converter(source, complexTarget, ratesInfo, status), limit(limit),
           precision(std::move(precision)), targetUnit(complexTarget.copy(status)) {}
+
+    // Cannot be copied, because ComplexUnitsConverter cannot be copied.
+    ConverterPreference(const ConverterPreference &) = delete;
+    void operator=(const ConverterPreference & /*other*/) = delete;
+    // Can be moved though!
+    ConverterPreference(ConverterPreference &&other) = default;
+    ConverterPreference &operator=(ConverterPreference &&other) = default;
 };
 
 // Export explicit template instantiations of MaybeStackArray, MemoryPool and
@@ -132,6 +146,13 @@ class U_I18N_API UnitsRouter {
      */
     const MaybeStackVector<MeasureUnit> *getOutputUnits() const;
 
+    // Cannot be copied, because MaybeStackVector cannot be copied.
+    UnitsRouter(const UnitsRouter &) = delete;
+    void operator=(const UnitsRouter & /*other*/) = delete;
+    // Can be moved though!
+    UnitsRouter(UnitsRouter &&other) = default;
+    UnitsRouter &operator=(UnitsRouter &&other) = default;
+
   private:
     // List of possible output units. TODO: converterPreferences_ now also has
     // this data available. Maybe drop outputUnits_ and have getOutputUnits
@@ -139,6 +160,7 @@ class U_I18N_API UnitsRouter {
     MaybeStackVector<MeasureUnit> outputUnits_;
 
     MaybeStackVector<ConverterPreference> converterPreferences_;
+
 };
 
 } // namespace units
