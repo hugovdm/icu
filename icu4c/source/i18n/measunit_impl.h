@@ -182,12 +182,12 @@ struct U_I18N_API MeasureUnitImpl : public UMemory {
     /**
      * Used for currency units.
      */
-    static inline MeasureUnitImpl &&forCurrencyCode(StringPiece currencyCode) {
+    static inline MeasureUnitImpl forCurrencyCode(StringPiece currencyCode) {
         MeasureUnitImpl result;
         UErrorCode localStatus = U_ZERO_ERROR;
         result.identifier.append(currencyCode, localStatus);
         // localStatus is not expected to fail since currencyCode should be 3 chars long
-        return std::move(result);
+        return result;
     }
 
     /** Transform this MeasureUnitImpl into a MeasureUnit, simplifying if possible. */
@@ -196,7 +196,7 @@ struct U_I18N_API MeasureUnitImpl : public UMemory {
     /**
      * Create a copy of this MeasureUnitImpl. Don't use copy constructor to make this explicit.
      */
-    MeasureUnitImpl &&copy(UErrorCode &status) const;
+    MeasureUnitImpl copy(UErrorCode& status) const;
 
     /**
      * Extracts the list of all the individual units inside the `MeasureUnitImpl`.

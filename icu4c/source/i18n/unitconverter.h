@@ -100,9 +100,9 @@ enum U_I18N_API Convertibility {
     UNCONVERTIBLE,
 };
 
-MeasureUnitImpl U_I18N_API &&extractCompoundBaseUnit(const MeasureUnitImpl &source,
-                                                     const ConversionRates &conversionRates,
-                                                     UErrorCode &status);
+MeasureUnitImpl U_I18N_API extractCompoundBaseUnit(const MeasureUnitImpl &source,
+                                                   const ConversionRates &conversionRates,
+                                                   UErrorCode &status);
 
 /**
  * Check if the convertibility between `source` and `target`.
