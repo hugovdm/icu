@@ -1,3 +1,5 @@
+// © 2020 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html#License
 /*
  *******************************************************************************
  * Copyright (C) 2004-2020, Google Inc, International Business Machines
@@ -73,17 +75,12 @@ public class SingleUnitImpl {
             result.append("square-");
         } else if (posPower == 3) {
             result.append("cubic-");
-        } else if (posPower < 10) {
-            result.append("pow");
-            result.append(posPower + "0");
-            result.append('-');
         } else if (posPower <= 15) {
-            result.append("pow1");
-            result.append('0' + (posPower % 10));
+            result.append("pow");
+            result.append(posPower);
             result.append('-');
         } else {
-            // TODO: choose better name for this exception
-            throw new InternalException("Unit Identifier Syntax Error");
+            throw new IllegalArgumentException("Unit Identifier Syntax Error");
         }
 
         result.append(this.getSiPrefix().getIdentifier());

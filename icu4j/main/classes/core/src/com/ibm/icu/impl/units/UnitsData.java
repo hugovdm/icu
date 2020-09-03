@@ -1,3 +1,5 @@
+// © 2020 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html#License
 /*
  *******************************************************************************
  * Copyright (C) 2004-2020, Google Inc, International Business Machines
@@ -19,7 +21,7 @@ import java.util.ArrayList;
  * Responsible for all units data operations (retriever, analysis, extraction certain data ... etc.).
  */
 public class UnitsData {
-    private static String[] simpleUnits = null;
+    private volatile static String[] simpleUnits = null;
 
     public static String[] getSimpleUnits() {
         if (simpleUnits != null) {
@@ -47,6 +49,15 @@ public class UnitsData {
             UResource.Table simpleUnitsTable = value.getTable();
             ArrayList<String> simpleUnits = new ArrayList<>();
             for (int i = 0; simpleUnitsTable.getKeyAndValue(i, key, value); i++) {
+                if (key.toString().equals("kilogram")) {
+
+                    // For parsing, we use "gram", the prefixless metric mass unit. We
+                    // thus ignore the SI Base Unit of Mass: it exists due to being the
+                    // mass conversion target unit, but not needed for MeasureUnit
+                    // parsing.
+                    continue;
+                }
+
                 simpleUnits.add(key.toString());
             }
 

@@ -2900,12 +2900,12 @@ public class MeasureUnitTest extends TestFmwk {
                     throw new IllegalStateException();
                 }
                 checkForDup(seen, name, unit);
-                System.out.printf("MeasureUnit *MeasureUnit::create%s(UErrorCode &status) {\n", name);
-                System.out.printf("    return MeasureUnit::create(%d, %d, status);\n",
+                System.out.printf("MeasureUnit *MeasureUnit.create%s(UErrorCode &status) {\n", name);
+                System.out.printf("    return MeasureUnit.create(%d, %d, status);\n",
                         typeSubType.first, typeSubType.second);
                 System.out.println("}");
                 System.out.println();
-                System.out.printf("MeasureUnit MeasureUnit::get%s() {\n", name);
+                System.out.printf("MeasureUnit MeasureUnit.get%s() {\n", name);
                 System.out.printf("    return MeasureUnit(%d, %d);\n",
                         typeSubType.first, typeSubType.second);
                 System.out.println("}");
@@ -2988,8 +2988,8 @@ public class MeasureUnitTest extends TestFmwk {
             for (MeasureUnit unit : entry.getValue()) {
                 String camelCase = toCamelCase(unit);
                 checkForDup(seen, camelCase, unit);
-                System.out.printf("    measureUnit.adoptInstead(MeasureUnit::create%s(status));\n", camelCase);
-                System.out.printf("    measureUnitValue = MeasureUnit::get%s();\n", camelCase);
+                System.out.printf("    measureUnit.adoptInstead(MeasureUnit.create%s(status));\n", camelCase);
+                System.out.printf("    measureUnitValue = MeasureUnit.get%s();\n", camelCase);
             }
         }
         System.out.println("    assertSuccess(\"\", status);");
@@ -3263,13 +3263,13 @@ public class MeasureUnitTest extends TestFmwk {
     @Test
     public void TestIdentifiers() {
         class TestCase {
-        final String id;
-        final String normalized;
+            final String id;
+            final String normalized;
 
-        TestCase(String id, String normalized) {
-            this.id = id;
-            this.normalized = normalized;
-        }
+            TestCase(String id, String normalized) {
+                this.id = id;
+                this.normalized = normalized;
+            }
         }
 
         TestCase cases[] = {
@@ -3295,15 +3295,15 @@ public class MeasureUnitTest extends TestFmwk {
         };
 
 
-        for (TestCase testCase :cases){
-            MeasureUnit unit = MeasureUnit.forIdentifier (testCase.id);
+        for (TestCase testCase : cases) {
+            MeasureUnit unit = MeasureUnit.forIdentifier(testCase.id);
 
-        final String actual = unit.getIdentifier();
+            final String actual = unit.getIdentifier();
             assertEquals(testCase.id, testCase.normalized, actual);
         }
     }
 
-    @Test(expected = InternalError.class)
+    @Test
     public void TestInvalidIdentifiers() {
         final String inputs[] = {
                 "kilo",
@@ -3340,65 +3340,248 @@ public class MeasureUnitTest extends TestFmwk {
 
                 // Compound units not supported in mixed units yet. TODO(CLDR-13700).
                 "kilonewton-meter-and-newton-meter",
-
         };
 
         for (String input : inputs) {
-            // TODO: test the failure for each input value.
-          MeasureUnit.forIdentifier(input);
+            try {
+                MeasureUnit.forIdentifier(input);
+                Assert.fail("An IllegalArgumentException must be thrown");
+            } catch (IllegalArgumentException e) {
+                continue;
+            }
         }
     }
 
     @Test
     public void TestCompoundUnitOperations() {
-        // TODO: implement
+        MeasureUnit.forIdentifier("kilometer-per-second-joule");
+
+        MeasureUnit kilometer = MeasureUnit.KILOMETER;
+        MeasureUnit cubicMeter = MeasureUnit.CUBIC_METER;
+        MeasureUnit meter = kilometer.withSIPrefix(MeasureUnit.SIPrefix.ONE);
+        MeasureUnit centimeter1 = kilometer.withSIPrefix(MeasureUnit.SIPrefix.CENTI);
+        MeasureUnit centimeter2 = meter.withSIPrefix(MeasureUnit.SIPrefix.CENTI);
+        MeasureUnit cubicDecimeter = cubicMeter.withSIPrefix(MeasureUnit.SIPrefix.DECI);
+
+        verifySingleUnit(kilometer, MeasureUnit.SIPrefix.KILO, 1, "kilometer");
+        verifySingleUnit(meter, MeasureUnit.SIPrefix.ONE, 1, "meter");
+        verifySingleUnit(centimeter1, MeasureUnit.SIPrefix.CENTI, 1, "centimeter");
+        verifySingleUnit(centimeter2, MeasureUnit.SIPrefix.CENTI, 1, "centimeter");
+        verifySingleUnit(cubicDecimeter, MeasureUnit.SIPrefix.DECI, 3, "cubic-decimeter");
+
+        assertTrue("centimeter equality", centimeter1 == centimeter2);
+        assertTrue("kilometer inequality", centimeter1 != kilometer);
+
+        MeasureUnit squareMeter = meter.withDimensionality(2);
+        MeasureUnit overCubicCentimeter = centimeter1.withDimensionality(-3);
+        MeasureUnit quarticKilometer = kilometer.withDimensionality(4);
+        MeasureUnit overQuarticKilometer1 = kilometer.withDimensionality(-4);
+
+        verifySingleUnit(squareMeter, MeasureUnit.SIPrefix.ONE, 2, "square-meter");
+        verifySingleUnit(overCubicCentimeter, MeasureUnit.SIPrefix.CENTI, -3, "per-cubic-centimeter");
+        verifySingleUnit(quarticKilometer, MeasureUnit.SIPrefix.KILO, 4, "pow4-kilometer");
+        verifySingleUnit(overQuarticKilometer1, MeasureUnit.SIPrefix.KILO, -4, "per-pow4-kilometer");
+
+        assertTrue("power inequality", quarticKilometer != overQuarticKilometer1);
+
+        MeasureUnit overQuarticKilometer2 = quarticKilometer.reciprocal();
+        MeasureUnit overQuarticKilometer3 = kilometer.product(kilometer)
+                .product(kilometer)
+                .product(kilometer)
+                .reciprocal();
+        MeasureUnit overQuarticKilometer4 = meter.withDimensionality(4)
+                .reciprocal()
+                .withSIPrefix(MeasureUnit.SIPrefix.KILO);
+
+        verifySingleUnit(overQuarticKilometer2, MeasureUnit.SIPrefix.KILO, -4, "per-pow4-kilometer");
+        verifySingleUnit(overQuarticKilometer3, MeasureUnit.SIPrefix.KILO, -4, "per-pow4-kilometer");
+        verifySingleUnit(overQuarticKilometer4, MeasureUnit.SIPrefix.KILO, -4, "per-pow4-kilometer");
+
+        assertTrue("reciprocal equality", overQuarticKilometer1.equals(overQuarticKilometer2));
+        assertTrue("reciprocal equality", overQuarticKilometer1.equals(overQuarticKilometer3));
+        assertTrue("reciprocal equality", overQuarticKilometer1.equals(overQuarticKilometer4));
+
+        MeasureUnit kiloSquareSecond = MeasureUnit.SECOND
+                .withDimensionality(2).withSIPrefix(MeasureUnit.SIPrefix.KILO);
+        MeasureUnit meterSecond = meter.product(kiloSquareSecond);
+        MeasureUnit cubicMeterSecond1 = meter.withDimensionality(3).product(kiloSquareSecond);
+        MeasureUnit centimeterSecond1 = meter.withSIPrefix(MeasureUnit.SIPrefix.CENTI).product(kiloSquareSecond);
+        MeasureUnit secondCubicMeter = kiloSquareSecond.product(meter.withDimensionality(3));
+        MeasureUnit secondCentimeter = kiloSquareSecond.product(meter.withSIPrefix(MeasureUnit.SIPrefix.CENTI));
+        MeasureUnit secondCentimeterPerKilometer = secondCentimeter.product(kilometer.reciprocal());
+
+        verifySingleUnit(kiloSquareSecond, MeasureUnit.SIPrefix.KILO, 2, "square-kilosecond");
+        String meterSecondSub[] = {
+                "meter", "square-kilosecond"
+        };
+        verifyCompoundUnit(meterSecond, "meter-square-kilosecond",
+                meterSecondSub, meterSecondSub.length);
+        String cubicMeterSecond1Sub[] = {
+                "cubic-meter", "square-kilosecond"
+        };
+        verifyCompoundUnit(cubicMeterSecond1, "cubic-meter-square-kilosecond",
+                cubicMeterSecond1Sub, cubicMeterSecond1Sub.length);
+        String centimeterSecond1Sub[] = {
+                "centimeter", "square-kilosecond"
+        };
+        verifyCompoundUnit(centimeterSecond1, "centimeter-square-kilosecond",
+                centimeterSecond1Sub, centimeterSecond1Sub.length);
+        String secondCubicMeterSub[] = {
+                "cubic-meter", "square-kilosecond"
+        };
+        verifyCompoundUnit(secondCubicMeter, "cubic-meter-square-kilosecond",
+                secondCubicMeterSub, secondCubicMeterSub.length);
+        String secondCentimeterSub[] = {
+                "centimeter", "square-kilosecond"
+        };
+        verifyCompoundUnit(secondCentimeter, "centimeter-square-kilosecond",
+                secondCentimeterSub, secondCentimeterSub.length);
+        String secondCentimeterPerKilometerSub[] = {
+                "centimeter", "square-kilosecond", "per-kilometer"
+        };
+        verifyCompoundUnit(secondCentimeterPerKilometer, "centimeter-square-kilosecond-per-kilometer",
+                secondCentimeterPerKilometerSub, secondCentimeterPerKilometerSub.length);
+
+        assertTrue("reordering equality", cubicMeterSecond1.equals(secondCubicMeter));
+        assertTrue("additional simple units inequality", !secondCubicMeter.equals(secondCentimeter));
+
+        // Don't allow get/set power or SI prefix on compound units
+        try {
+            meterSecond.getDimensionality();
+            fail("UnsupportedOperationException must be thrown");
+        } catch (UnsupportedOperationException e) {
+            // Expecting an exception to be thrown
+        }
+
+        try {
+            meterSecond.withDimensionality(3);
+            fail("UnsupportedOperationException must be thrown");
+        } catch (UnsupportedOperationException e) {
+            // Expecting an exception to be thrown
+        }
+
+        try {
+            meterSecond.getSIPrefix();
+            fail("UnsupportedOperationException must be thrown");
+        } catch (UnsupportedOperationException e) {
+            // Expecting an exception to be thrown
+        }
+
+        try {
+            meterSecond.withSIPrefix(MeasureUnit.SIPrefix.CENTI);
+            fail("UnsupportedOperationException must be thrown");
+        } catch (UnsupportedOperationException e) {
+            // Expecting an exception to be thrown
+        }
+
+        MeasureUnit footInch = MeasureUnit.forIdentifier("foot-and-inch");
+        MeasureUnit inchFoot = MeasureUnit.forIdentifier("inch-and-foot");
+
+        String footInchSub[] = {
+                "foot", "inch"
+        };
+        verifyMixedUnit(footInch, "foot-and-inch",
+                footInchSub, footInchSub.length);
+        String inchFootSub[] = {
+                "inch", "foot"
+        };
+        verifyMixedUnit(inchFoot, "inch-and-foot",
+                inchFootSub, inchFootSub.length);
+
+        assertTrue("order matters inequality", !footInch.equals(inchFoot));
+
+
+        MeasureUnit dimensionless  /* TODO(sffc): do you mean that we need default constructor for dimensionless measure unit? */ = MeasureUnit.forIdentifier("");
+        MeasureUnit dimensionless2 = MeasureUnit.forIdentifier("");
+        assertTrue("dimensionless equality", dimensionless.equals(dimensionless2));
+
+        // We support starting from an "identity" MeasureUnit and then combining it
+        // with others via product:
+        MeasureUnit kilometer2 = dimensionless.product(kilometer);
+
+        verifySingleUnit(kilometer2, MeasureUnit.SIPrefix.KILO, 1, "kilometer");
+        assertTrue("kilometer equality", kilometer.equals(kilometer2));
+
+        // Test out-of-range powers
+        MeasureUnit power15 = MeasureUnit.forIdentifier("pow15-kilometer");
+        verifySingleUnit(power15, MeasureUnit.SIPrefix.KILO, 15, "pow15-kilometer");
+
+        try {
+            MeasureUnit power16a = MeasureUnit.forIdentifier("pow16-kilometer"); /* TODO: why do we need the variable */
+            fail("An IllegalArgumentException must be thrown");
+        } catch (IllegalArgumentException e) {
+            // Expecting an exception to be thrown
+        }
+
+        try {
+            MeasureUnit power16b = power15.product(kilometer); /* TODO: why do we need the variable */
+            fail("An IllegalArgumentException must be thrown");
+        } catch (IllegalArgumentException e) {
+            // Expecting an exception to be thrown
+        }
+
+        MeasureUnit powerN15 = MeasureUnit.forIdentifier("per-pow15-kilometer");
+        verifySingleUnit(powerN15, MeasureUnit.SIPrefix.KILO, -15, "per-pow15-kilometer");
+
+        try {
+            MeasureUnit powerN16a = MeasureUnit.forIdentifier("per-pow16-kilometer"); /* TODO: why do we need the variable */
+            fail("An IllegalArgumentException must be thrown");
+        } catch (IllegalArgumentException e) {
+            // Expecting an exception to be thrown
+        }
+
+        try {
+            MeasureUnit powerN16b = powerN15.product(overQuarticKilometer1); /* TODO: why do we need the variable */
+            fail("An IllegalArgumentException must be thrown");
+        } catch (IllegalArgumentException e) {
+            // Expecting an exception to be thrown
+        }
     }
 
     @Test
     public void TestDimensionlessBehaviour() {
-    MeasureUnit dimensionless = MeasureUnit.forIdentifier("");
-    MeasureUnit modified;
+        MeasureUnit dimensionless = MeasureUnit.forIdentifier("");
+        MeasureUnit modified /* TODO(sffc): do you mean that we need default constructor for dimensionless measure unit? */ = MeasureUnit.forIdentifier("");
 
-    // At the time of writing, each of the seven groups below caused
-    // Parser::from("") to be called:
+        // At the time of writing, each of the seven groups below caused
+        // Parser::from("") to be called:
 
-    // splitToSingleUnits
-    List<MeasureUnit> singles = dimensionless.splitToSingleUnits();
-    assertEquals("no singles in dimensionless", 0, singles.size());
+        // splitToSingleUnits
+        List<MeasureUnit> singles = dimensionless.splitToSingleUnits();
+        assertEquals("no singles in dimensionless", 0, singles.size());
 
-    // product(dimensionless)
-    MeasureUnit mile = MeasureUnit.MILE;
-    mile = mile.product(dimensionless);
-    // TODO: uncomment
-    // verifySingleUnit(mile, MeasureUnit.SIPrefix.ONE, 1, "mile");
+        // product(dimensionless)
+        MeasureUnit mile = MeasureUnit.MILE;
+        mile = mile.product(dimensionless);
+        verifySingleUnit(mile, MeasureUnit.SIPrefix.ONE, 1, "mile");
 
-    // dimensionless.getSIPrefix()
-    MeasureUnit.SIPrefix siPrefix = dimensionless.getSIPrefix();
-    assertEquals("dimensionless SIPrefix", MeasureUnit.SIPrefix.ONE, siPrefix);
+        // dimensionless.getSIPrefix()
+        MeasureUnit.SIPrefix siPrefix = dimensionless.getSIPrefix();
+        assertEquals("dimensionless SIPrefix", MeasureUnit.SIPrefix.ONE, siPrefix);
 
-    // dimensionless.withSIPrefix()
-    modified = dimensionless.withSIPrefix(MeasureUnit.SIPrefix.KILO);
-    singles = modified.splitToSingleUnits();
-    assertEquals("no singles in modified", 0, singles.size());
-    siPrefix = modified.getSIPrefix();
-    assertEquals("modified SIPrefix", MeasureUnit.SIPrefix.ONE, siPrefix);
+        // dimensionless.withSIPrefix()
+        modified = dimensionless.withSIPrefix(MeasureUnit.SIPrefix.KILO);
+        singles = modified.splitToSingleUnits();
+        assertEquals("no singles in modified", 0, singles.size());
+        siPrefix = modified.getSIPrefix();
+        assertEquals("modified SIPrefix", MeasureUnit.SIPrefix.ONE, siPrefix);
 
-    // dimensionless.getComplexity()
-    MeasureUnit.Complexity complexity = dimensionless.getComplexity();
-    assertEquals("dimensionless complexity", MeasureUnit.Complexity.SINGLE, complexity);
+        // dimensionless.getComplexity()
+        MeasureUnit.Complexity complexity = dimensionless.getComplexity();
+        assertEquals("dimensionless complexity", MeasureUnit.Complexity.SINGLE, complexity);
 
-    // Dimensionality is mostly meaningless for dimensionless units, but it's
-    // still considered a SINGLE unit, so this code doesn't throw errors:
+        // Dimensionality is mostly meaningless for dimensionless units, but it's
+        // still considered a SINGLE unit, so this code doesn't throw errors:
 
-    // dimensionless.getDimensionality()
-    int dimensionality = dimensionless.getDimensionality();
-    assertEquals("dimensionless dimensionality", 0, dimensionality);
+        // dimensionless.getDimensionality() /* TODO: why this line */
+        int dimensionality = dimensionless.getDimensionality();
+        assertEquals("dimensionless dimensionality", 0, dimensionality);
 
-    // dimensionless.withDimensionality()
-    dimensionless.withDimensionality(-1);
-    dimensionality = dimensionless.getDimensionality();
-    assertEquals("dimensionless dimensionality", 0, dimensionality);
-}
+        // dimensionless.withDimensionality() /* TODO: why this line */
+        dimensionless.withDimensionality(-1);
+        dimensionality = dimensionless.getDimensionality();
+        assertEquals("dimensionless dimensionality", 0, dimensionality);
+    }
 
     // ICU-21060
     @Test
@@ -3427,30 +3610,107 @@ public class MeasureUnitTest extends TestFmwk {
         second = second.product(crux);
     }
 
-// TODO: Implement
-//
-//    private void verifySingleUnit(MeasureUnit measureUnit, MeasureUnit.SIPrefix prefix, int power, String identifier) {
-//    UnicodeString uid(identifier, -1, US_INV);
-//    assertEquals(uid + ": SI prefix",
-//        siPrefix,
-//        unit.getSIPrefix(status));
-//    status.errIfFailureAndReset("%s: SI prefix", identifier);
-//    assertEquals(uid + ": Power",
-//        static_cast<int32_t>(power),
-//        static_cast<int32_t>(unit.getDimensionality(status)));
-//    status.errIfFailureAndReset("%s: Power", identifier);
-//    assertEquals(uid + ": Identifier",
-//        identifier,
-//        unit.getIdentifier());
-//    status.errIfFailureAndReset("%s: Identifier", identifier);
-//    assertTrue(uid + ": Constructor",
-//        unit == MeasureUnit::forIdentifier(identifier, status));
-//    status.errIfFailureAndReset("%s: Constructor", identifier);
-//    assertEquals(uid + ": Complexity",
-//        UMEASURE_UNIT_SINGLE,
-//        unit.getComplexity(status));
-//    status.errIfFailureAndReset("%s: Complexity", identifier);
-//    }
+    private void verifySingleUnit(MeasureUnit singleMeasureUnit, MeasureUnit.SIPrefix prefix, int power, String identifier) {
+        assertEquals(identifier + ": SI prefix", prefix, singleMeasureUnit.getSIPrefix());
+
+        assertEquals(identifier + ": Power", power, singleMeasureUnit.getDimensionality());
+
+        assertEquals(identifier + ": Identifier", identifier, singleMeasureUnit.getIdentifier());
+
+        assertTrue(identifier + ": Constructor", singleMeasureUnit.equals(MeasureUnit.forIdentifier(identifier)));
+
+        assertEquals(identifier + ": Complexity", MeasureUnit.Complexity.SINGLE, singleMeasureUnit.getComplexity());
+    }
 
 
+    // Kilogram is a "base unit", although it's also "gram" with a kilo- prefix.
+    // This tests that it is handled in the preferred manner.
+    @Test
+    public void TestKilogramIdentifier() {
+        // SI unit of mass
+        MeasureUnit kilogram = MeasureUnit.forIdentifier("kilogram");
+        // Metric mass unit
+        MeasureUnit gram = MeasureUnit.forIdentifier("gram");
+        // Microgram: still a built-in type
+        MeasureUnit microgram = MeasureUnit.forIdentifier("microgram");
+        // Nanogram: not a built-in type at this time
+        MeasureUnit nanogram = MeasureUnit.forIdentifier("nanogram");
+
+        assertEquals("parsed kilogram equals built-in kilogram", MeasureUnit.KILOGRAM.getType(),
+                kilogram.getType());
+        assertEquals("parsed kilogram equals built-in kilogram", MeasureUnit.KILOGRAM.getSubtype(),
+                kilogram.getSubtype());
+        assertEquals("parsed gram equals built-in gram", MeasureUnit.GRAM.getType(), gram.getType());
+        assertEquals("parsed gram equals built-in gram", MeasureUnit.GRAM.getSubtype(),
+                gram.getSubtype());
+        assertEquals("parsed microgram equals built-in microgram", MeasureUnit.MICROGRAM.getType(),
+                microgram.getType());
+        assertEquals("parsed microgram equals built-in microgram", MeasureUnit.MICROGRAM.getSubtype(),
+                microgram.getSubtype());
+        assertEquals("nanogram", null, nanogram.getType());
+        assertEquals("nanogram", "nanogram", nanogram.getIdentifier());
+
+        assertEquals("prefix of kilogram", MeasureUnit.SIPrefix.KILO, kilogram.getSIPrefix());
+        assertEquals("prefix of gram", MeasureUnit.SIPrefix.ONE, gram.getSIPrefix());
+        assertEquals("prefix of microgram", MeasureUnit.SIPrefix.MICRO, microgram.getSIPrefix());
+        assertEquals("prefix of nanogram", MeasureUnit.SIPrefix.NANO, nanogram.getSIPrefix());
+
+        MeasureUnit tmp = kilogram.withSIPrefix(MeasureUnit.SIPrefix.MILLI);
+        assertEquals("Kilogram + milli should be milligram, got: " + tmp.getIdentifier(),
+                MeasureUnit.MILLIGRAM.getIdentifier(), tmp.getIdentifier());
+    }
+
+    private void verifyCompoundUnit(
+            MeasureUnit unit,
+            String identifier,
+            String subIdentifiers[],
+            int subIdentifierCount) {
+        assertEquals(identifier + ": Identifier",
+                identifier,
+                unit.getIdentifier());
+
+        assertTrue(identifier + ": Constructor",
+                unit.equals(MeasureUnit.forIdentifier(identifier)));
+
+        assertEquals(identifier + ": Complexity",
+                MeasureUnit.Complexity.COMPOUND,
+                unit.getComplexity());
+
+        List<MeasureUnit> subUnits = unit.splitToSingleUnits();
+        assertEquals(identifier + ": Length", subIdentifierCount, subUnits.size());
+        for (int i = 0; ; i++) {
+            if (i >= subIdentifierCount || i >= subUnits.size()) break;
+            assertEquals(identifier + ": Sub-unit #" + i,
+                    subIdentifiers[i],
+                    subUnits.get(i).getIdentifier());
+            assertEquals(identifier + ": Sub-unit Complexity",
+                    MeasureUnit.Complexity.SINGLE,
+                    subUnits.get(i).getComplexity());
+        }
+    }
+
+    private void verifyMixedUnit(
+            MeasureUnit unit,
+            String identifier,
+            String subIdentifiers[],
+            int subIdentifierCount) {
+        assertEquals(identifier + ": Identifier",
+                identifier,
+                unit.getIdentifier());
+        assertTrue(identifier + ": Constructor",
+                unit.equals(MeasureUnit.forIdentifier(identifier)));
+
+        assertEquals(identifier + ": Complexity",
+                MeasureUnit.Complexity.MIXED,
+                unit.getComplexity());
+
+        List<MeasureUnit> subUnits = unit.splitToSingleUnits();
+        assertEquals(identifier + ": Length", subIdentifierCount, subUnits.size());
+        for (int i = 0; ; i++) {
+            if (i >= subIdentifierCount || i >= subUnits.size()) break;
+            assertEquals(identifier + ": Sub-unit #" + i,
+                    subIdentifiers[i],
+                    subUnits.get(i).getIdentifier());
+        }
+    }
 }

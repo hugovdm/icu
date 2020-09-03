@@ -8,23 +8,13 @@
  */
 package com.ibm.icu.util;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
-import java.io.Serializable;
-import java.util.*;
-
-import com.ibm.icu.impl.CollectionSet;
-import com.ibm.icu.impl.ICUData;
-import com.ibm.icu.impl.ICUResourceBundle;
-import com.ibm.icu.impl.Pair;
-import com.ibm.icu.impl.UResource;
+import com.ibm.icu.impl.*;
 import com.ibm.icu.impl.units.MeasureUnitImpl;
 import com.ibm.icu.impl.units.SingleUnitImpl;
-import com.ibm.icu.impl.units.UnitsData;
 import com.ibm.icu.text.UnicodeSet;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * A unit such as length, mass, volume, currency, etc.  A unit is
@@ -47,6 +37,7 @@ public class MeasureUnit implements Serializable {
     private static boolean cacheIsPopulated = false;
 
     /**
+     * If set to -1, fImpl is in use instead of fTypeId and fSubTypeId.
      * @internal
      * @deprecated This API is ICU internal only.
      */
@@ -54,6 +45,7 @@ public class MeasureUnit implements Serializable {
     protected final String type;
 
     /**
+     * If set to -1, fImpl is in use instead of fTypeId and fSubTypeId.
      * @internal
      * @deprecated This API is ICU internal only.
      */
@@ -81,6 +73,7 @@ public class MeasureUnit implements Serializable {
      * or SI prefix of a compound unit.
      *
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public enum Complexity {
         /**
@@ -98,17 +91,18 @@ public class MeasureUnit implements Serializable {
         COMPOUND,
 
         /**
-         * A mixed unit, like hour+minute.
+         * A mixed unit, like hour-and-minute.
          *
          * @draft ICU 68
          */
         MIXED
     }
 
-        /**
+    /**
      * Enumeration for SI prefixes, such as "kilo".
      *
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public enum SIPrefix {
 
@@ -274,26 +268,6 @@ public class MeasureUnit implements Serializable {
         public int getSiPrefixPower() {
             return siPrefixPower;
         }
-
-        /**
-         * @internal
-         */
-        public int getTrieIndex() {
-            return siPrefixPower + UnitsData.Constants.kSIPrefixOffset;
-        }
-
-        /**
-         * @internal
-         */
-        public static SIPrefix getSiPrefixFromTrieIndex(int trieIndex) {
-            for (SIPrefix element :
-                    SIPrefix.values()) {
-                if (element.getTrieIndex() == trieIndex)
-                    return element;
-            }
-
-            throw new InternalError("Incorrect trieIndex");
-        }
     }
 
     /**
@@ -317,6 +291,7 @@ public class MeasureUnit implements Serializable {
      * @param identifier The CLDR Sequence Unit Identifier
      * @throws IllegalArgumentException if the identifier is invalid.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public static MeasureUnit forIdentifier(String identifier) {
         return MeasureUnitImpl.forIdentifier(identifier).build();
@@ -326,14 +301,24 @@ public class MeasureUnit implements Serializable {
      * @internal
      * @param measureUnitImpl
      */
-    public MeasureUnit(MeasureUnitImpl measureUnitImpl) {
-        this.subType = null;
-        this.type = null;
-
-        if (MeasureUnit.findBySubType(measureUnitImpl.getIdentifier()) == null) {
-            this.measureUnitImpl = measureUnitImpl;
+    public static MeasureUnit fromMeasureUnitImpl(MeasureUnitImpl measureUnitImpl) {
+        measureUnitImpl.serialize();
+        String identifier = measureUnitImpl.getIdentifier();
+        MeasureUnit result = MeasureUnit.findBySubType(identifier);
+        if (result != null) {
+            return result;
         }
+
+        return new MeasureUnit(measureUnitImpl);
     }
+
+    private MeasureUnit(MeasureUnitImpl measureUnitImpl) {
+        type = null;
+        subType = null;
+        this.measureUnitImpl = measureUnitImpl.clone();
+    }
+
+
 
     /**
      * Get the type, such as "length"
@@ -359,6 +344,7 @@ public class MeasureUnit implements Serializable {
      *
      * @return The string form of this unit.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public String getIdentifier() {
         String result = measureUnitImpl == null ? getSubtype() : measureUnitImpl.getIdentifier();
@@ -370,6 +356,7 @@ public class MeasureUnit implements Serializable {
      *
      * @return The unit complexity.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public Complexity getComplexity() {
         if (measureUnitImpl == null) {
@@ -393,6 +380,7 @@ public class MeasureUnit implements Serializable {
      * @return A new SINGLE unit.
      * @throws UnsupportedOperationException if this unit is a COMPOUND or MIXED unit.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public MeasureUnit withSIPrefix(SIPrefix prefix) {
         SingleUnitImpl singleUnit = getSingleUnitImpl();
@@ -410,6 +398,7 @@ public class MeasureUnit implements Serializable {
      * @return The SI prefix of this SINGLE unit, from SIPrefix.
      * @throws UnsupportedOperationException if the unit is COMPOUND or MIXED.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public SIPrefix getSIPrefix() {
         return getSingleUnitImpl().getSiPrefix();
@@ -425,6 +414,7 @@ public class MeasureUnit implements Serializable {
      * @return The dimensionality (power) of this simple unit.
      * @throws UnsupportedOperationException if the unit is COMPOUND or MIXED.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public int getDimensionality() {
         SingleUnitImpl singleUnit = getSingleUnitImpl();
@@ -446,6 +436,7 @@ public class MeasureUnit implements Serializable {
      * @return A new SINGLE unit.
      * @throws UnsupportedOperationException if the unit is COMPOUND or MIXED.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public MeasureUnit withDimensionality(int dimensionality) {
         SingleUnitImpl singleUnit = getSingleUnitImpl();
@@ -464,6 +455,7 @@ public class MeasureUnit implements Serializable {
      * @return The reciprocal of the target unit.
      * @throws UnsupportedOperationException if the unit is MIXED.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public MeasureUnit reciprocal() {
         MeasureUnitImpl measureUnit = getCopyOfMeasureUnitImpl();
@@ -487,18 +479,18 @@ public class MeasureUnit implements Serializable {
      * @return The product of the target unit with the provided unit.
      * @throws UnsupportedOperationException if the unit is MIXED.
      * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
      */
     public MeasureUnit product(MeasureUnit other) {
         MeasureUnitImpl implCopy = getCopyOfMeasureUnitImpl();
-        MeasureUnitImpl otherImplCopy = other.getCopyOfMeasureUnitImpl();
-        if (implCopy.getComplexity() == Complexity.MIXED || otherImplCopy.getComplexity() == Complexity.MIXED) {
+        final MeasureUnitImpl otherImplRef = other.getMayBeReferenceOfMeasureUnitImpl();
+        if (implCopy.getComplexity() == Complexity.MIXED || otherImplRef.getComplexity() == Complexity.MIXED) {
             throw new UnsupportedOperationException();
         }
 
         for (SingleUnitImpl singleUnit :
-                otherImplCopy.getSingleUnits()) {
+                otherImplRef.getSingleUnits()) {
             implCopy.appendSingleUnit(singleUnit);
-
         }
 
         return implCopy.build();
@@ -517,10 +509,11 @@ public class MeasureUnit implements Serializable {
      *
      * @return An unmodifiable list of single units
      * @internal ICU 68 Technology Preview
+     * @provisional This API might change or be removed in a future release.
      */
     public List<MeasureUnit> splitToSingleUnits() {
-        ArrayList<SingleUnitImpl> singleUnits = getCopyOfMeasureUnitImpl().getSingleUnits();
-        ArrayList<MeasureUnit> result = new ArrayList<>(singleUnits.size());
+        final ArrayList<SingleUnitImpl> singleUnits = getMayBeReferenceOfMeasureUnitImpl().getSingleUnits();
+        List<MeasureUnit> result = new ArrayList<>(singleUnits.size());
         for (SingleUnitImpl singleUnit : singleUnits) {
             result.add(singleUnit.build());
         }
@@ -552,7 +545,21 @@ public class MeasureUnit implements Serializable {
             return false;
         }
         MeasureUnit c = (MeasureUnit) rhs;
-        return type.equals(c.type) && subType.equals(c.subType);
+        if (type != null && subType != null && type.equals(c.type) && subType.equals(c.subType) ) {
+            return true;
+        }
+
+        if (this.measureUnitImpl ==  ((MeasureUnit) rhs).measureUnitImpl) {
+            return true;
+        }
+
+        if (this.measureUnitImpl == null || ((MeasureUnit) rhs).measureUnitImpl == null) {
+            // If both of them were null, the previous if statement would be true.
+            // And the return value would be true.
+            return false;
+        }
+
+        return this.getIdentifier().equals(((MeasureUnit) rhs).getIdentifier());
     }
 
     /**
@@ -1928,6 +1935,16 @@ public class MeasureUnit implements Serializable {
         return this.measureUnitImpl == null ?
                 MeasureUnitImpl.forIdentifier(getIdentifier()) :
                 this.measureUnitImpl.clone();
+    }
+
+    /**
+     *
+     * @return this object in a MeasureUnitImpl form.
+     */
+    private MeasureUnitImpl getMayBeReferenceOfMeasureUnitImpl(){
+        return this.measureUnitImpl == null ?
+                MeasureUnitImpl.forIdentifier(getIdentifier()) :
+                this.measureUnitImpl;
     }
 
     static final class MeasureUnitProxy implements Externalizable {

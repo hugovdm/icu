@@ -1,3 +1,5 @@
+// © 2020 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html#License
 /*
  *******************************************************************************
  * Copyright (C) 2004-2020, Google Inc, International Business Machines
@@ -9,8 +11,8 @@ package com.ibm.icu.impl.units;
 
 import com.ibm.icu.impl.Assert;
 import com.ibm.icu.util.*;
+import jdk.nashorn.internal.runtime.regexp.joni.exception.InternalException;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -160,7 +162,7 @@ public class MeasureUnitImpl {
             return false;
         }
 
-        // TODO: shall we just add singleUnit instead of creating a copy ??
+        // Add a copy of singleUnit
         this.singleUnits.add(singleUnit.clone());
 
         // If the MeasureUnitImpl is `UMEASURE_UNIT_SINGLE` and after the appending a unit, the singleUnits are more
@@ -174,9 +176,11 @@ public class MeasureUnitImpl {
 
     /**
      * Transform this MeasureUnitImpl into a MeasureUnit, simplifying if possible.
+     * <p>
+     * NOTE: this function must be called from a thread-safe class
      */
     public MeasureUnit build() {
-        return new MeasureUnit(this);
+        return MeasureUnit.fromMeasureUnitImpl(this);
     }
 
     /**
@@ -194,12 +198,11 @@ public class MeasureUnitImpl {
         throw new UnsupportedOperationException();
     }
 
-    public String getIdentifier() {
-        if (this.identifier != null) {
-            return this.identifier;
-        }
 
-        this.serialize();
+    /**
+     * Returns the CLDR unit identifier.
+     */
+    public String getIdentifier() {
         return identifier;
     }
 
@@ -214,7 +217,7 @@ public class MeasureUnitImpl {
     /**
      * Normalizes the MeasureUnitImpl and generates the identifier string in place.
      */
-    private void serialize() {
+    public void serialize() {
         if (this.getSingleUnits().size() == 0) {
             // Dimensionless, constructed by the default constructor: no appending
             // to this.result, we wish it to contain the zero-length string.
@@ -262,18 +265,207 @@ public class MeasureUnitImpl {
         this.identifier = result.toString();
     }
 
-    class SingleUnitComparator implements Comparator<SingleUnitImpl> {
-        @Override
-        public int compare(SingleUnitImpl o1, SingleUnitImpl o2) {
-            return o1.compareTo(o2);
+    public enum CompoundPart {
+        // Represents "-per-"
+        COMPOUND_PART_PER(0),
+        // Represents "-"
+        COMPOUND_PART_TIMES(1),
+        // Represents "-and-"
+        COMPOUND_PART_AND(2);
+
+        private final int index;
+
+        CompoundPart(int index) {
+            this.index = index;
+        }
+
+        public static CompoundPart getCompoundPartFromTrieIndex(int trieIndex) {
+            int index = trieIndex - UnitsData.Constants.kCompoundPartOffset;
+            switch (index) {
+                case 0:
+                    return CompoundPart.COMPOUND_PART_PER;
+                case 1:
+                    return CompoundPart.COMPOUND_PART_TIMES;
+                case 2:
+                    return CompoundPart.COMPOUND_PART_AND;
+                default:
+                    throw new InternalError("CompoundPart index must be 0, 1 or 2");
+            }
+        }
+
+        public int getTrieIndex() {
+            return this.index + UnitsData.Constants.kCompoundPartOffset;
+        }
+
+        public int getValue() {
+            return index;
         }
     }
 
+    public enum PowerPart {
+        POWER_PART_P2(2),
+        POWER_PART_P3(3),
+        POWER_PART_P4(4),
+        POWER_PART_P5(5),
+        POWER_PART_P6(6),
+        POWER_PART_P7(7),
+        POWER_PART_P8(8),
+        POWER_PART_P9(9),
+        POWER_PART_P10(10),
+        POWER_PART_P11(11),
+        POWER_PART_P12(12),
+        POWER_PART_P13(13),
+        POWER_PART_P14(14),
+        POWER_PART_P15(15);
+
+        private final int power;
+
+        PowerPart(int power) {
+            this.power = power;
+        }
+
+        public static int getPowerFromTrieIndex(int trieIndex) {
+            return trieIndex - UnitsData.Constants.kPowerPartOffset;
+        }
+
+        public int getTrieIndex() {
+            return this.power + UnitsData.Constants.kPowerPartOffset;
+        }
+
+        public int getValue() {
+            return power;
+        }
+    }
+
+    public enum InitialCompoundPart {
+
+        // Represents "per-", the only compound part that can appear at the start of
+        // an identifier.
+        INITIAL_COMPOUND_PART_PER(0);
+
+        private final int index;
+
+        InitialCompoundPart(int powerIndex) {
+            this.index = powerIndex;
+        }
+
+        public static InitialCompoundPart getInitialCompoundPartFromTrieIndex(int trieIndex) {
+            int index = trieIndex - UnitsData.Constants.kInitialCompoundPartOffset;
+            if (index == 0) {
+                return INITIAL_COMPOUND_PART_PER;
+            }
+
+            throw new InternalError("Incorrect trieIndex");
+        }
+
+        public int getTrieIndex() {
+            return this.index + UnitsData.Constants.kInitialCompoundPartOffset;
+        }
+
+        public int getValue() {
+            return index;
+        }
+
+    }
+
     public static class UnitsParser {
+        // This used only to not build the trie each time we use the parser
+        private volatile static CharsTrie savedTrie = null;
+
+        // This trie used in the parsing operation.
+        private CharsTrie trie;
+
+        private final String[] simpleUnits;
+        // Tracks parser progress: the offset into fSource.
+        private  int fIndex = 0;
+        // Set to true when we've seen a "-per-" or a "per-", after which all units
+        // are in the denominator. Until we find an "-and-", at which point the
+        // identifier is invalid pending TODO(CLDR-13700).
+        private boolean fAfterPer = false;
+        private String fSource;
+        // If an "-and-" was parsed prior to finding the "single
+        //     * unit", sawAnd is set to true. If not, it is left as is.
+        private boolean sawAnd = false;
+
+        private UnitsParser(String identifier) {
+            this.simpleUnits = UnitsData.getSimpleUnits();
+            this.fSource = identifier;
+
+            if (savedTrie != null) {
+                try {
+                    this.trie = savedTrie.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+
+            // Building the trie.
+            CharsTrieBuilder trieBuilder;
+            trieBuilder = new CharsTrieBuilder();
+
+            // Add syntax parts (compound, power prefixes)
+            trieBuilder.add("-per-", CompoundPart.COMPOUND_PART_PER.getTrieIndex());
+            trieBuilder.add("-", CompoundPart.COMPOUND_PART_TIMES.getTrieIndex());
+            trieBuilder.add("-and-", CompoundPart.COMPOUND_PART_AND.getTrieIndex());
+            trieBuilder.add("per-", InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex());
+            trieBuilder.add("square-", PowerPart.POWER_PART_P2.getTrieIndex());
+            trieBuilder.add("cubic-", PowerPart.POWER_PART_P3.getTrieIndex());
+            trieBuilder.add("pow2-", PowerPart.POWER_PART_P2.getTrieIndex());
+            trieBuilder.add("pow3-", PowerPart.POWER_PART_P3.getTrieIndex());
+            trieBuilder.add("pow4-", PowerPart.POWER_PART_P4.getTrieIndex());
+            trieBuilder.add("pow5-", PowerPart.POWER_PART_P5.getTrieIndex());
+            trieBuilder.add("pow6-", PowerPart.POWER_PART_P6.getTrieIndex());
+            trieBuilder.add("pow7-", PowerPart.POWER_PART_P7.getTrieIndex());
+            trieBuilder.add("pow8-", PowerPart.POWER_PART_P8.getTrieIndex());
+            trieBuilder.add("pow9-", PowerPart.POWER_PART_P9.getTrieIndex());
+            trieBuilder.add("pow10-", PowerPart.POWER_PART_P10.getTrieIndex());
+            trieBuilder.add("pow11-", PowerPart.POWER_PART_P11.getTrieIndex());
+            trieBuilder.add("pow12-", PowerPart.POWER_PART_P12.getTrieIndex());
+            trieBuilder.add("pow13-", PowerPart.POWER_PART_P13.getTrieIndex());
+            trieBuilder.add("pow14-", PowerPart.POWER_PART_P14.getTrieIndex());
+            trieBuilder.add("pow15-", PowerPart.POWER_PART_P15.getTrieIndex());
+
+            // Add SI prefixes
+            for (MeasureUnit.SIPrefix siPrefix :
+                    MeasureUnit.SIPrefix.values()) {
+                trieBuilder.add(siPrefix.getIdentifier(), getTrieIndex(siPrefix));
+            }
+
+            // Add simple units
+            for (int i = 0; i < simpleUnits.length; i++) {
+                trieBuilder.add(simpleUnits[i], i + UnitsData.Constants.kSimpleUnitOffset);
+
+            }
+
+            // TODO: Use SLOW or FAST here?
+            this.savedTrie = trieBuilder.build(StringTrieBuilder.Option.FAST);
+
+            try {
+                this.trie = this.savedTrie.clone();
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+
         public static MeasureUnitImpl parseForIdentifier(String identifier) {
             UnitsParser parser = new UnitsParser(identifier);
             return parser.parse();
 
+        }
+
+        private static MeasureUnit.SIPrefix getSiPrefixFromTrieIndex(int trieIndex) {
+            for (MeasureUnit.SIPrefix element :
+                    MeasureUnit.SIPrefix.values()) {
+                if (getTrieIndex(element) == trieIndex)
+                    return element;
+            }
+
+            throw new InternalException("Incorrect trieIndex");
+        }
+
+        private static int getTrieIndex(MeasureUnit.SIPrefix prefix) {
+            return prefix.getSiPrefixPower() + UnitsData.Constants.kSIPrefixOffset;
         }
 
         private MeasureUnitImpl parse() {
@@ -284,8 +476,6 @@ public class MeasureUnitImpl {
                 return result;
             }
 
-
-            int unitNum = 0;
             while (hasNext()) {
                 sawAnd = false;
                 SingleUnitImpl singleUnit = nextSingleUnit();
@@ -308,7 +498,7 @@ public class MeasureUnitImpl {
                         Assert.assrt(result.getComplexity() == MeasureUnit.Complexity.COMPOUND);
                         result.setComplexity(complexity);
                     } else if (result.getComplexity() != complexity) {
-                        throw new InternalError("Can't have mixed compound units");
+                        throw new IllegalArgumentException("Can't have mixed compound units");
                     }
                 }
             }
@@ -322,8 +512,9 @@ public class MeasureUnitImpl {
          * If a "-per-" was parsed, the result will have appropriate negative
          * dimensionality.
          * <p>
+         *
          * @throws InternalError if we parse both compound units and "-and-", since mixed
-         * compound units are not yet supported - TODO(CLDR-13700).
+         *                       compound units are not yet supported - TODO(CLDR-13700).
          */
         private SingleUnitImpl nextSingleUnit() {
             SingleUnitImpl result = new SingleUnitImpl();
@@ -340,22 +531,18 @@ public class MeasureUnitImpl {
             if (atStart) {
                 // Identifiers optionally start with "per-".
                 if (token.getType() == Token.Type.TYPE_INITIAL_COMPOUND_PART) {
-                    if (token.getInitialCompoundPart() == InitialCompoundPart.INITIAL_COMPOUND_PART_PER) {
-                        fAfterPer = true;
-                        result.setDimensionality(-1);
+                    Assert.assrt(token.getInitialCompoundPart() == InitialCompoundPart.INITIAL_COMPOUND_PART_PER);
 
-                        token = nextToken();
+                    fAfterPer = true;
+                    result.setDimensionality(-1);
 
-                    } else {
-                        throw new InternalError();
-                    }
-
+                    token = nextToken();
                 }
             } else {
                 // All other SingleUnit's are separated from previous SingleUnit's
                 // via a compound part:
                 if (token.getType() != Token.Type.TYPE_COMPOUND_PART) {
-                    throw new InternalError("token type must be TYPE_COMPOUND_PART");
+                    throw new IllegalArgumentException("token type must be TYPE_COMPOUND_PART");
                 }
 
                 CompoundPart compoundPart = CompoundPart.getCompoundPartFromTrieIndex(token.getMatch());
@@ -379,7 +566,7 @@ public class MeasureUnitImpl {
                     case COMPOUND_PART_AND:
                         if (fAfterPer) {
                             // not yet supported, TODO(CLDR-13700).
-                            throw new InternalError("Can't start with \"-and-\", and mixed compound units");
+                            throw new IllegalArgumentException("Can't start with \"-and-\", and mixed compound units");
                         }
                         sawAnd = true;
                         break;
@@ -402,7 +589,7 @@ public class MeasureUnitImpl {
 
                     case TYPE_SI_PREFIX:
                         if (state > 1) {
-                            throw new InternalError();
+                            throw new IllegalArgumentException();
                         }
 
                         result.setSiPrefix(token.getSIPrefix());
@@ -414,11 +601,11 @@ public class MeasureUnitImpl {
                         return result;
 
                     default:
-                        throw new InternalError();
+                        throw new IllegalArgumentException();
                 }
 
                 if (!hasNext()) {
-                    throw new InternalError("We ran out of tokens before finding a complete single unit.");
+                    throw new IllegalArgumentException("We ran out of tokens before finding a complete single unit.");
                 }
 
                 token = nextToken();
@@ -457,7 +644,7 @@ public class MeasureUnitImpl {
                 }
 
                 if (result != BytesTrie.Result.INTERMEDIATE_VALUE) {
-                    throw new InternalError("result must has an intermediate value");
+                    throw new IllegalArgumentException("result must has an intermediate value");
                 }
 
                 // continue;
@@ -465,7 +652,7 @@ public class MeasureUnitImpl {
 
 
             if (match < 0) {
-                throw new InternalError("match must be bigger than zero");
+                throw new IllegalArgumentException("Encountered unknown token starting at index " + previ);
             } else {
                 fIndex = previ;
             }
@@ -473,96 +660,16 @@ public class MeasureUnitImpl {
             return new Token(match);
         }
 
-        private UnitsParser(String identifier) {
-            this.simpleUnits = UnitsData.getSimpleUnits();
-            this.fSource = identifier;
-
-            if (trie != null) {
-                return;
-            }
-
-
-
-            // Building the trie.
-            CharsTrieBuilder trieBuilder;
-            trieBuilder = new CharsTrieBuilder();
-
-
-            // Add syntax parts (compound, power prefixes)
-            trieBuilder.add("-per-", CompoundPart.COMPOUND_PART_PER.getTrieIndex());
-            trieBuilder.add("-", CompoundPart.COMPOUND_PART_TIMES.getTrieIndex());
-            trieBuilder.add("-and-", CompoundPart.COMPOUND_PART_AND.getTrieIndex());
-            trieBuilder.add("per-", InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex());
-            trieBuilder.add("square-", PowerPart.POWER_PART_P2.getTrieIndex());
-            trieBuilder.add("cubic-", PowerPart.POWER_PART_P3.getTrieIndex());
-            trieBuilder.add("pow2-", PowerPart.POWER_PART_P2.getTrieIndex());
-            trieBuilder.add("pow3-", PowerPart.POWER_PART_P3.getTrieIndex());
-            trieBuilder.add("pow4-", PowerPart.POWER_PART_P4.getTrieIndex());
-            trieBuilder.add("pow5-", PowerPart.POWER_PART_P5.getTrieIndex());
-            trieBuilder.add("pow6-", PowerPart.POWER_PART_P6.getTrieIndex());
-            trieBuilder.add("pow7-", PowerPart.POWER_PART_P7.getTrieIndex());
-            trieBuilder.add("pow8-", PowerPart.POWER_PART_P8.getTrieIndex());
-            trieBuilder.add("pow9-", PowerPart.POWER_PART_P9.getTrieIndex());
-            trieBuilder.add("pow10-", PowerPart.POWER_PART_P10.getTrieIndex());
-            trieBuilder.add("pow11-", PowerPart.POWER_PART_P11.getTrieIndex());
-            trieBuilder.add("pow12-", PowerPart.POWER_PART_P12.getTrieIndex());
-            trieBuilder.add("pow13-", PowerPart.POWER_PART_P13.getTrieIndex());
-            trieBuilder.add("pow14-", PowerPart.POWER_PART_P14.getTrieIndex());
-            trieBuilder.add("pow15-", PowerPart.POWER_PART_P15.getTrieIndex());
-
-            // Add SI prefixes
-            for (MeasureUnit.SIPrefix siPrefix :
-                    MeasureUnit.SIPrefix.values()) {
-                trieBuilder.add(siPrefix.getIdentifier(), siPrefix.getTrieIndex());
-            }
-
-            // Add simple units
-            for (int i = 0; i < simpleUnits.length; i++) {
-                trieBuilder.add(simpleUnits[i], i + UnitsData.Constants.kSimpleUnitOffset);
-
-            }
-
-            // TODO: Use SLOW or FAST here?
-            trie = trieBuilder.build(StringTrieBuilder.Option.FAST);
-        }
-
-        private static CharsTrie trie = null;
-
-
-        // Set to true when we've seen a "-per-" or a "per-", after which all units
-        // are in the denominator. Until we find an "-and-", at which point the
-        // identifier is invalid pending TODO(CLDR-13700).
-        private boolean fAfterPer = false;
-
-        private String fSource;
-
-        // Tracks parser progress: the offset into fSource.
-        int fIndex = 0;
-
-        // If an "-and-" was parsed prior to finding the "single
-        //     * unit", sawAnd is set to true. If not, it is left as is.
-        private boolean sawAnd = false;
-
-
-        private final String[] simpleUnits;
-
         static class Token {
+
+            private final int fMatch;
+            private final Type type;
 
             public Token(int fMatch) {
                 this.fMatch = fMatch;
                 type = calculateType(fMatch);
             }
 
-            enum Type {
-                TYPE_UNDEFINED,
-                TYPE_SI_PREFIX,
-                // Token type for "-per-", "-", and "-and-".
-                TYPE_COMPOUND_PART,
-                // Token type for "per-".
-                TYPE_INITIAL_COMPOUND_PART,
-                TYPE_POWER_PART,
-                TYPE_SIMPLE_UNIT,
-            }
 
             public Type getType() {
                 return this.type;
@@ -570,7 +677,7 @@ public class MeasureUnitImpl {
 
             public MeasureUnit.SIPrefix getSIPrefix() {
                 if (this.type == Type.TYPE_SI_PREFIX) {
-                    return MeasureUnit.SIPrefix.getSiPrefixFromTrieIndex(this.fMatch);
+                    return getSiPrefixFromTrieIndex(this.fMatch);
                 }
 
                 throw new InternalError("type must be TYPE_SI_PREFIX");
@@ -631,110 +738,23 @@ public class MeasureUnitImpl {
                 return Type.TYPE_SIMPLE_UNIT;
             }
 
-            private final int fMatch;
-            private final Type type;
-        }
-    }
-
-    public enum CompoundPart {
-        // Represents "-per-"
-        COMPOUND_PART_PER(0),
-        // Represents "-"
-        COMPOUND_PART_TIMES(1),
-        // Represents "-and-"
-        COMPOUND_PART_AND(2);
-
-
-        private final int index;
-        CompoundPart(int index) {
-            this.index = index ;
-        }
-
-        public int getTrieIndex() {
-            return  this.index +  UnitsData.Constants.kCompoundPartOffset ;
-        }
-
-        public static CompoundPart getCompoundPartFromTrieIndex(int trieIndex) {
-            int index = trieIndex -  UnitsData.Constants.kCompoundPartOffset ;
-            switch (index) {
-                case 0:
-                    return CompoundPart.COMPOUND_PART_PER;
-                case 1:
-                    return CompoundPart.COMPOUND_PART_TIMES;
-                case 2:
-                    return CompoundPart.COMPOUND_PART_AND;
-                default:
-                   throw new InternalError("CompoundPart index must be 0, 1 or 2");
+            enum Type {
+                TYPE_UNDEFINED,
+                TYPE_SI_PREFIX,
+                // Token type for "-per-", "-", and "-and-".
+                TYPE_COMPOUND_PART,
+                // Token type for "per-".
+                TYPE_INITIAL_COMPOUND_PART,
+                TYPE_POWER_PART,
+                TYPE_SIMPLE_UNIT,
             }
         }
-
-        public int getValue() {
-            return index;
-        }
     }
 
-    public enum PowerPart {
-        POWER_PART_P2 (2),
-        POWER_PART_P3(3),
-        POWER_PART_P4(4),
-        POWER_PART_P5(5),
-        POWER_PART_P6(6),
-        POWER_PART_P7(7),
-        POWER_PART_P8(8),
-        POWER_PART_P9(9),
-        POWER_PART_P10(10),
-        POWER_PART_P11(11),
-        POWER_PART_P12(12),
-        POWER_PART_P13(13),
-        POWER_PART_P14(14),
-        POWER_PART_P15(15);
-
-        private final int power;
-        PowerPart(int power) {
-            this.power = power;
+    class SingleUnitComparator implements Comparator<SingleUnitImpl> {
+        @Override
+        public int compare(SingleUnitImpl o1, SingleUnitImpl o2) {
+            return o1.compareTo(o2);
         }
-
-        public int getTrieIndex() {
-            return  this.power +  UnitsData.Constants.kPowerPartOffset ;
-        }
-
-        public static int getPowerFromTrieIndex(int trieIndex) {
-            return trieIndex -  UnitsData.Constants.kPowerPartOffset ;
-        }
-
-        public int getValue() {
-            return power;
-        }
-    }
-
-    public enum InitialCompoundPart {
-
-        // Represents "per-", the only compound part that can appear at the start of
-        // an identifier.
-        INITIAL_COMPOUND_PART_PER(0);
-
-        private final int index;
-
-        InitialCompoundPart(int powerIndex) {
-            this.index = powerIndex ;
-        }
-
-        public int getTrieIndex() {
-            return this.index + UnitsData.Constants.kInitialCompoundPartOffset;
-        }
-
-        public static InitialCompoundPart getInitialCompoundPartFromTrieIndex(int trieIndex) {
-            int index = trieIndex - UnitsData.Constants.kInitialCompoundPartOffset;
-            if (index == 0) {
-                return  INITIAL_COMPOUND_PART_PER;
-            }
-
-            throw new InternalError("Incorrect trieIndex");
-        }
-
-        public int getValue() {
-            return index;
-        }
-
     }
 }
