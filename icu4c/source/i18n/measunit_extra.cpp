@@ -378,10 +378,10 @@ public:
         return Parser(source);
     }
 
-    MeasureUnitImpl parse(UErrorCode& status) {
+    MeasureUnitImpl &&parse(UErrorCode &status) {
         MeasureUnitImpl result;
         parseImpl(result, status);
-        return result;
+        return std::move(result);
     }
 
 private:

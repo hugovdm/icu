@@ -2280,12 +2280,12 @@ int32_t MeasureUnit::getOffset() const {
     return gOffsets[fTypeId] + fSubTypeId;
 }
 
-MeasureUnitImpl MeasureUnitImpl::copy(UErrorCode &status) const {
+MeasureUnitImpl &&MeasureUnitImpl::copy(UErrorCode &status) const {
     MeasureUnitImpl result;
     result.complexity = complexity;
     result.units.appendAll(units, status);
     result.identifier.append(identifier, status);
-    return result;
+    return std::move(result);
 }
 
 U_NAMESPACE_END

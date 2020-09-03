@@ -396,12 +396,14 @@ void U_I18N_API addSingleFactorConstant(StringPiece baseStr, int32_t power, Sign
  * Extracts the compound base unit of a compound unit (`source`). For example, if the source unit is
  * `square-mile-per-hour`, the compound base unit will be `square-meter-per-second`
  */
-MeasureUnitImpl U_I18N_API extractCompoundBaseUnit(const MeasureUnitImpl &source,
-                                                   const ConversionRates &conversionRates,
-                                                   UErrorCode &status) {
+MeasureUnitImpl U_I18N_API &&extractCompoundBaseUnit(const MeasureUnitImpl &source,
+                                                     const ConversionRates &conversionRates,
+                                                     UErrorCode &status) {
 
     MeasureUnitImpl result;
-    if (U_FAILURE(status)) return result;
+    if (U_FAILURE(status)) {
+        return std::move(result);
+    }
 
     const auto &singleUnits = source.units;
     for (int i = 0, count = singleUnits.length(); i < count; ++i) {
@@ -411,11 +413,11 @@ MeasureUnitImpl U_I18N_API extractCompoundBaseUnit(const MeasureUnitImpl &source
         const auto rateInfo =
             conversionRates.extractConversionInfo(singleUnit.getSimpleUnitID(), status);
         if (U_FAILURE(status)) {
-            return result;
+            return std::move(result);
         }
         if (rateInfo == nullptr) {
             status = U_INTERNAL_PROGRAM_ERROR;
-            return result;
+            return std::move(result);
         }
 
         // Multiply the power of the singleUnit by the power of the baseUnit. For example, square-hectare
@@ -428,12 +430,12 @@ MeasureUnitImpl U_I18N_API extractCompoundBaseUnit(const MeasureUnitImpl &source
             result.append(*baseUnits[i], status);
 
             if (U_FAILURE(status)) {
-                return result;
+                return std::move(result);
             }
         }
     }
 
-    return result;
+    return std::move(result);
 }
 
 /**
