@@ -296,19 +296,21 @@ void UnitsTest::testArea() {
 }
 
 /**
- * Trims whitespace (spaces only) off of the specified string.
+ * Trims whitespace off of the specified string.
  * @param field is two pointers pointing at the start and end of the string.
  * @return A StringPiece with initial and final space characters trimmed off.
  */
 StringPiece trimField(char *(&field)[2]) {
-    char *start = field[0];
-    while (start < field[1] && (start[0]) == ' ') {
-        start++;
+    const char *start = field[0];
+    start = u_skipWhitespace(start);
+    if (start >= field[1]) {
+        start = field[1];
     }
-    int32_t length = (int32_t)(field[1] - start);
-    while (length > 0 && (start[length - 1]) == ' ') {
-        length--;
+    const char *end = field[1];
+    while ((start < end) && U_IS_INV_WHITESPACE(*(end - 1))) {
+        end--;
     }
+    int32_t length = (int32_t)(end - start);
     return StringPiece(start, length);
 }
 
