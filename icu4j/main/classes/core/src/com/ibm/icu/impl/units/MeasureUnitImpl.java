@@ -228,12 +228,12 @@ public class MeasureUnitImpl {
         }
 
         StringBuilder result = new StringBuilder();
-        boolean beforePre = true;
+        boolean beforePer = true;
         boolean firstTimeNegativeDimension = false;
         for (SingleUnitImpl singleUnit :
                 this.getSingleUnits()) {
-            if (beforePre && singleUnit.getDimensionality() < 0) {
-                beforePre = false;
+            if (beforePer && singleUnit.getDimensionality() < 0) {
+                beforePer = false;
                 firstTimeNegativeDimension = true;
             } else if (singleUnit.getDimensionality() < 0) {
                 firstTimeNegativeDimension = false;
