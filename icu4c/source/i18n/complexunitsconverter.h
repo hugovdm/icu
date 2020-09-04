@@ -72,13 +72,6 @@ class U_I18N_API ComplexUnitsConverter : public UMemory {
     //           other elements are floored to the nearest integer
     MaybeStackVector<Measure> convert(double quantity, UErrorCode &status) const;
 
-    // Cannot be copied, because MaybeStackVector cannot be copied.
-    ComplexUnitsConverter(const ComplexUnitsConverter &) = delete;
-    void operator=(const ComplexUnitsConverter & /*other*/) = delete;
-    // Can be moved though!
-    ComplexUnitsConverter(ComplexUnitsConverter &&other) = default;
-    ComplexUnitsConverter &operator=(ComplexUnitsConverter &&other) = default;
-
   private:
     MaybeStackVector<UnitConverter> unitConverters_;
     MaybeStackVector<MeasureUnitImpl> units_;

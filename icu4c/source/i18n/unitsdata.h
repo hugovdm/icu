@@ -103,13 +103,6 @@ class U_I18N_API ConversionRates {
      */
     const ConversionRateInfo *extractConversionInfo(StringPiece source, UErrorCode &status) const;
 
-    // Cannot be copied, because MaybeStackVector cannot be copied.
-    ConversionRates(const ConversionRates &) = delete;
-    void operator=(const ConversionRates & /*other*/) = delete;
-    // Can be moved though!
-    ConversionRates(ConversionRates &&other) = default;
-    ConversionRates &operator=(ConversionRates &&other) = default;
-
   private:
     MaybeStackVector<ConversionRateInfo> conversionInfo_;
 };
@@ -122,13 +115,6 @@ struct U_I18N_API UnitPreference : public UMemory {
     CharString unit;
     double geq;
     UnicodeString skeleton;
-
-    // Cannot be copied, because CharString cannot be copied.
-    UnitPreference(const UnitPreference &) = delete;
-    void operator=(const UnitPreference & /*other*/) = delete;
-    // Can be moved though!
-    UnitPreference(UnitPreference &&other) = default;
-    UnitPreference &operator=(UnitPreference &&other) = default;
 };
 
 /**
@@ -225,13 +211,6 @@ class U_I18N_API UnitPreferences {
     void getPreferencesFor(StringPiece category, StringPiece usage, StringPiece region,
                            const UnitPreference *const *&outPreferences, int32_t &preferenceCount,
                            UErrorCode &status) const;
-
-    // Cannot be copied, because MaybeStackVector cannot be copied.
-    UnitPreferences(const UnitPreferences &) = delete;
-    void operator=(const UnitPreferences & /*other*/) = delete;
-    // Can be moved though!
-    UnitPreferences(UnitPreferences &&other) = default;
-    UnitPreferences &operator=(UnitPreferences &&other) = default;
 
   protected:
     // Metadata about the sets of preferences, this is the index for looking up

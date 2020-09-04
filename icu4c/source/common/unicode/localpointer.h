@@ -154,13 +154,6 @@ public:
         // delete ptr;
         ptr=p;
     }
-
-    // Move constructor
-    LocalPointerBase(LocalPointerBase &&other) = default;
-
-    // Move assignment operator
-    LocalPointerBase &operator=(LocalPointerBase &&other) = default;
-
 protected:
     /**
      * Actual pointer.
@@ -169,11 +162,11 @@ protected:
     T *ptr;
 private:
     // No comparison operators with other LocalPointerBases.
-    bool operator==(const LocalPointerBase<T> &other) = delete;
-    bool operator!=(const LocalPointerBase<T> &other) = delete;
+    bool operator==(const LocalPointerBase<T> &other);
+    bool operator!=(const LocalPointerBase<T> &other);
     // No ownership sharing: No copy constructor, no assignment operator.
-    LocalPointerBase(const LocalPointerBase<T> &other) = delete;
-    void operator=(const LocalPointerBase<T> &other) = delete;
+    LocalPointerBase(const LocalPointerBase<T> &other);
+    void operator=(const LocalPointerBase<T> &other);
 };
 
 /**

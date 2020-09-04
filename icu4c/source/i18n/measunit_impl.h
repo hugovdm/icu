@@ -136,11 +136,9 @@ template class U_I18N_API MaybeStackVector<SingleUnitImpl, 8>;
 struct U_I18N_API MeasureUnitImpl : public UMemory {
     MeasureUnitImpl() = default;
     MeasureUnitImpl(MeasureUnitImpl &&other) = default;
-    MeasureUnitImpl(const MeasureUnitImpl &other) = delete;
     MeasureUnitImpl(const MeasureUnitImpl &other, UErrorCode &status);
     MeasureUnitImpl(const SingleUnitImpl &singleUnit, UErrorCode &status);
 
-    void operator=(const MeasureUnitImpl & /*other*/) = delete;
     MeasureUnitImpl &operator=(MeasureUnitImpl &&other) noexcept = default;
 
     /** Extract the MeasureUnitImpl from a MeasureUnit. */

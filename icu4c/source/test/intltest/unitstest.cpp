@@ -445,7 +445,7 @@ void UnitsTest::testComplexUnitsConverter() {
     MeasureUnitImpl tempInput, tempOutput;
     const MeasureUnitImpl &inputImpl = MeasureUnitImpl::forMeasureUnit(input, tempInput, status);
     const MeasureUnitImpl &outputImpl = MeasureUnitImpl::forMeasureUnit(output, tempOutput, status);
-    ComplexUnitsConverter converter(inputImpl, outputImpl, rates, status);
+    auto converter = ComplexUnitsConverter(inputImpl, outputImpl, rates, status);
 
     // Significantly less than 2.0.
     MaybeStackVector<Measure> measures = converter.convert(1.9999, status);
@@ -484,7 +484,7 @@ void UnitsTest::testComplexUnitsConverter() {
     const MeasureUnitImpl &inputImpl3 = MeasureUnitImpl::forMeasureUnit(input, tempInput3, status);
     const MeasureUnitImpl &outputImpl3 = MeasureUnitImpl::forMeasureUnit(output, tempOutput3, status);
     // TODO: reusing converter results in a leak.
-    ComplexUnitsConverter converter3(inputImpl3, outputImpl3, rates, status);
+    ComplexUnitsConverter converter3 = ComplexUnitsConverter(inputImpl3, outputImpl3, rates, status);
     // TODO: reusing measures results in a leak.
     MaybeStackVector<Measure> measures3 = converter3.convert((2.0 - DBL_EPSILON), status);
     assertEquals("measures length", 2, measures3.length());
@@ -731,7 +731,7 @@ void unitPreferencesTestDataLineFn(void *context, char *fields[][2], int32_t fie
     if (status.errIfFailureAndReset("Failure before router.route")) {
         return;
     }
-    RouteResult routeResult = router.route(inputAmount, status);
+    auto routeResult = router.route(inputAmount, status);
     if (status.errIfFailureAndReset("router.route(inputAmount, ...)")) {
         return;
     }
