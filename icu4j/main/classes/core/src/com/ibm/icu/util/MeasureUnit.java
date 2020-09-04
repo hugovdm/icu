@@ -41,7 +41,7 @@ public class MeasureUnit implements Serializable {
     private static boolean cacheIsPopulated = false;
 
     /**
-     * If set to -1, fImpl is in use instead of fTypeId and fSubTypeId.
+     * If type set to null, measureUnitImpl is in use instead of type and subType.
      * @internal
      * @deprecated This API is ICU internal only.
      */
@@ -49,7 +49,7 @@ public class MeasureUnit implements Serializable {
     protected final String type;
 
     /**
-     * If set to -1, fImpl is in use instead of fTypeId and fSubTypeId.
+     * If subType set to null, measureUnitImpl is in use instead of type and subType.
      * @internal
      * @deprecated This API is ICU internal only.
      */
