@@ -19,11 +19,12 @@
 #include "unitsrouter.h"
 
 U_NAMESPACE_BEGIN
-namespace number {
-namespace impl {
 
 using ::icu::units::ComplexUnitsConverter;
 using ::icu::units::UnitsRouter;
+
+namespace number {
+namespace impl {
 
 /**
  * A MicroPropsGenerator which uses UnitsRouter to produce output converted to a
@@ -63,9 +64,15 @@ class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory 
     static Precision parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton, UErrorCode status);
 };
 
+} // namespace impl
+} // namespace number
+
 // Export explicit template instantiations of LocalPointerBase and LocalPointer.
 // This is required when building DLLs for Windows. (See datefmt.h,
 // collationiterator.h, erarules.h and others for similar examples.)
+//
+// Note: These need to be outside of the number::impl namespace, or Clang will
+// generate a compile error.
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
 #if defined(_MSC_VER)
 // Ignore warning 4661 as LocalPointerBase does not use operator== or operator!=
@@ -78,6 +85,9 @@ template class U_I18N_API LocalPointer<ComplexUnitsConverter>;
 #pragma warning(pop)
 #endif
 #endif
+
+namespace number {
+namespace impl {
 
 /**
  * A MicroPropsGenerator which converts a measurement from a simple MeasureUnit
