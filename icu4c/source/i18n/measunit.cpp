@@ -2283,8 +2283,14 @@ int32_t MeasureUnit::getOffset() const {
 MeasureUnitImpl MeasureUnitImpl::copy(UErrorCode &status) const {
     MeasureUnitImpl result;
     result.complexity = complexity;
-    result.units.appendAll(units, status);
     result.identifier.append(identifier, status);
+    for (int32_t i = 0; i < units.length(); i++) {
+        SingleUnitImpl *item = result.units.emplaceBack(*units[i]);
+        if (!item) {
+            status = U_MEMORY_ALLOCATION_ERROR;
+            return result;
+        }
+    }
     return result;
 }
 
