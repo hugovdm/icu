@@ -288,7 +288,7 @@ public class MeasureUnitImpl {
                 case 2:
                     return CompoundPart.COMPOUND_PART_AND;
                 default:
-                    throw new InternalError("CompoundPart index must be 0, 1 or 2");
+                    throw new AssertionError("CompoundPart index must be 0, 1 or 2");
             }
         }
 
@@ -354,7 +354,7 @@ public class MeasureUnitImpl {
                 return INITIAL_COMPOUND_PART_PER;
             }
 
-            throw new InternalError("Incorrect trieIndex");
+            throw new IllegalArgumentException("Incorrect trieIndex");
         }
 
         public int getTrieIndex() {
@@ -458,7 +458,7 @@ public class MeasureUnitImpl {
                     return element;
             }
 
-            throw new InternalError("Incorrect trieIndex");
+            throw new IllegalArgumentException("Incorrect trieIndex");
         }
 
         private static int getTrieIndex(MeasureUnit.SIPrefix prefix) {
@@ -480,7 +480,7 @@ public class MeasureUnitImpl {
 
                 boolean added = result.appendSingleUnit(singleUnit);
                 if (sawAnd && !added) {
-                    throw new InternalError("Two similar units are not allowed in a mixed unit.");
+                    throw new IllegalArgumentException("Two similar units are not allowed in a mixed unit.");
                 }
 
                 if ((result.singleUnits.size()) >= 2) {
@@ -510,8 +510,8 @@ public class MeasureUnitImpl {
          * dimensionality.
          * <p>
          *
-         * @throws InternalError if we parse both compound units and "-and-", since mixed
-         *                       compound units are not yet supported - TODO(CLDR-13700).
+         * @throws IllegalArgumentException if we parse both compound units and "-and-", since mixed
+         *                                  compound units are not yet supported - TODO(CLDR-13700).
          */
         private SingleUnitImpl nextSingleUnit() {
             SingleUnitImpl result = new SingleUnitImpl();
@@ -546,7 +546,7 @@ public class MeasureUnitImpl {
                 switch (compoundPart) {
                     case COMPOUND_PART_PER:
                         if (sawAnd) {
-                            throw new InternalError("Mixed compound units not yet supported");
+                            throw new IllegalArgumentException("Mixed compound units not yet supported");
                             // TODO(CLDR-13700).
                         }
 
@@ -577,7 +577,7 @@ public class MeasureUnitImpl {
                 switch (token.getType()) {
                     case TYPE_POWER_PART:
                         if (state > 0) {
-                            throw new InternalError();
+                            throw new IllegalArgumentException();
                         }
 
                         result.setDimensionality(result.getDimensionality() * token.getPower());
@@ -629,9 +629,7 @@ public class MeasureUnitImpl {
                     continue;
                 }
 
-                if (!result.hasValue()) {
-                    throw new InternalError("result must has a value");
-                }
+                Assert.assrt(result.hasValue());
 
                 match = trie.getValue();
                 previ = fIndex;
@@ -667,45 +665,31 @@ public class MeasureUnitImpl {
                 type = calculateType(fMatch);
             }
 
-
             public Type getType() {
                 return this.type;
             }
 
             public MeasureUnit.SIPrefix getSIPrefix() {
-                if (this.type == Type.TYPE_SI_PREFIX) {
-                    return getSiPrefixFromTrieIndex(this.fMatch);
-                }
-
-                throw new InternalError("type must be TYPE_SI_PREFIX");
+                Assert.assrt(this.type == Type.TYPE_SI_PREFIX);
+                return getSiPrefixFromTrieIndex(this.fMatch);
             }
 
             // Valid only for tokens with type TYPE_COMPOUND_PART.
             public int getMatch() {
-                if (getType() == Type.TYPE_COMPOUND_PART) {
-                    return fMatch;
-                }
-
-                throw new InternalError("getType() must return Type.TYPE_COMPOUND_PART");
+                Assert.assrt(getType() == Type.TYPE_COMPOUND_PART);
+                return fMatch;
             }
 
             // Even if there is only one InitialCompoundPart value, we have this
             // function for the simplicity of code consistency.
             public InitialCompoundPart getInitialCompoundPart() {
-
-                if (this.type == Type.TYPE_INITIAL_COMPOUND_PART && fMatch == InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex()) {
-                    return InitialCompoundPart.getInitialCompoundPartFromTrieIndex(fMatch);
-                }
-
-                throw new InternalError("type must be initial and fMatch must equal `InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex()`");
+                Assert.assrt(this.type == Type.TYPE_INITIAL_COMPOUND_PART && fMatch == InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex());
+                return InitialCompoundPart.getInitialCompoundPartFromTrieIndex(fMatch);
             }
 
             public int getPower() {
-                if (this.type == Type.TYPE_POWER_PART) {
-                    return PowerPart.getPowerFromTrieIndex(this.fMatch);
-                }
-
-                throw new InternalError("type must be `TYPE_POWER_PART`");
+                Assert.assrt(this.type == Type.TYPE_POWER_PART);
+                return PowerPart.getPowerFromTrieIndex(this.fMatch);
             }
 
             public int getSimpleUnitIndex() {
@@ -716,7 +700,7 @@ public class MeasureUnitImpl {
             // value isn't positive.
             private Type calculateType(int fMatch) {
                 if (fMatch <= 0) {
-                    throw new InternalError("fMatch must have a positive value");
+                    throw new AssertionError("fMatch must have a positive value");
                 }
 
                 if (fMatch < UnitsData.Constants.kCompoundPartOffset) {
