@@ -11,7 +11,6 @@ package com.ibm.icu.impl.units;
 
 import com.ibm.icu.impl.Assert;
 import com.ibm.icu.util.*;
-import jdk.nashorn.internal.runtime.regexp.joni.exception.InternalException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -371,13 +370,11 @@ public class MeasureUnitImpl {
     public static class UnitsParser {
         // This used only to not build the trie each time we use the parser
         private volatile static CharsTrie savedTrie = null;
-
+        private final String[] simpleUnits;
         // This trie used in the parsing operation.
         private CharsTrie trie;
-
-        private final String[] simpleUnits;
         // Tracks parser progress: the offset into fSource.
-        private  int fIndex = 0;
+        private int fIndex = 0;
         // Set to true when we've seen a "-per-" or a "per-", after which all units
         // are in the denominator. Until we find an "-and-", at which point the
         // identifier is invalid pending TODO(CLDR-13700).
@@ -395,7 +392,7 @@ public class MeasureUnitImpl {
                 try {
                     this.trie = savedTrie.clone();
                 } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
+                    throw new ICUCloneNotSupportedException();
                 }
                 return;
             }
@@ -444,7 +441,7 @@ public class MeasureUnitImpl {
             try {
                 this.trie = this.savedTrie.clone();
             } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
+                throw new ICUCloneNotSupportedException();
             }
         }
 
@@ -461,7 +458,7 @@ public class MeasureUnitImpl {
                     return element;
             }
 
-            throw new InternalException("Incorrect trieIndex");
+            throw new InternalError("Incorrect trieIndex");
         }
 
         private static int getTrieIndex(MeasureUnit.SIPrefix prefix) {

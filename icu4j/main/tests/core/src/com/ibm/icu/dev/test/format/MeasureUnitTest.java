@@ -3369,8 +3369,8 @@ public class MeasureUnitTest extends TestFmwk {
         verifySingleUnit(centimeter2, MeasureUnit.SIPrefix.CENTI, 1, "centimeter");
         verifySingleUnit(cubicDecimeter, MeasureUnit.SIPrefix.DECI, 3, "cubic-decimeter");
 
-        assertTrue("centimeter equality", centimeter1 == centimeter2);
-        assertTrue("kilometer inequality", centimeter1 != kilometer);
+        assertTrue("centimeter equality", centimeter1.equals( centimeter2));
+        assertTrue("kilometer inequality", !centimeter1.equals( kilometer));
 
         MeasureUnit squareMeter = meter.withDimensionality(2);
         MeasureUnit overCubicCentimeter = centimeter1.withDimensionality(-3);
@@ -3507,14 +3507,14 @@ public class MeasureUnitTest extends TestFmwk {
         verifySingleUnit(power15, MeasureUnit.SIPrefix.KILO, 15, "pow15-kilometer");
 
         try {
-            MeasureUnit power16a = MeasureUnit.forIdentifier("pow16-kilometer"); /* TODO: why do we need the variable */
+            MeasureUnit.forIdentifier("pow16-kilometer");
             fail("An IllegalArgumentException must be thrown");
         } catch (IllegalArgumentException e) {
             // Expecting an exception to be thrown
         }
 
         try {
-            MeasureUnit power16b = power15.product(kilometer); /* TODO: why do we need the variable */
+            power15.product(kilometer);
             fail("An IllegalArgumentException must be thrown");
         } catch (IllegalArgumentException e) {
             // Expecting an exception to be thrown
@@ -3524,14 +3524,14 @@ public class MeasureUnitTest extends TestFmwk {
         verifySingleUnit(powerN15, MeasureUnit.SIPrefix.KILO, -15, "per-pow15-kilometer");
 
         try {
-            MeasureUnit powerN16a = MeasureUnit.forIdentifier("per-pow16-kilometer"); /* TODO: why do we need the variable */
+            MeasureUnit.forIdentifier("per-pow16-kilometer");
             fail("An IllegalArgumentException must be thrown");
         } catch (IllegalArgumentException e) {
             // Expecting an exception to be thrown
         }
 
         try {
-            MeasureUnit powerN16b = powerN15.product(overQuarticKilometer1); /* TODO: why do we need the variable */
+            powerN15.product(overQuarticKilometer1);
             fail("An IllegalArgumentException must be thrown");
         } catch (IllegalArgumentException e) {
             // Expecting an exception to be thrown
