@@ -788,6 +788,7 @@ public:
     using MemoryPool<T, stackCapacity>::MemoryPool;
     using MemoryPool<T, stackCapacity>::operator=;
 
+    MaybeStackVector() = default;
     // Cannot be copied, because MemoryPool cannot be copied.
     MaybeStackVector(const MaybeStackVector &) = delete;
     void operator=(const MaybeStackVector & /*other*/) = delete;
