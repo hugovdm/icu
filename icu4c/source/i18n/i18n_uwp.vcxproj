@@ -439,6 +439,7 @@
     <ClCompile Include="number_multiplier.cpp" />
     <ClCompile Include="number_currencysymbols.cpp" />
     <ClCompile Include="number_skeletons.cpp" />
+    <ClCompile Include="number_symbolswrapper.cpp" />
     <ClCompile Include="number_capi.cpp" />
     <ClCompile Include="string_segment.cpp" />
     <ClCompile Include="numparse_parsednumber.cpp" />
@@ -712,6 +713,7 @@
     <ClInclude Include="number_multiplier.h" />
     <ClInclude Include="number_currencysymbols.h" />
     <ClInclude Include="number_skeletons.h" />
+    <ClInclude Include="number_symbolswrapper.h" />
     <ClInclude Include="string_segment.h" />
     <ClInclude Include="numparse_impl.h" />
     <ClInclude Include="numparse_symbols.h" />
