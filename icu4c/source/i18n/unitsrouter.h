@@ -77,17 +77,24 @@ struct ConverterPreference : UMemory {
           precision(std::move(precision)), targetUnit(complexTarget.copy(status)) {}
 };
 
+} // namespace units
+
 // Export explicit template instantiations of MaybeStackArray, MemoryPool and
 // MaybeStackVector. This is required when building DLLs for Windows. (See
 // datefmt.h, collationiterator.h, erarules.h and others for similar examples.)
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
+//
+// Note: These need to be outside of the units namespace, or Clang will generate
+// a compile error.
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN || 1
 template class U_I18N_API MaybeStackArray<MeasureUnit*, 8>;
 template class U_I18N_API MemoryPool<MeasureUnit, 8>;
 template class U_I18N_API MaybeStackVector<MeasureUnit, 8>;
-template class U_I18N_API MaybeStackArray<ConverterPreference*, 8>;
-template class U_I18N_API MemoryPool<ConverterPreference, 8>;
-template class U_I18N_API MaybeStackVector<ConverterPreference, 8>;
+template class U_I18N_API MaybeStackArray<units::ConverterPreference*, 8>;
+template class U_I18N_API MemoryPool<units::ConverterPreference, 8>;
+template class U_I18N_API MaybeStackVector<units::ConverterPreference, 8>;
 #endif
+
+namespace units {
 
 /**
  * `UnitsRouter` responsible for converting from a single unit (such as `meter` or `meter-per-second`) to
