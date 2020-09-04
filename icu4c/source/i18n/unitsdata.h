@@ -59,14 +59,21 @@ class U_I18N_API ConversionRateInfo : public UMemory {
     CharString offset;
 };
 
+} // namespace units
+
 // Export explicit template instantiations of MaybeStackArray, MemoryPool and
 // MaybeStackVector. This is required when building DLLs for Windows. (See
 // datefmt.h, collationiterator.h, erarules.h and others for similar examples.)
+//
+// Note: These need to be outside of the units namespace, or Clang will generate
+// a compile error.
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-template class U_I18N_API MaybeStackArray<ConversionRateInfo*, 8>;
-template class U_I18N_API MemoryPool<ConversionRateInfo, 8>;
-template class U_I18N_API MaybeStackVector<ConversionRateInfo, 8>;
+template class U_I18N_API MaybeStackArray<units::ConversionRateInfo*, 8>;
+template class U_I18N_API MemoryPool<units::ConversionRateInfo, 8>;
+template class U_I18N_API MaybeStackVector<units::ConversionRateInfo, 8>;
 #endif
+
+namespace units {
 
 /**
  * Returns ConversionRateInfo for all supported conversions.
@@ -145,17 +152,24 @@ class U_I18N_API UnitPreferenceMetadata : public UMemory {
                       bool *foundRegion) const;
 };
 
+} // namespace units
+
 // Export explicit template instantiations of MaybeStackArray, MemoryPool and
 // MaybeStackVector. This is required when building DLLs for Windows. (See
 // datefmt.h, collationiterator.h, erarules.h and others for similar examples.)
+//
+// Note: These need to be outside of the units namespace, or Clang will generate
+// a compile error.
 #if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
-template class U_I18N_API MaybeStackArray<UnitPreferenceMetadata*, 8>;
-template class U_I18N_API MemoryPool<UnitPreferenceMetadata, 8>;
-template class U_I18N_API MaybeStackVector<UnitPreferenceMetadata, 8>;
-template class U_I18N_API MaybeStackArray<UnitPreference*, 8>;
-template class U_I18N_API MemoryPool<UnitPreference, 8>;
-template class U_I18N_API MaybeStackVector<UnitPreference, 8>;
+template class U_I18N_API MaybeStackArray<units::UnitPreferenceMetadata*, 8>;
+template class U_I18N_API MemoryPool<units::UnitPreferenceMetadata, 8>;
+template class U_I18N_API MaybeStackVector<units::UnitPreferenceMetadata, 8>;
+template class U_I18N_API MaybeStackArray<units::UnitPreference*, 8>;
+template class U_I18N_API MemoryPool<units::UnitPreference, 8>;
+template class U_I18N_API MaybeStackVector<units::UnitPreference, 8>;
 #endif
+
+namespace units {
 
 /**
  * Unit Preferences information for various locales and usages.
