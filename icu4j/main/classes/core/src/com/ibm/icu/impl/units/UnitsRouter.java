@@ -1,3 +1,5 @@
+// © 2020 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html#License
 /*
  *******************************************************************************
  * Copyright (C) 2004-2020, Google Inc, International Business Machines
@@ -150,5 +152,3 @@ public class UnitsRouter {
         }
     }
 }
-
-
