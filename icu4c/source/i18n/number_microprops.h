@@ -54,13 +54,7 @@ class IntMeasures : public MaybeStackArray<int64_t, 2> {
         if (this == &rhs) {
             return *this;
         }
-        int32_t length = rhs.capacity;
-        if (this->resize(length, 0) != NULL) {
-            U_ASSERT(this->capacity == rhs.capacity);
-            uprv_memcpy(this->ptr, rhs.ptr, (size_t)length * sizeof(int64_t));
-        } else {
-            status = U_MEMORY_ALLOCATION_ERROR;
-        }
+        copyFrom(rhs, status);
         return *this;
     }
 

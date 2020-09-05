@@ -388,11 +388,22 @@ public:
      */
     inline T *orphanOrClone(int32_t length, int32_t &resultCapacity);
 
-  protected: // TODO(icu-units#64): make these private again if possible?
+protected:
+    // Resizes the array to the size of src, then copies the contents of src.
+    void copyFrom(const MaybeStackArray &src, UErrorCode &status) {
+        if (U_FAILURE(status)) {
+            return;
+        }
+        if (this->resize(src.capacity, 0) == NULL) {
+            status = U_INDEX_OUTOFBOUNDS_ERROR;
+            return;
+        }
+        uprv_memcpy(this->ptr, src.ptr, (size_t)capacity * sizeof(T));
+    }
+
+private:
     T *ptr;
     int32_t capacity;
-
-  private:
     UBool needToRelease;
     T stackArray[stackCapacity];
     void releaseArray() {
