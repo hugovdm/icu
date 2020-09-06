@@ -395,7 +395,7 @@ protected:
             return;
         }
         if (this->resize(src.capacity, 0) == NULL) {
-            status = U_INDEX_OUTOFBOUNDS_ERROR;
+            status = U_MEMORY_ALLOCATION_ERROR;
             return;
         }
         uprv_memcpy(this->ptr, src.ptr, (size_t)capacity * sizeof(T));
