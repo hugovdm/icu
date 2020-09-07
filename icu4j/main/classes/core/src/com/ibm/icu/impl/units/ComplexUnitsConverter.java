@@ -1,5 +1,5 @@
 // © 2020 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
 /*
  *******************************************************************************
  * Copyright (C) 2004-2020, Google Inc, International Business Machines
@@ -46,8 +46,9 @@ public class ComplexUnitsConverter {
         Assert.assrt(!units_.isEmpty());
 
         // Sort the units in a descending order.
-        MeasureUnitImpl.MeasureUnitImplComparator.setConversionRates(conversionRates);
-        Collections.sort(this.units_, Collections.reverseOrder(new MeasureUnitImpl.MeasureUnitImplComparator()));
+        Collections.sort(
+                this.units_,
+                Collections.reverseOrder(new MeasureUnitImpl.MeasureUnitImplComparator(conversionRates)));
 
 
         // If the `outputUnits` is `UMEASURE_UNIT_MIXED` such as `foot+inch`. Thus means there is more than one unit
@@ -83,7 +84,7 @@ public class ComplexUnitsConverter {
      * `foot` with the `limit`.
      */
     public boolean greaterThanOrEqual(BigDecimal quantity, BigDecimal limit) {
-        Assert.assrt(!units_.isEmpty());
+        assert !units_.isEmpty() ;
 
         // NOTE: First converter converts to the biggest quantity.
         return unitConverters_.get(0).convert(quantity).multiply(BigDecimal.valueOf(1 + EPSILON)).compareTo(limit) >= 0;

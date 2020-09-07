@@ -1,5 +1,5 @@
 // © 2020 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
 /*
  *******************************************************************************
  * Copyright (C) 2004-2020, Google Inc, International Business Machines
@@ -734,16 +734,14 @@ public class MeasureUnitImpl {
     }
 
     static class MeasureUnitImplComparator implements Comparator<MeasureUnitImpl> {
-        private static ConversionRates conversionRates = null;
+        private ConversionRates conversionRates;
 
-        public static void setConversionRates(ConversionRates conversionRates) {
-            MeasureUnitImplComparator.conversionRates = conversionRates;
+        public MeasureUnitImplComparator(ConversionRates conversionRates) {
+            this.conversionRates = conversionRates;
         }
 
         @Override
         public int compare(MeasureUnitImpl o1, MeasureUnitImpl o2) {
-            Assert.assrt(conversionRates != null);
-
             UnitConverter fromO1toO2 = new UnitConverter(o1, o2, conversionRates);
             return fromO1toO2.convert(BigDecimal.valueOf(1)).compareTo(BigDecimal.valueOf(1));
         }
