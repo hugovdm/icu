@@ -85,7 +85,7 @@ struct ConverterPreference : UMemory {
 //
 // Note: These need to be outside of the units namespace, or Clang will generate
 // a compile error.
-#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN || 1
+#if U_PF_WINDOWS <= U_PLATFORM && U_PLATFORM <= U_PF_CYGWIN
 template class U_I18N_API MaybeStackArray<MeasureUnit*, 8>;
 template class U_I18N_API MemoryPool<MeasureUnit, 8>;
 template class U_I18N_API MaybeStackVector<MeasureUnit, 8>;
