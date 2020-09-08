@@ -37,7 +37,7 @@ class U_I18N_API UsagePrefsHandler : public MicroPropsGenerator, public UMemory 
                       const MicroPropsGenerator *parent, UErrorCode &status);
 
     /**
-     * Obtains the appropriate output value, MeasurementUnit and
+     * Obtains the appropriate output value, MeasureUnit and
      * rounding/precision behaviour from the UnitsRouter.
      *
      * The output unit is passed on to the LongNameHandler via
@@ -108,7 +108,7 @@ class U_I18N_API UnitConversionHandler : public MicroPropsGenerator, public UMem
                           UErrorCode &status);
 
     /**
-     * Obtains the appropraite output values from the Unit Converter.
+     * Obtains the appropriate output values from the Unit Converter.
      */
     void processQuantity(DecimalQuantity &quantity, MicroProps &micros,
                          UErrorCode &status) const U_OVERRIDE;
