@@ -977,11 +977,9 @@ group: number_output
     standardplural.o plurrule.o
   deps
     # FormattedNumber internals:
-    number_representation format formatted_value_sbimpl
+    number_representation format formatted_value_sbimpl units
     # PluralRules internals:
     unifiedcache
-    # Unit Formatting
-    units
 
 group: numberformatter
     # ICU 60+ NumberFormatter API
@@ -1001,8 +999,9 @@ group: numberformatter
     listformatter number_representation number_output
     numsys
     number_usageprefs
-    uclean_i18n common
+    number_rounding
     number_symbolswrapper
+    uclean_i18n common
 
 group: numsys
     dcfmtsym.o
