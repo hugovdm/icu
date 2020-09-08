@@ -515,8 +515,7 @@ const Modifier *MixedUnitLongNameHandler::getMixedUnitModifier(DecimalQuantity &
 
     // Return a SimpleModifier for the "premixed" pattern
     micros.helpers.mixedUnitModifier =
-        SimpleModifier(premixedCompiled, {UFIELD_CATEGORY_NUMBER, UNUM_MEASURE_UNIT_FIELD}, false,
-                       {this, SIGNUM_POS_ZERO, finalPlural});
+        SimpleModifier(premixedCompiled, kUndefinedField, false, {this, SIGNUM_POS_ZERO, finalPlural});
     return &micros.helpers.mixedUnitModifier;
 }
 
