@@ -2900,12 +2900,12 @@ public class MeasureUnitTest extends TestFmwk {
                     throw new IllegalStateException();
                 }
                 checkForDup(seen, name, unit);
-                System.out.printf("MeasureUnit *MeasureUnit.create%s(UErrorCode &status) {\n", name);
-                System.out.printf("    return MeasureUnit.create(%d, %d, status);\n",
+                System.out.printf("MeasureUnit *MeasureUnit::create%s(UErrorCode &status) {\n", name);
+                System.out.printf("    return MeasureUnit::create(%d, %d, status);\n",
                         typeSubType.first, typeSubType.second);
                 System.out.println("}");
                 System.out.println();
-                System.out.printf("MeasureUnit MeasureUnit.get%s() {\n", name);
+                System.out.printf("MeasureUnit MeasureUnit::get%s() {\n", name);
                 System.out.printf("    return MeasureUnit(%d, %d);\n",
                         typeSubType.first, typeSubType.second);
                 System.out.println("}");
@@ -2988,8 +2988,8 @@ public class MeasureUnitTest extends TestFmwk {
             for (MeasureUnit unit : entry.getValue()) {
                 String camelCase = toCamelCase(unit);
                 checkForDup(seen, camelCase, unit);
-                System.out.printf("    measureUnit.adoptInstead(MeasureUnit.create%s(status));\n", camelCase);
-                System.out.printf("    measureUnitValue = MeasureUnit.get%s();\n", camelCase);
+                System.out.printf("    measureUnit.adoptInstead(MeasureUnit::create%s(status));\n", camelCase);
+                System.out.printf("    measureUnitValue = MeasureUnit::get%s();\n", camelCase);
             }
         }
         System.out.println("    assertSuccess(\"\", status);");
@@ -3274,7 +3274,6 @@ public class MeasureUnitTest extends TestFmwk {
 
         TestCase cases[] = {
                 // Correctly normalized identifiers should not change
-                new TestCase("", ""),
                 new TestCase("square-meter-per-square-meter", "square-meter-per-square-meter"),
                 new TestCase("kilogram-meter-per-square-meter-square-second",
                         "kilogram-meter-per-square-meter-square-second"),
@@ -3301,6 +3300,9 @@ public class MeasureUnitTest extends TestFmwk {
             final String actual = unit.getIdentifier();
             assertEquals(testCase.id, testCase.normalized, actual);
         }
+
+        assertEquals("for empty identifiers, the MeasureUnit will be null",
+                null, MeasureUnit.forIdentifier(""));
     }
 
     @Test
@@ -3491,13 +3493,13 @@ public class MeasureUnitTest extends TestFmwk {
         assertTrue("order matters inequality", !footInch.equals(inchFoot));
 
 
-        MeasureUnit dimensionless  /* TODO(sffc): do you mean that we need default constructor for dimensionless measure unit? */ = MeasureUnit.forIdentifier("");
+        MeasureUnit dimensionless  = NoUnit.BASE;
         MeasureUnit dimensionless2 = MeasureUnit.forIdentifier("");
-        assertTrue("dimensionless equality", dimensionless.equals(dimensionless2));
+        assertEquals("dimensionless equality", dimensionless, dimensionless2);
 
         // We support starting from an "identity" MeasureUnit and then combining it
         // with others via product:
-        MeasureUnit kilometer2 = dimensionless.product(kilometer);
+        MeasureUnit kilometer2 = kilometer.product(dimensionless);
 
         verifySingleUnit(kilometer2, MeasureUnit.SIPrefix.KILO, 1, "kilometer");
         assertTrue("kilometer equality", kilometer.equals(kilometer2));
@@ -3541,73 +3543,22 @@ public class MeasureUnitTest extends TestFmwk {
     @Test
     public void TestDimensionlessBehaviour() {
         MeasureUnit dimensionless = MeasureUnit.forIdentifier("");
-        MeasureUnit modified /* TODO(sffc): do you mean that we need default constructor for dimensionless measure unit? */ = MeasureUnit.forIdentifier("");
+        MeasureUnit dimensionless2 = NoUnit.BASE;
+        MeasureUnit dimensionless3 = null;
+        MeasureUnit dimensionless4 = MeasureUnit.forIdentifier(null);
+
+        assertEquals("dimensionless must be equals", dimensionless, dimensionless2);
+        assertEquals("dimensionless must be equals", dimensionless2, dimensionless3);
+        assertEquals("dimensionless must be equals", dimensionless3, dimensionless4);
 
         // At the time of writing, each of the seven groups below caused
         // Parser::from("") to be called:
 
-        // splitToSingleUnits
-        List<MeasureUnit> singles = dimensionless.splitToSingleUnits();
-        assertEquals("no singles in dimensionless", 0, singles.size());
 
         // product(dimensionless)
         MeasureUnit mile = MeasureUnit.MILE;
         mile = mile.product(dimensionless);
         verifySingleUnit(mile, MeasureUnit.SIPrefix.ONE, 1, "mile");
-
-        // dimensionless.getSIPrefix()
-        MeasureUnit.SIPrefix siPrefix = dimensionless.getSIPrefix();
-        assertEquals("dimensionless SIPrefix", MeasureUnit.SIPrefix.ONE, siPrefix);
-
-        // dimensionless.withSIPrefix()
-        modified = dimensionless.withSIPrefix(MeasureUnit.SIPrefix.KILO);
-        singles = modified.splitToSingleUnits();
-        assertEquals("no singles in modified", 0, singles.size());
-        siPrefix = modified.getSIPrefix();
-        assertEquals("modified SIPrefix", MeasureUnit.SIPrefix.ONE, siPrefix);
-
-        // dimensionless.getComplexity()
-        MeasureUnit.Complexity complexity = dimensionless.getComplexity();
-        assertEquals("dimensionless complexity", MeasureUnit.Complexity.SINGLE, complexity);
-
-        // Dimensionality is mostly meaningless for dimensionless units, but it's
-        // still considered a SINGLE unit, so this code doesn't throw errors:
-
-        // dimensionless.getDimensionality() /* TODO: why this line */
-        int dimensionality = dimensionless.getDimensionality();
-        assertEquals("dimensionless dimensionality", 0, dimensionality);
-
-        // dimensionless.withDimensionality() /* TODO: why this line */
-        dimensionless.withDimensionality(-1);
-        dimensionality = dimensionless.getDimensionality();
-        assertEquals("dimensionless dimensionality", 0, dimensionality);
-    }
-
-    // ICU-21060
-    @Test
-    public void Test21060_AddressSanitizerProblem() {
-        MeasureUnit first = MeasureUnit.forIdentifier("");
-
-        // Experimentally, a compound unit like "kilogram-meter" failed. A single
-        // unit like "kilogram" or "meter" did not fail, did not trigger the
-        // problem.
-        MeasureUnit crux = MeasureUnit.forIdentifier("per-meter");
-
-        // Heap allocation of a new CharString for first.identifier happens here:
-        first = first.product(crux);
-
-        // Constructing second from first's identifier resulted in a failure later,
-        // as second held a reference to a substring of first's identifier:
-        MeasureUnit second = MeasureUnit.forIdentifier(first.getIdentifier());
-
-        // Heap is freed here, as an old first.identifier CharString is deallocated
-        // and a new CharString is allocated:
-        first = first.product(crux);
-
-        // heap-use-after-free failure happened here, since a SingleUnitImpl had
-        // held onto a StringPiece pointing at a substring of an identifier that was
-        // freed above:
-        second = second.product(crux);
     }
 
     private void verifySingleUnit(MeasureUnit singleMeasureUnit, MeasureUnit.SIPrefix prefix, int power, String identifier) {

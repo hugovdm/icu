@@ -1,5 +1,5 @@
 // © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
 /*
  *******************************************************************************
  * Copyright (C) 2004-2016, Google Inc, International Business Machines
@@ -309,8 +309,10 @@ public class MeasureUnit implements Serializable {
     }
 
     /**
-     * Construct a MeasureUnit from a CLDR Sequence Unit Identifier, defined in UTS 35.
+     * Construct a MeasureUnit from a CLDR Unit Identifier, defined in UTS 35.
      * Validates and canonicalizes the identifier.
+     *
+     * Note: dimensionless <code>MeasureUnit</code> is <code>null</code>
      *
      * <pre>
      * MeasureUnit example = MeasureUnit::forIdentifier("furlong-per-nanosecond")
@@ -322,6 +324,10 @@ public class MeasureUnit implements Serializable {
      * @provisional This API might change or be removed in a future release.
      */
     public static MeasureUnit forIdentifier(String identifier) {
+        if (identifier == null || identifier.isEmpty()) {
+            return NoUnit.BASE;
+        }
+
         return MeasureUnitImpl.forIdentifier(identifier).build();
     }
 
@@ -511,6 +517,11 @@ public class MeasureUnit implements Serializable {
      */
     public MeasureUnit product(MeasureUnit other) {
         MeasureUnitImpl implCopy = getCopyOfMeasureUnitImpl();
+
+        if (other == null /* dimensionless */) {
+            return implCopy.build();
+        }
+
         final MeasureUnitImpl otherImplRef = other.getMayBeReferenceOfMeasureUnitImpl();
         if (implCopy.getComplexity() == Complexity.MIXED || otherImplRef.getComplexity() == Complexity.MIXED) {
             throw new UnsupportedOperationException();

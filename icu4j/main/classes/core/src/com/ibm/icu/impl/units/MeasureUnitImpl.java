@@ -1,15 +1,9 @@
 // © 2020 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+// License & terms of use: http://www.unicode.org/copyright.html
+
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
 import com.ibm.icu.util.*;
 
 import java.util.ArrayList;
@@ -19,15 +13,17 @@ import java.util.Comparator;
 public class MeasureUnitImpl {
 
     /**
-     * The full unit identifier. Owned by the MeasureUnitImpl.  Null if not computed.
+     * The full unit identifier.  Null if not computed.
      */
     private String identifier = null;
+
     /**
      * The complexity, either SINGLE, COMPOUND, or MIXED.
      */
     private MeasureUnit.Complexity complexity = MeasureUnit.Complexity.SINGLE;
+
     /**
-     * the list of simple units.These may be summed or multiplied, based on the
+     * The list of simple units. These may be summed or multiplied, based on the
      * value of the complexity field.
      * <p>
      * The "dimensionless" unit (SingleUnitImpl default constructor) must not be
@@ -50,7 +46,7 @@ public class MeasureUnitImpl {
      * Parse a unit identifier into a MeasureUnitImpl.
      *
      * @param identifier The unit identifier string.
-     * @return A newly parsed value object.
+     * @return A newly parsed object.
      * @throws <code>InternalError</code> in case of incorrect/non-parsed identifier.
      */
     public static MeasureUnitImpl forIdentifier(String identifier) {
@@ -116,17 +112,6 @@ public class MeasureUnitImpl {
 
         result.add(this.clone());
         return result;
-    }
-
-    /**
-     * Applies dimensionality to all the internal single units.
-     * For example: <b>square-meter-per-second</b>, when we apply dimensionality -2, it will be <b>square-second-per-p4-meter</b>
-     */
-    public void applyDimensionality(int dimensionality) {
-        for (SingleUnitImpl singleUnit :
-                singleUnits) {
-            singleUnit.setDimensionality(singleUnit.getDimensionality() * dimensionality);
-        }
     }
 
     /**
@@ -199,7 +184,7 @@ public class MeasureUnitImpl {
 
 
     /**
-     * Returns the CLDR unit identifier.
+     * Returns the CLDR unit identifier and null if not computed.
      */
     public String getIdentifier() {
         return identifier;
@@ -266,11 +251,11 @@ public class MeasureUnitImpl {
 
     public enum CompoundPart {
         // Represents "-per-"
-        COMPOUND_PART_PER(0),
+        PER(0),
         // Represents "-"
-        COMPOUND_PART_TIMES(1),
+        TIMES(1),
         // Represents "-and-"
-        COMPOUND_PART_AND(2);
+        AND(2);
 
         private final int index;
 
@@ -282,11 +267,11 @@ public class MeasureUnitImpl {
             int index = trieIndex - UnitsData.Constants.kCompoundPartOffset;
             switch (index) {
                 case 0:
-                    return CompoundPart.COMPOUND_PART_PER;
+                    return CompoundPart.PER;
                 case 1:
-                    return CompoundPart.COMPOUND_PART_TIMES;
+                    return CompoundPart.TIMES;
                 case 2:
-                    return CompoundPart.COMPOUND_PART_AND;
+                    return CompoundPart.AND;
                 default:
                     throw new AssertionError("CompoundPart index must be 0, 1 or 2");
             }
@@ -302,20 +287,20 @@ public class MeasureUnitImpl {
     }
 
     public enum PowerPart {
-        POWER_PART_P2(2),
-        POWER_PART_P3(3),
-        POWER_PART_P4(4),
-        POWER_PART_P5(5),
-        POWER_PART_P6(6),
-        POWER_PART_P7(7),
-        POWER_PART_P8(8),
-        POWER_PART_P9(9),
-        POWER_PART_P10(10),
-        POWER_PART_P11(11),
-        POWER_PART_P12(12),
-        POWER_PART_P13(13),
-        POWER_PART_P14(14),
-        POWER_PART_P15(15);
+        P2(2),
+        P3(3),
+        P4(4),
+        P5(5),
+        P6(6),
+        P7(7),
+        P8(8),
+        P9(9),
+        P10(10),
+        P11(11),
+        P12(12),
+        P13(13),
+        P14(14),
+        P15(15);
 
         private final int power;
 
@@ -382,7 +367,7 @@ public class MeasureUnitImpl {
         private String fSource;
         // If an "-and-" was parsed prior to finding the "single
         //     * unit", sawAnd is set to true. If not, it is left as is.
-        private boolean sawAnd = false;
+        private boolean fSawAnd = false;
 
         private UnitsParser(String identifier) {
             this.simpleUnits = UnitsData.getSimpleUnits();
@@ -402,26 +387,26 @@ public class MeasureUnitImpl {
             trieBuilder = new CharsTrieBuilder();
 
             // Add syntax parts (compound, power prefixes)
-            trieBuilder.add("-per-", CompoundPart.COMPOUND_PART_PER.getTrieIndex());
-            trieBuilder.add("-", CompoundPart.COMPOUND_PART_TIMES.getTrieIndex());
-            trieBuilder.add("-and-", CompoundPart.COMPOUND_PART_AND.getTrieIndex());
+            trieBuilder.add("-per-", CompoundPart.PER.getTrieIndex());
+            trieBuilder.add("-", CompoundPart.TIMES.getTrieIndex());
+            trieBuilder.add("-and-", CompoundPart.AND.getTrieIndex());
             trieBuilder.add("per-", InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex());
-            trieBuilder.add("square-", PowerPart.POWER_PART_P2.getTrieIndex());
-            trieBuilder.add("cubic-", PowerPart.POWER_PART_P3.getTrieIndex());
-            trieBuilder.add("pow2-", PowerPart.POWER_PART_P2.getTrieIndex());
-            trieBuilder.add("pow3-", PowerPart.POWER_PART_P3.getTrieIndex());
-            trieBuilder.add("pow4-", PowerPart.POWER_PART_P4.getTrieIndex());
-            trieBuilder.add("pow5-", PowerPart.POWER_PART_P5.getTrieIndex());
-            trieBuilder.add("pow6-", PowerPart.POWER_PART_P6.getTrieIndex());
-            trieBuilder.add("pow7-", PowerPart.POWER_PART_P7.getTrieIndex());
-            trieBuilder.add("pow8-", PowerPart.POWER_PART_P8.getTrieIndex());
-            trieBuilder.add("pow9-", PowerPart.POWER_PART_P9.getTrieIndex());
-            trieBuilder.add("pow10-", PowerPart.POWER_PART_P10.getTrieIndex());
-            trieBuilder.add("pow11-", PowerPart.POWER_PART_P11.getTrieIndex());
-            trieBuilder.add("pow12-", PowerPart.POWER_PART_P12.getTrieIndex());
-            trieBuilder.add("pow13-", PowerPart.POWER_PART_P13.getTrieIndex());
-            trieBuilder.add("pow14-", PowerPart.POWER_PART_P14.getTrieIndex());
-            trieBuilder.add("pow15-", PowerPart.POWER_PART_P15.getTrieIndex());
+            trieBuilder.add("square-", PowerPart.P2.getTrieIndex());
+            trieBuilder.add("cubic-", PowerPart.P3.getTrieIndex());
+            trieBuilder.add("pow2-", PowerPart.P2.getTrieIndex());
+            trieBuilder.add("pow3-", PowerPart.P3.getTrieIndex());
+            trieBuilder.add("pow4-", PowerPart.P4.getTrieIndex());
+            trieBuilder.add("pow5-", PowerPart.P5.getTrieIndex());
+            trieBuilder.add("pow6-", PowerPart.P6.getTrieIndex());
+            trieBuilder.add("pow7-", PowerPart.P7.getTrieIndex());
+            trieBuilder.add("pow8-", PowerPart.P8.getTrieIndex());
+            trieBuilder.add("pow9-", PowerPart.P9.getTrieIndex());
+            trieBuilder.add("pow10-", PowerPart.P10.getTrieIndex());
+            trieBuilder.add("pow11-", PowerPart.P11.getTrieIndex());
+            trieBuilder.add("pow12-", PowerPart.P12.getTrieIndex());
+            trieBuilder.add("pow13-", PowerPart.P13.getTrieIndex());
+            trieBuilder.add("pow14-", PowerPart.P14.getTrieIndex());
+            trieBuilder.add("pow15-", PowerPart.P15.getTrieIndex());
 
             // Add SI prefixes
             for (MeasureUnit.SIPrefix siPrefix :
@@ -445,7 +430,19 @@ public class MeasureUnitImpl {
             }
         }
 
+
+        /**
+         * Construct a MeasureUnit from a CLDR Unit Identifier, defined in UTS 35.
+         * Validates and canonicalizes the identifier.
+         *
+         * @return MeasureUnitImpl object or null if the identifier is empty.
+         * @throws IllegalArgumentException in case of invalid identifier.
+         */
         public static MeasureUnitImpl parseForIdentifier(String identifier) {
+            if (identifier == null || identifier.isEmpty()) {
+                return null;
+            }
+
             UnitsParser parser = new UnitsParser(identifier);
             return parser.parse();
 
@@ -469,17 +466,17 @@ public class MeasureUnitImpl {
             MeasureUnitImpl result = new MeasureUnitImpl();
 
             if (fSource.isEmpty()) {
-                // The dimensionless unit: nothing to parse. return the empty result.
-                return result;
+                // The dimensionless unit: nothing to parse. return null.
+                return null;
             }
 
             while (hasNext()) {
-                sawAnd = false;
+                fSawAnd = false;
                 SingleUnitImpl singleUnit = nextSingleUnit();
-                Assert.assrt(!singleUnit.isDimensionless());
+                assert !singleUnit.isDimensionless();
 
                 boolean added = result.appendSingleUnit(singleUnit);
-                if (sawAnd && !added) {
+                if (fSawAnd && !added) {
                     throw new IllegalArgumentException("Two similar units are not allowed in a mixed unit.");
                 }
 
@@ -489,10 +486,10 @@ public class MeasureUnitImpl {
                     // (COMPOUND_PART_TIMES). Consequently we take care of that
                     // here.
                     MeasureUnit.Complexity complexity =
-                            sawAnd ? MeasureUnit.Complexity.MIXED : MeasureUnit.Complexity.COMPOUND;
+                            fSawAnd ? MeasureUnit.Complexity.MIXED : MeasureUnit.Complexity.COMPOUND;
                     if (result.getSingleUnits().size() == 2) {
                         // After appending two singleUnits, the complexity will be `UMEASURE_UNIT_COMPOUND`
-                        Assert.assrt(result.getComplexity() == MeasureUnit.Complexity.COMPOUND);
+                        assert result.getComplexity() == MeasureUnit.Complexity.COMPOUND;
                         result.setComplexity(complexity);
                     } else if (result.getComplexity() != complexity) {
                         throw new IllegalArgumentException("Can't have mixed compound units");
@@ -528,7 +525,7 @@ public class MeasureUnitImpl {
             if (atStart) {
                 // Identifiers optionally start with "per-".
                 if (token.getType() == Token.Type.TYPE_INITIAL_COMPOUND_PART) {
-                    Assert.assrt(token.getInitialCompoundPart() == InitialCompoundPart.INITIAL_COMPOUND_PART_PER);
+                    assert token.getInitialCompoundPart() == InitialCompoundPart.INITIAL_COMPOUND_PART_PER;
 
                     fAfterPer = true;
                     result.setDimensionality(-1);
@@ -544,8 +541,8 @@ public class MeasureUnitImpl {
 
                 CompoundPart compoundPart = CompoundPart.getCompoundPartFromTrieIndex(token.getMatch());
                 switch (compoundPart) {
-                    case COMPOUND_PART_PER:
-                        if (sawAnd) {
+                    case PER:
+                        if (fSawAnd) {
                             throw new IllegalArgumentException("Mixed compound units not yet supported");
                             // TODO(CLDR-13700).
                         }
@@ -554,18 +551,18 @@ public class MeasureUnitImpl {
                         result.setDimensionality(-1);
                         break;
 
-                    case COMPOUND_PART_TIMES:
+                    case TIMES:
                         if (fAfterPer) {
                             result.setDimensionality(-1);
                         }
                         break;
 
-                    case COMPOUND_PART_AND:
+                    case AND:
                         if (fAfterPer) {
                             // not yet supported, TODO(CLDR-13700).
                             throw new IllegalArgumentException("Can't start with \"-and-\", and mixed compound units");
                         }
-                        sawAnd = true;
+                        fSawAnd = true;
                         break;
                 }
 
@@ -629,7 +626,7 @@ public class MeasureUnitImpl {
                     continue;
                 }
 
-                Assert.assrt(result.hasValue());
+                assert result.hasValue();
 
                 match = trie.getValue();
                 previ = fIndex;
@@ -670,25 +667,27 @@ public class MeasureUnitImpl {
             }
 
             public MeasureUnit.SIPrefix getSIPrefix() {
-                Assert.assrt(this.type == Type.TYPE_SI_PREFIX);
+                assert this.type == Type.TYPE_SI_PREFIX;
                 return getSiPrefixFromTrieIndex(this.fMatch);
             }
 
             // Valid only for tokens with type TYPE_COMPOUND_PART.
             public int getMatch() {
-                Assert.assrt(getType() == Type.TYPE_COMPOUND_PART);
+                assert getType() == Type.TYPE_COMPOUND_PART;
                 return fMatch;
             }
 
             // Even if there is only one InitialCompoundPart value, we have this
             // function for the simplicity of code consistency.
             public InitialCompoundPart getInitialCompoundPart() {
-                Assert.assrt(this.type == Type.TYPE_INITIAL_COMPOUND_PART && fMatch == InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex());
+                assert (this.type == Type.TYPE_INITIAL_COMPOUND_PART
+                        &&
+                        fMatch == InitialCompoundPart.INITIAL_COMPOUND_PART_PER.getTrieIndex());
                 return InitialCompoundPart.getInitialCompoundPartFromTrieIndex(fMatch);
             }
 
             public int getPower() {
-                Assert.assrt(this.type == Type.TYPE_POWER_PART);
+                assert this.type == Type.TYPE_POWER_PART;
                 return PowerPart.getPowerFromTrieIndex(this.fMatch);
             }
 
@@ -699,9 +698,7 @@ public class MeasureUnitImpl {
             // Calling calculateType() is invalid, resulting in an assertion failure, if Token
             // value isn't positive.
             private Type calculateType(int fMatch) {
-                if (fMatch <= 0) {
-                    throw new AssertionError("fMatch must have a positive value");
-                }
+                assert fMatch > 0 : "fMatch must have a positive value";
 
                 if (fMatch < UnitsData.Constants.kCompoundPartOffset) {
                     return Type.TYPE_SI_PREFIX;

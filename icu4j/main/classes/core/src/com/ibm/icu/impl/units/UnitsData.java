@@ -1,15 +1,9 @@
 // © 2020 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+// License & terms of use: http://www.unicode.org/copyright.html
+
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
 import com.ibm.icu.impl.ICUData;
 import com.ibm.icu.impl.ICUResourceBundle;
 import com.ibm.icu.impl.UResource;
@@ -20,7 +14,7 @@ import java.util.ArrayList;
 /**
  * Responsible for all units data operations (retriever, analysis, extraction certain data ... etc.).
  */
-public class UnitsData {
+class UnitsData {
     private volatile static String[] simpleUnits = null;
 
     public static String[] getSimpleUnits() {
@@ -43,8 +37,8 @@ public class UnitsData {
 
         @Override
         public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
-            Assert.assrt(key.toString().equals(Constants.CONVERSION_UNIT_TABLE_NAME));
-            Assert.assrt(value.getType() == UResourceBundle.TABLE);
+            assert key.toString().equals(Constants.CONVERSION_UNIT_TABLE_NAME);
+            assert value.getType() == UResourceBundle.TABLE;
 
             UResource.Table simpleUnitsTable = value.getTable();
             ArrayList<String> simpleUnits = new ArrayList<>();
