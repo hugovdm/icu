@@ -30,6 +30,11 @@ ComplexUnitsConverter::ComplexUnitsConverter(const MeasureUnitImpl &inputUnit,
 
     U_ASSERT(units_.length() != 0);
 
+    // Save the desired order of output units before we sort units_
+    for (int32_t i = 0; i < units_.length(); i++) {
+        outputUnits_.emplaceBackAndCheckErrorCode(status, units_[i]->copy(status).build(status));
+    }
+
     // NOTE:
     //  This comparator is used to short the units in a descending order. Therefore, we return -1 if
     //  the left is bigger than right and so on.
@@ -102,6 +107,7 @@ UBool ComplexUnitsConverter::greaterThanOrEqual(double quantity, double limit) c
 
 MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity, UErrorCode &status) const {
     // TODO(icu-units#63): test negative numbers!
+    // TODO(hugovdm): return an error for "foot-and-foot"?
     MaybeStackVector<Measure> result;
 
     for (int i = 0, n = unitConverters_.length(); i < n; ++i) {
@@ -136,6 +142,24 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity, UError
             // NOTE: Measure would own its MeasureUnit.
             MeasureUnit *type = new MeasureUnit(units_[i]->copy(status).build(status));
             result.emplaceBackAndCheckErrorCode(status, formattableQuantity, type, status);
+        }
+    }
+
+    MaybeStackVector<Measure> orderedResult;
+    int32_t unitsCount = outputUnits_.length();
+    U_ASSERT(unitsCount == units_.length());
+    Measure **arr = result.getAlias();
+    // O(N^2) is fine: mixed units' unitsCount is usually 2 or 3.
+    for (int32_t i = 0; i < unitsCount; i++) {
+        for (int32_t j = i; j < unitsCount; j++) {
+            // Find the next expected unit, and swap it into place.
+            if (result[j]->getUnit() == *outputUnits_[i]) {
+                if (j != i) {
+                    Measure *tmp = arr[j];
+                    arr[j] = arr[i];
+                    arr[i] = tmp;
+                }
+            }
         }
     }
 
