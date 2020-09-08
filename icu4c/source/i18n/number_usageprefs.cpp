@@ -19,7 +19,7 @@
 #include "unicode/platform.h"
 #include "unicode/unum.h"
 #include "unicode/urename.h"
-#include "unitsdata.h"
+#include "units_data.h"
 
 using namespace icu;
 using namespace icu::number;

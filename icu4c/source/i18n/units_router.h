@@ -4,18 +4,18 @@
 #include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
-#ifndef __UNITSROUTER_H__
-#define __UNITSROUTER_H__
+#ifndef __UNITS_ROUTER_H__
+#define __UNITS_ROUTER_H__
 
 #include <limits>
 
 #include "cmemory.h"
-#include "complexunitsconverter.h"
 #include "measunit_impl.h"
 #include "unicode/measunit.h"
 #include "unicode/stringpiece.h"
 #include "unicode/uobject.h"
-#include "unitsdata.h"
+#include "units_complexconverter.h"
+#include "units_data.h"
 
 U_NAMESPACE_BEGIN
 
@@ -151,6 +151,6 @@ class U_I18N_API UnitsRouter {
 } // namespace units
 U_NAMESPACE_END
 
-#endif //__UNITSROUTER_H__
+#endif //__UNITS_ROUTER_H__
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

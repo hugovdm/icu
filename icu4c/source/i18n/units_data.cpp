@@ -11,7 +11,7 @@
 #include "uassert.h"
 #include "unicode/unistr.h"
 #include "unicode/ures.h"
-#include "unitsdata.h"
+#include "units_data.h"
 #include "uresimp.h"
 #include "util.h"
 #include <utility>

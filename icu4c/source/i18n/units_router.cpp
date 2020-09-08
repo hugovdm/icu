@@ -12,8 +12,8 @@
 #include "number_decimalquantity.h"
 #include "resource.h"
 #include "unicode/measure.h"
-#include "unitsdata.h"
-#include "unitsrouter.h"
+#include "units_data.h"
+#include "units_router.h"
 
 U_NAMESPACE_BEGIN
 namespace units {

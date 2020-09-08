@@ -4,15 +4,15 @@
 #include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
-#ifndef __COMPLEXUNITSCONVERTER_H__
-#define __COMPLEXUNITSCONVERTER_H__
+#ifndef __UNITS_COMPLEXCONVERTER_H__
+#define __UNITS_COMPLEXCONVERTER_H__
 
 #include "cmemory.h"
 #include "measunit_impl.h"
 #include "unicode/errorcode.h"
 #include "unicode/measure.h"
-#include "unitconverter.h"
-#include "unitsdata.h"
+#include "units_converter.h"
+#include "units_data.h"
 
 U_NAMESPACE_BEGIN
 
@@ -86,6 +86,6 @@ class U_I18N_API ComplexUnitsConverter : public UMemory {
 } // namespace units
 U_NAMESPACE_END
 
-#endif //__COMPLEXUNITSCONVERTER_H__
+#endif //__UNITS_COMPLEXCONVERTER_H__
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

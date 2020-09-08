@@ -4,8 +4,8 @@
 #include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
-#ifndef __GETUNITSDATA_H__
-#define __GETUNITSDATA_H__
+#ifndef __UNITS_DATA_H__
+#define __UNITS_DATA_H__
 
 #include <limits>
 
@@ -26,10 +26,10 @@ namespace units {
  * Categories are found in `unitQuantities` in the `units` resource (see
  * `units.txt`).
  *
- * TODO(hugovdm): if we give unitsdata.cpp access to the functionality of
- * `extractCompoundBaseUnit` which is currently in unitconverter.cpp, we could
+ * TODO(hugovdm): if we give units_data.cpp access to the functionality of
+ * `extractCompoundBaseUnit` which is currently in units_converter.cpp, we could
  * support all units for which there is a category. Does it make sense to move
- * that function to unitsdata.cpp?
+ * that function to units_data.cpp?
  */
 CharString U_I18N_API getUnitCategory(const char *baseUnitIdentifier, UErrorCode &status);
 
@@ -224,6 +224,6 @@ class U_I18N_API UnitPreferences {
 } // namespace units
 U_NAMESPACE_END
 
-#endif //__GETUNITSDATA_H__
+#endif //__UNITS_DATA_H__
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
