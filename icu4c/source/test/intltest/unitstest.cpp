@@ -534,11 +534,11 @@ void UnitsTest::testComplexUnitConverterSorting() {
     auto measures = complexConverter.convert(10.0, status);
 
     U_ASSERT(measures.length() == 2);
-    assertEquals("Sorted Data", "inch", measures[0]->getUnit().getIdentifier());
-    assertEquals("Sorted Data", "foot", measures[1]->getUnit().getIdentifier());
+    assertEquals("inch-and-foot unit 0", "inch", measures[0]->getUnit().getIdentifier());
+    assertEquals("inch-and-foot unit 1", "foot", measures[1]->getUnit().getIdentifier());
 
-    assertEqualsNear("Sorted Data", 9.7008, measures[0]->getNumber().getDouble(), 0.0001);
-    assertEqualsNear("Sorted Data", 32, measures[1]->getNumber().getInt64(), 0.00001);
+    assertEqualsNear("inch-and-foot value 0", 9.7008, measures[0]->getNumber().getDouble(), 0.0001);
+    assertEqualsNear("inch-and-foot value 1", 32, measures[1]->getNumber().getInt64(), 0.00001);
 }
 
 /**
