@@ -912,9 +912,19 @@ void NumberFormatterApiTest::unitUsage() {
     formattedNum = formatter.formatDouble(321, status);
     status.errIfFailureAndReset("unitUsage() en-ZA road formatDouble");
     assertTrue(
-        uTestCase + ", got outputUnit: \"" + formattedNum.getOutputUnit(status).getIdentifier() + "\"",
-        MeasureUnit::getMeter() == formattedNum.getOutputUnit(status));
+            uTestCase + u", got outputUnit: \"" + formattedNum.getOutputUnit(status).getIdentifier() + "\"",
+            MeasureUnit::getMeter() == formattedNum.getOutputUnit(status));
     assertEquals(uTestCase, "300 m", formattedNum.toString(status));
+    {
+        static const UFieldPosition expectedFieldPositions[] = {
+                {UNUM_INTEGER_FIELD, 0, 3},
+                {UNUM_MEASURE_UNIT_FIELD, 4, 5}};
+        assertNumberFieldPositions(
+                (uTestCase + u" field positions").getTerminatedBuffer(),
+                formattedNum,
+                expectedFieldPositions,
+                UPRV_LENGTHOF(expectedFieldPositions));
+    }
     assertFormatDescendingBig(
             uTestCase.getTerminatedBuffer(),
             u"measure-unit/length-meter usage/road",
@@ -935,15 +945,22 @@ void NumberFormatterApiTest::unitUsage() {
     formatter = unloc_formatter.locale("en-GB");
     formattedNum = formatter.formatDouble(321, status);
     status.errIfFailureAndReset("unitUsage() en-GB road, formatDouble(...)");
-    U_ASSERT(status == U_ZERO_ERROR);
-    assertTrue(UnicodeString("unitUsage() en-GB road, got outputUnit: \"") +
-                   formattedNum.getOutputUnit(status).getIdentifier() + "\"",
-               MeasureUnit::getYard() == formattedNum.getOutputUnit(status));
+    assertTrue(
+            uTestCase + u", got outputUnit: \"" + formattedNum.getOutputUnit(status).getIdentifier() + "\"",
+            MeasureUnit::getYard() == formattedNum.getOutputUnit(status));
     status.errIfFailureAndReset("unitUsage() en-GB road, getOutputUnit(...)");
-    U_ASSERT(status == U_ZERO_ERROR);
-    assertEquals("unitUsage() en-GB road", "350 yd", formattedNum.toString(status));
+    assertEquals(uTestCase, "350 yd", formattedNum.toString(status));
     status.errIfFailureAndReset("unitUsage() en-GB road, toString(...)");
-    U_ASSERT(status == U_ZERO_ERROR);
+    {
+        static const UFieldPosition expectedFieldPositions[] = {
+                {UNUM_INTEGER_FIELD, 0, 3},
+                {UNUM_MEASURE_UNIT_FIELD, 4, 6}};
+        assertNumberFieldPositions(
+                (uTestCase + u" field positions").getTerminatedBuffer(),
+                formattedNum,
+                expectedFieldPositions,
+                UPRV_LENGTHOF(expectedFieldPositions));
+    }
     assertFormatDescendingBig(
             uTestCase.getTerminatedBuffer(),
             u"measure-unit/length-meter usage/road",
@@ -964,15 +981,23 @@ void NumberFormatterApiTest::unitUsage() {
     formatter = unloc_formatter.locale("en-US");
     formattedNum = formatter.formatDouble(321, status);
     status.errIfFailureAndReset("unitUsage() en-US road, formatDouble(...)");
-    U_ASSERT(status == U_ZERO_ERROR);
-    assertTrue(UnicodeString("unitUsage() en-US road, got outputUnit: \"") +
-                   formattedNum.getOutputUnit(status).getIdentifier() + "\"",
-               MeasureUnit::getFoot() == formattedNum.getOutputUnit(status));
+    assertTrue(
+            uTestCase + u", got outputUnit: \"" + formattedNum.getOutputUnit(status).getIdentifier() + "\"",
+            MeasureUnit::getFoot() == formattedNum.getOutputUnit(status));
     status.errIfFailureAndReset("unitUsage() en-US road, getOutputUnit(...)");
-    U_ASSERT(status == U_ZERO_ERROR);
-    assertEquals("unitUsage() en-US road", "1,050 ft", formattedNum.toString(status));
+    assertEquals(uTestCase, "1,050 ft", formattedNum.toString(status));
     status.errIfFailureAndReset("unitUsage() en-US road, toString(...)");
-    U_ASSERT(status == U_ZERO_ERROR);
+    {
+        static const UFieldPosition expectedFieldPositions[] = {
+                {UNUM_GROUPING_SEPARATOR_FIELD, 1, 2},
+                {UNUM_INTEGER_FIELD, 0, 5},
+                {UNUM_MEASURE_UNIT_FIELD, 6, 8}};
+        assertNumberFieldPositions(
+                (uTestCase + u" field positions").getTerminatedBuffer(),
+                formattedNum,
+                expectedFieldPositions,
+                UPRV_LENGTHOF(expectedFieldPositions));
+    }
     assertFormatDescendingBig(
             uTestCase.getTerminatedBuffer(),
             u"measure-unit/length-meter usage/road",
@@ -999,6 +1024,29 @@ void NumberFormatterApiTest::unitUsage() {
         MeasureUnit::forIdentifier("stone-and-pound", status) == formattedNum.getOutputUnit(status));
     status.errIfFailureAndReset("unitUsage() en-GB person - formattedNum.getOutputUnit(status)");
     assertEquals(uTestCase, "12 st, 8.4 lb", formattedNum.toString(status));
+    status.errIfFailureAndReset("unitUsage() en-GB person, toString(...)");
+    {
+        static const UFieldPosition expectedFieldPositions[] = {
+                // // Desired output: TODO(icu-units#67)
+                // {UNUM_INTEGER_FIELD, 0, 2},
+                // {UNUM_MEASURE_UNIT_FIELD, 3, 5},
+                // {ULISTFMT_LITERAL_FIELD, 5, 6},
+                // {UNUM_INTEGER_FIELD, 7, 8},
+                // {UNUM_DECIMAL_SEPARATOR_FIELD, 8, 9},
+                // {UNUM_FRACTION_FIELD, 9, 10},
+                // {UNUM_MEASURE_UNIT_FIELD, 11, 13}};
+
+                // Current output: rather no fields than wrong fields
+                {UNUM_INTEGER_FIELD, 7, 8},
+                {UNUM_DECIMAL_SEPARATOR_FIELD, 8, 9},
+                {UNUM_FRACTION_FIELD, 9, 10},
+                };
+        assertNumberFieldPositions(
+                (uTestCase + u" field positions").getTerminatedBuffer(),
+                formattedNum,
+                expectedFieldPositions,
+                UPRV_LENGTHOF(expectedFieldPositions));
+    }
     assertFormatDescending(
             uTestCase.getTerminatedBuffer(),
             u"measure-unit/mass-kilogram usage/person",
