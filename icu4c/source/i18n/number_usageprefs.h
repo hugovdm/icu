@@ -8,7 +8,6 @@
 #define __NUMBER_USAGEPREFS_H__
 
 #include "cmemory.h"
-#include "complexunitsconverter.h"
 #include "number_types.h"
 #include "unicode/listformatter.h"
 #include "unicode/localpointer.h"
@@ -16,7 +15,8 @@
 #include "unicode/measunit.h"
 #include "unicode/stringpiece.h"
 #include "unicode/uobject.h"
-#include "unitsrouter.h"
+#include "units_converter.h"
+#include "units_router.h"
 
 U_NAMESPACE_BEGIN
 

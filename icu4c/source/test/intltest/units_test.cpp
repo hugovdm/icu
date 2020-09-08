@@ -19,9 +19,10 @@
 #include "unicode/unistr.h"
 #include "unicode/unum.h"
 #include "unicode/ures.h"
-#include "unitconverter.h"
-#include "unitsdata.h"
-#include "unitsrouter.h"
+#include "units_complexconverter.h"
+#include "units_converter.h"
+#include "units_data.h"
+#include "units_router.h"
 #include "uparse.h"
 #include "uresimp.h"
 
@@ -90,7 +91,7 @@ void UnitsTest::testUnitConstantFreshness() {
         addSingleFactorConstant(constant, 1, POSITIVE, factor, status);
         if (status.errDataIfFailureAndReset(
                 "addSingleFactorConstant(<%s>, ...).\n\n"
-                "If U_INVALID_FORMAT_ERROR, please check that \"icu4c/source/i18n/unitconverter.cpp\" "
+                "If U_INVALID_FORMAT_ERROR, please check that \"icu4c/source/i18n/units_converter.cpp\" "
                 "has all constants? Is \"%s\" a new constant?\n",
                 constant, constant)) {
             continue;
@@ -107,7 +108,7 @@ void UnitsTest::testUnitConstantFreshness() {
         }
         DecimalQuantity dqVal;
         UErrorCode parseStatus = U_ZERO_ERROR;
-        // TODO(units): unify with strToDouble() in unitconverter.cpp
+        // TODO(units): unify with strToDouble() in units_converter.cpp
         dqVal.setToDecNumber(val.toStringPiece(), parseStatus);
         if (!U_SUCCESS(parseStatus)) {
             // Not simple to parse, skip validating this constant's value. (We

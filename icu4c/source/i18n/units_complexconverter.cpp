@@ -8,14 +8,14 @@
 #include <cmath>
 
 #include "cmemory.h"
-#include "complexunitsconverter.h"
 #include "uarrsort.h"
 #include "uassert.h"
 #include "unicode/fmtable.h"
 #include "unicode/localpointer.h"
 #include "unicode/measunit.h"
 #include "unicode/measure.h"
-#include "unitconverter.h"
+#include "units_complexconverter.h"
+#include "units_converter.h"
 
 U_NAMESPACE_BEGIN
 namespace units {
