@@ -11,6 +11,7 @@
 #include <memory>
 #include "unicode/unum.h"
 #include "unicode/numberformatter.h"
+#include "unicode/testlog.h"
 #include "unicode/utypes.h"
 #include "number_asformat.h"
 #include "number_types.h"
