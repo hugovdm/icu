@@ -138,7 +138,7 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     }
 
     quantity.roundToInfinity(); // Enables toDouble
-    const auto routed = fUnitsRouter.route(quantity.toDouble(), status);
+    const auto routed = fUnitsRouter.route(quantity.toDouble(), &micros.rounder, status);
     if (U_FAILURE(status)) {
         return;
     }
@@ -216,7 +216,7 @@ void UnitConversionHandler::processQuantity(DecimalQuantity &quantity, MicroProp
         return;
     }
     quantity.roundToInfinity(); // Enables toDouble
-    MaybeStackVector<Measure> measures = fUnitConverter->convert(quantity.toDouble(), status);
+    MaybeStackVector<Measure> measures = fUnitConverter->convert(quantity.toDouble(), &micros.rounder, status);
     micros.outputUnit = fOutputUnit;
     if (U_FAILURE(status)) {
         return;

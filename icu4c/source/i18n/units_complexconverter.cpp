@@ -8,6 +8,8 @@
 #include <cmath>
 
 #include "cmemory.h"
+#include "number_decimalquantity.h"
+#include "number_roundingutils.h"
 #include "uarrsort.h"
 #include "uassert.h"
 #include "unicode/fmtable.h"
@@ -105,7 +107,9 @@ UBool ComplexUnitsConverter::greaterThanOrEqual(double quantity, double limit) c
     return newQuantity >= limit;
 }
 
-MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity, UErrorCode &status) const {
+MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity,
+                                                         icu::number::impl::RoundingImpl *rounder,
+                                                         UErrorCode &status) const {
     // TODO(icu-units#63): test negative numbers!
     // TODO(hugovdm): return an error for "foot-and-foot"?
     MaybeStackVector<Measure> result;
@@ -137,6 +141,20 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity, UError
                 quantity -= roundedQuantity;
             }
         } else { // LAST ELEMENT
+            if (rounder != nullptr) {
+                number::impl::DecimalQuantity quant;
+                // printf("Rounding: %f", quantity);
+                quant.setToDouble(quantity);
+                quant.roundToInfinity();
+                rounder->apply(quant, status);
+                quantity = quant.toDouble();
+                // printf(" to %f\n", quantity);
+
+                // FIXME: now check if we've rounded up to the point of needing
+                // to carry, and carry back up as far as needed via the list of
+                // converters - before wrapping up below.
+            }
+
             Formattable formattableQuantity(quantity);
 
             // NOTE: Measure would own its MeasureUnit.

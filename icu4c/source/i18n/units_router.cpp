@@ -100,12 +100,12 @@ UnitsRouter::UnitsRouter(MeasureUnit inputUnit, StringPiece region, StringPiece 
     }
 }
 
-RouteResult UnitsRouter::route(double quantity, UErrorCode &status) const {
+RouteResult UnitsRouter::route(double quantity, icu::number::impl::RoundingImpl *rounder, UErrorCode &status) const {
     for (int i = 0, n = converterPreferences_.length(); i < n; i++) {
         const auto &converterPreference = *converterPreferences_[i];
         if (converterPreference.converter.greaterThanOrEqual(quantity * (1 + DBL_EPSILON),
                                                              converterPreference.limit)) {
-            return RouteResult(converterPreference.converter.convert(quantity, status),
+            return RouteResult(converterPreference.converter.convert(quantity, rounder, status),
                                converterPreference.precision,
                                converterPreference.targetUnit.copy(status));
         }
@@ -113,7 +113,7 @@ RouteResult UnitsRouter::route(double quantity, UErrorCode &status) const {
 
     // In case of the `quantity` does not fit in any converter limit, use the last converter.
     const auto &lastConverterPreference = (*converterPreferences_[converterPreferences_.length() - 1]);
-    return RouteResult(lastConverterPreference.converter.convert(quantity, status),
+    return RouteResult(lastConverterPreference.converter.convert(quantity, rounder, status),
                        lastConverterPreference.precision,
                        lastConverterPreference.targetUnit.copy(status));
 }
