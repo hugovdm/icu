@@ -233,9 +233,33 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
         return nullptr;
     }
 
-    ///////////////////////////////////////////////
-    /// Start populating the default MicroProps ///
-    ///////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////
+    /// START POPULATING THE DEFAULT MICROPROPS AND BUILDING THE MICROPROPS GENERATOR ///
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    // Unit Preferences and Conversions as our first step
+    if (macros.usage.isSet()) {
+        if (!isCldrUnit) {
+            // We only support "usage" when the input unit is specified, and is
+            // a CLDR Unit.
+            status = U_ILLEGAL_ARGUMENT_ERROR;
+            return nullptr;
+        }
+        auto usagePrefsHandler =
+            new UsagePrefsHandler(macros.locale, macros.unit, macros.usage.fUsage, chain, status);
+        fUsagePrefsHandler.adoptInsteadAndCheckErrorCode(usagePrefsHandler, status);
+        chain = fUsagePrefsHandler.getAlias();
+    } else if (isMixedUnit) {
+        auto unitConversionHandler = new UnitConversionHandler(macros.unit, chain, status);
+        fUnitConversionHandler.adoptInsteadAndCheckErrorCode(unitConversionHandler, status);
+        chain = fUnitConversionHandler.getAlias();
+    }
+
+    // Multiplier
+    if (macros.scale.isValid()) {
+        fMicros.helpers.multiplier.setAndChain(macros.scale, chain);
+        chain = &fMicros.helpers.multiplier;
+    }
 
     // Rounding strategy
     Precision precision;
@@ -299,34 +323,6 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
 
     // Use monetary separator symbols
     fMicros.useCurrency = isCurrency;
-
-    /////////////////////////////////////////////////
-    // Build up the chain of MicroPropsGenerators ///
-    /////////////////////////////////////////////////
-
-    // Unit Preferences and Conversions as our first step
-    if (macros.usage.isSet()) {
-        if (!isCldrUnit) {
-            // We only support "usage" when the input unit is specified, and is
-            // a CLDR Unit.
-            status = U_ILLEGAL_ARGUMENT_ERROR;
-            return nullptr;
-        }
-        auto usagePrefsHandler =
-            new UsagePrefsHandler(macros.locale, macros.unit, macros.usage.fUsage, chain, status);
-        fUsagePrefsHandler.adoptInsteadAndCheckErrorCode(usagePrefsHandler, status);
-        chain = fUsagePrefsHandler.getAlias();
-    } else if (isMixedUnit) {
-        auto unitConversionHandler = new UnitConversionHandler(macros.unit, chain, status);
-        fUnitConversionHandler.adoptInsteadAndCheckErrorCode(unitConversionHandler, status);
-        chain = fUnitConversionHandler.getAlias();
-    }
-
-    // Multiplier
-    if (macros.scale.isValid()) {
-        fMicros.helpers.multiplier.setAndChain(macros.scale, chain);
-        chain = &fMicros.helpers.multiplier;
-    }
 
     // Inner modifier (scientific notation)
     if (macros.notation.fType == Notation::NTN_SCIENTIFIC) {
