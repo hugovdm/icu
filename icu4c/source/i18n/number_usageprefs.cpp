@@ -163,6 +163,7 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     }
 }
 
+// TODO: deduplicate this code, number_usageprefs.cpp & units_router.cpp
 Precision UsagePrefsHandler::parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton,
                                                       UErrorCode status) {
     if (U_FAILURE(status)) {
@@ -178,9 +179,9 @@ Precision UsagePrefsHandler::parseSkeletonToPrecision(icu::UnicodeString precisi
     U_ASSERT(precisionSkeleton[kSkelPrefixLen - 1] == u'/');
     StringSegment segment(precisionSkeleton, false);
     segment.adjustOffset(kSkelPrefixLen);
-    MacroProps macros;
-    blueprint_helpers::parseIncrementOption(segment, macros, status);
-    return macros.precision;
+    Precision result;
+    number::impl::parseIncrementOption(segment, result, status);
+    return result;
 }
 
 UnitConversionHandler::UnitConversionHandler(const MeasureUnit &unit, const MicroPropsGenerator *parent,

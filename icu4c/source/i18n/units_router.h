@@ -21,6 +21,9 @@ U_NAMESPACE_BEGIN
 
 // Forward declarations
 class Measure;
+namespace number {
+class Precision;
+}
 
 namespace units {
 
@@ -143,6 +146,9 @@ class U_I18N_API UnitsRouter {
     MaybeStackVector<MeasureUnit> outputUnits_;
 
     MaybeStackVector<ConverterPreference> converterPreferences_;
+
+    static number::Precision parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton,
+                                                      UErrorCode &status);
 };
 
 } // namespace units

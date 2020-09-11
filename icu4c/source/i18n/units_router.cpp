@@ -10,6 +10,7 @@
 #include "cstring.h"
 #include "measunit_impl.h"
 #include "number_decimalquantity.h"
+#include "number_roundingutils.h"
 #include "resource.h"
 #include "unicode/measure.h"
 #include "units_data.h"
@@ -17,6 +18,30 @@
 
 U_NAMESPACE_BEGIN
 namespace units {
+
+using number::Precision;
+using number::impl::parseIncrementOption;
+
+// TODO: deduplicate this code, number_usageprefs.cpp & units_router.cpp
+Precision UnitsRouter::parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton,
+                                                UErrorCode &status) {
+    if (U_FAILURE(status)) {
+        // As a member of UsagePrefsHandler, which is a friend of Precision, we
+        // get access to the default constructor.
+        return {};
+    }
+    constexpr int32_t kSkelPrefixLen = 20;
+    if (!precisionSkeleton.startsWith(UNICODE_STRING_SIMPLE("precision-increment/"))) {
+        status = U_INVALID_FORMAT_ERROR;
+        return {};
+    }
+    U_ASSERT(precisionSkeleton[kSkelPrefixLen - 1] == u'/');
+    StringSegment segment(precisionSkeleton, false);
+    segment.adjustOffset(kSkelPrefixLen);
+    Precision result;
+    parseIncrementOption(segment, result, status);
+    return result;
+}
 
 UnitsRouter::UnitsRouter(MeasureUnit inputUnit, StringPiece region, StringPiece usage,
                          UErrorCode &status) {
@@ -53,6 +78,14 @@ UnitsRouter::UnitsRouter(MeasureUnit inputUnit, StringPiece region, StringPiece 
         if (!precision.isEmpty() && !precision.startsWith(u"precision-increment", 19)) {
             status = U_INTERNAL_PROGRAM_ERROR;
             return;
+        }
+
+        if (!precision.isEmpty()) {
+            Precision precisionInstance = parseSkeletonToPrecision(precision, status);
+            // FIXME: do something with it.
+            if (U_FAILURE(status)) {
+                return;
+            }
         }
 
         outputUnits_.emplaceBackAndCheckErrorCode(status,

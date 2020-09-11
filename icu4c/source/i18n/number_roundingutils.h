@@ -8,6 +8,7 @@
 #define __NUMBER_ROUNDINGUTILS_H__
 
 #include "number_types.h"
+#include "string_segment.h"
 
 U_NAMESPACE_BEGIN
 namespace number {
@@ -198,6 +199,14 @@ class RoundingImpl {
     friend class UnitConversionHandler;
 };
 
+/* We want to be able to parse Precision-related skeleton strings without
+ * needing to pull in the .o files required for instantiating MacroProps
+ * instances.
+ * - blueprint_helpers::parseIncrementOption uses MacroProps.
+ * - UnitsRouter needs to parse skeletons
+ */
+void parseIncrementOption(const StringSegment &segment, Precision &precision,
+                                    UErrorCode &status);
 
 } // namespace impl
 } // namespace number

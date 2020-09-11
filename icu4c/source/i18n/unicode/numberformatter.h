@@ -99,6 +99,13 @@ class MultiplierParseHandler;
 }
 }
 
+namespace units {
+
+// Forward declarations:
+class UnitsRouter;
+
+} // namespace units
+
 namespace number {  // icu::number
 
 // Forward declarations:
@@ -765,6 +772,7 @@ class U_I18N_API Precision : public UMemory {
 
     // To allow access to isBogus and the default (bogus) constructor:
     friend class impl::UsagePrefsHandler;
+    friend class units::UnitsRouter;
 };
 
 /**
