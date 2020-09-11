@@ -858,8 +858,114 @@ public class NumberFormatterApiTest extends TestFmwk {
         } catch (UnsupportedOperationException e) {
             // pass
         }
+
+        // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
+        // When specifying built-in types, one can give both a unit and a perUnit.
+        // Resolving to a built-in unit does not always work.
+        assertFormatSingle(
+                "DEMONSTRATING BAD BEHAVIOUR? TODO(icu-units#59)",
+                "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+                "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+                NumberFormatter.with().unit(MeasureUnit.METER_PER_SECOND).perUnit(MeasureUnit.SECOND),
+                new ULocale("en-GB"),
+                2.4,
+                // UGLY:
+                "2.4 m/s/s");
     }
 
+
+    public void unitSkeletons() {
+        Object[][] cases = {
+            {"old-form built-in compound unit",     //
+             "measure-unit/speed-meter-per-second", //
+             "measure-unit/speed-meter-per-second"},
+
+            {"old-form compound construction, subtle difference to built-in",
+             "measure-unit/length-meter per-measure-unit/duration-second",
+             "measure-unit/length-meter per-measure-unit/duration-second"},
+
+            {"old-form compound construction which does not simplify to a built-in",
+             "measure-unit/energy-joule per-measure-unit/length-meter",
+             "measure-unit/energy-joule per-measure-unit/length-meter"},
+
+            // TODO(icu-units#59):
+            {"old-form compound-compound ugliness which should be fixed?",
+             "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+             "measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
+
+        //     {"short-form built-in compound units get split up unconditionally", //
+        //      "unit/meter-per-second",                                           //
+        //      "measure-unit/length-meter per-measure-unit/duration-second"},
+            // Inconsistent with C++!
+            {"short-form built-in compound units", //
+             "unit/meter-per-second",              //
+             "measure-unit/speed-meter-per-second"},
+
+            {"short-form compound units get split", //
+             "unit/square-meter-per-square-meter",  //
+             "measure-unit/area-square-meter per-measure-unit/area-square-meter"},
+
+        //     // ICU 67: hectometer not supported. toSkeleton returns invalid skeleton:
+        //     {"short-form that doesn't consist of built-in units",
+        //      "unit/hectometer-per-second", //
+        //      "measure-unit/- per-measure-unit/duration-second"},
+            // Inconsistent with C++!
+        };
+        for (Object[] cas : cases) {
+            String msg = (String)cas[0];
+            String inputSkeleton = (String)cas[1];
+            String normalizedSkeleton = (String)cas[2];
+            UnlocalizedNumberFormatter nf = NumberFormatter.forSkeleton(inputSkeleton);
+            assertEquals(msg, normalizedSkeleton, nf.toSkeleton());
+        }
+
+        Object NoException = new Object();
+        Object[][] failCases = {
+            {"short-form that doesn't consist of built-in units",
+             "unit/hectometer", //
+             // Inconsistent with C++!
+             true, //
+             false},
+            {"short-form that doesn't consist of built-in units",
+             "unit/hectometer-per-second", //
+             // Inconsistent with C++!
+             true, //
+             false},
+            // Inconsistent with C++!
+            {"short-form that isn't a built-in unit",
+             "unit/hectometer-per-second", //
+             true,                         //
+             false},
+        };
+        for (Object[] cas : failCases) {
+            String msg = (String)cas[0];
+            String inputSkeleton = (String)cas[1];
+            boolean forSkeletonExpectFailure = (boolean)cas[2];
+            boolean toSkeletonExpectFailure = (boolean)cas[3];
+            UnlocalizedNumberFormatter nf = null;
+            try {
+                nf = NumberFormatter.forSkeleton(inputSkeleton);
+                if (forSkeletonExpectFailure) {
+                    fail("forSkeleton() should have failed: " + msg);
+                }
+            } catch (Exception e) {
+                if (!forSkeletonExpectFailure) {
+                    fail("forSkeleton() should not have failed: " + msg);
+                }
+                continue;
+            }
+            try {
+                nf.toSkeleton();
+                if (toSkeletonExpectFailure) {
+                    fail("toSkeleton() should have failed: " + msg);
+                }
+            } catch (Exception e) {
+                if (!toSkeletonExpectFailure) {
+                    fail("toSkeleton() should not have failed: " + msg);
+                }
+            }
+        }
+    }
 
     @Test
     public void unitUsage() {
@@ -1118,8 +1224,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                 new ULocale("en-ZA"),
                 30500,
                 "350 m");
-}
-
+    }
 
     @Test
     public void unitUsageErrorCodes() {
@@ -3372,12 +3477,33 @@ public class NumberFormatterApiTest extends TestFmwk {
         }
 
         {
-            String message = "Measure unit field position with prefix and suffix";
+            String message = "Measure unit field position with prefix and suffix, composed m/s";
             FormattedNumber result = assertFormatSingle(
                     message,
                     "measure-unit/length-meter per-measure-unit/duration-second unit-width-full-name",
-                    "~unit/meter-per-second unit-width-full-name", // does not round-trip to the full skeleton above
+                    "~unit/meter-per-second unit-width-full-name", // unlike C++, does not round-trip
                     NumberFormatter.with().unit(MeasureUnit.METER).perUnit(MeasureUnit.SECOND).unitWidth(UnitWidth.FULL_NAME),
+                    new ULocale("ky"), // locale with the interesting data
+                    68,
+                    "секундасына 68 метр");
+            Object[][] expectedFieldPositions = new Object[][] {
+                    // field, begin index, end index
+                    {NumberFormat.Field.MEASURE_UNIT, 0, 11},
+                    {NumberFormat.Field.INTEGER, 12, 14},
+                    {NumberFormat.Field.MEASURE_UNIT, 15, 19}};
+            assertNumberFieldPositions(
+                    message,
+                    result,
+                    expectedFieldPositions);
+        }
+
+        {
+            String message = "Measure unit field position with prefix and suffix, built-in m/s";
+            FormattedNumber result = assertFormatSingle(
+                    message,
+                    "measure-unit/speed-meter-per-second unit-width-full-name",
+                    "unit/meter-per-second unit-width-full-name", // unlike C++, DOES round-trip
+                    NumberFormatter.with().unit(MeasureUnit.METER_PER_SECOND).unitWidth(UnitWidth.FULL_NAME),
                     new ULocale("ky"), // locale with the interesting data
                     68,
                     "секундасына 68 метр");

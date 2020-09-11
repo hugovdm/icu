@@ -1065,6 +1065,9 @@ void blueprint_helpers::parseIdentifierUnitOption(const StringSegment& segment, 
         return;
     }
 
+    // FIXME: find the correct split-up logic for fullUnit. Perhaps only if it
+    // isn't a built-in unit?
+
     // TODO(ICU-20941): Clean this up (see also
     // https://github.com/icu-units/icu/issues/35).
     for (int32_t i = 0; i < fullUnit.units.length(); i++) {
