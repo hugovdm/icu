@@ -1173,9 +1173,6 @@ class U_I18N_API Usage : public UMemory {
     // Allow skeleton generation code to access private members.
     friend class impl::GeneratorHelpers;
 
-    // Allow MacroProps/MicroProps to initialize empty instances.
-    friend struct impl::MacroProps;
-
 #endif // U_HIDE_INTERNAL_API
 
   private:
@@ -1190,6 +1187,10 @@ class U_I18N_API Usage : public UMemory {
         }
         return false;
     }
+
+    // Allow MacroProps/MicroProps to initialize empty instances and to call
+    // copyErrorTo().
+    friend struct impl::MacroProps;
 };
 
 // Do not enclose entire SymbolsWrapper with #ifndef U_HIDE_INTERNAL_API, needed for a protected field
