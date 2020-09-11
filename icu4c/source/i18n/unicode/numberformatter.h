@@ -1161,19 +1161,9 @@ class U_I18N_API Usage : public UMemory {
     /** @internal */
     bool isSet() const { return fLength > 0; }
 
-    /** @internal */
-    UBool copyErrorTo(UErrorCode &status) const {
-        if (U_FAILURE(fError)) {
-            status = fError;
-            return true;
-        }
-        return false;
-    }
-
   private:
     char *fUsage;
     int16_t fLength;
-    UErrorCode fError;
 
     Usage() : fUsage(nullptr), fLength(0), fError(U_ZERO_ERROR) {}
 
@@ -1187,6 +1177,19 @@ class U_I18N_API Usage : public UMemory {
     friend struct impl::MacroProps;
 
 #endif // U_HIDE_INTERNAL_API
+
+  private:
+    /** @internal */
+    UErrorCode fError;
+
+    /** @internal */
+    UBool copyErrorTo(UErrorCode &status) const {
+        if (U_FAILURE(fError)) {
+            status = fError;
+            return true;
+        }
+        return false;
+    }
 };
 
 // Do not enclose entire SymbolsWrapper with #ifndef U_HIDE_INTERNAL_API, needed for a protected field
