@@ -25,14 +25,14 @@ class UnitsData {
         // Read simple units
         ICUResourceBundle resource;
         resource = (ICUResourceBundle) UResourceBundle.getBundleInstance(ICUData.ICU_BASE_NAME, "units");
-        SimpleUnitsSink sink = new SimpleUnitsSink();
+        SimpleUnitIdentifiersSink sink = new SimpleUnitIdentifiersSink();
         resource.getAllItemsWithFallback("convertUnits", sink);
         simpleUnits = sink.simpleUnits;
 
         return simpleUnits;
     }
 
-    public static class SimpleUnitsSink extends UResource.Sink {
+    public static class SimpleUnitIdentifiersSink extends UResource.Sink {
         String[] simpleUnits = null;
 
         @Override

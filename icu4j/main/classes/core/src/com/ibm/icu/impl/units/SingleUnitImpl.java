@@ -5,7 +5,6 @@
 package com.ibm.icu.impl.units;
 
 import com.ibm.icu.util.MeasureUnit;
-import jdk.nashorn.internal.runtime.regexp.joni.exception.InternalException;
 
 public class SingleUnitImpl {
     /**
@@ -56,15 +55,14 @@ public class SingleUnitImpl {
      * @throws InternalException if a dimensionless SingleUnitImpl
      */
     public String getNeutralIdentifier() {
-        if (this.isDimensionless()) {
-            throw new InternalException("getIdentifier does not support the dimensionless");
-        }
+        assert  !this.isDimensionless();
 
         StringBuilder result = new StringBuilder();
         int posPower = Math.abs(this.getDimensionality());
-        if (posPower == 0) {
-            throw new InternalException("getIdentifier does not support the dimensionless");
-        } else if (posPower == 1) {
+
+        assert posPower > 0 : "getIdentifier does not support the dimensionless";
+
+        if (posPower == 1) {
             // no-op
         } else if (posPower == 2) {
             result.append("square-");

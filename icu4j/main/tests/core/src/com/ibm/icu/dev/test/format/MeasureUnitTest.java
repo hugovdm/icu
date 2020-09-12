@@ -3551,10 +3551,6 @@ public class MeasureUnitTest extends TestFmwk {
         assertEquals("dimensionless must be equals", dimensionless2, dimensionless3);
         assertEquals("dimensionless must be equals", dimensionless3, dimensionless4);
 
-        // At the time of writing, each of the seven groups below caused
-        // Parser::from("") to be called:
-
-
         // product(dimensionless)
         MeasureUnit mile = MeasureUnit.MILE;
         mile = mile.product(dimensionless);

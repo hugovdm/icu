@@ -47,7 +47,7 @@ public class MeasureUnitImpl {
      *
      * @param identifier The unit identifier string.
      * @return A newly parsed object.
-     * @throws <code>InternalError</code> in case of incorrect/non-parsed identifier.
+     * @throws <code>IllegalArgumentException</code> in case of incorrect/non-parsed identifier.
      */
     public static MeasureUnitImpl forIdentifier(String identifier) {
         return UnitsParser.parseForIdentifier(identifier);
