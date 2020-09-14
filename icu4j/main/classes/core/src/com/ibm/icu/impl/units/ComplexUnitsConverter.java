@@ -8,6 +8,7 @@ package com.ibm.icu.impl.units;
 import com.ibm.icu.util.Measure;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -107,13 +108,13 @@ public class ComplexUnitsConverter {
                 // decision is made. However after the thresholding, we use the
                 // original values to ensure unbiased accuracy (to the extent of
                 // double's capabilities).
-                Number newQuantity = Math.floor(quantity.multiply(EPSILON_MULTIPLIER).doubleValue());
+                BigDecimal newQuantity = quantity.multiply(EPSILON_MULTIPLIER).setScale(0, RoundingMode.FLOOR);
 
                 result.add(new Measure(newQuantity, units_.get(i).build()));
 
                 // Keep the residual of the quantity.
                 //   For example: `3.6 feet`, keep only `0.6 feet`
-                quantity = quantity.subtract(BigDecimal.valueOf(newQuantity.longValue()));
+                quantity = quantity.subtract(newQuantity);
             } else { // LAST ELEMENT
                 result.add(new Measure(quantity, units_.get(i).build()));
             }

@@ -1,19 +1,17 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+
 
 package com.ibm.icu.dev.test.impl;
 
 import com.ibm.icu.dev.test.TestUtil;
-import com.ibm.icu.impl.Assert;
+import com.ibm.icu.impl.Pair;
+import com.ibm.icu.impl.units.ComplexUnitsConverter;
 import com.ibm.icu.impl.units.ConversionRates;
 import com.ibm.icu.impl.units.MeasureUnitImpl;
 import com.ibm.icu.impl.units.UnitConverter;
+import com.ibm.icu.impl.units.UnitsRouter;
+import com.ibm.icu.util.Measure;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -21,11 +19,12 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 
-public class UnitConverterTest {
+public class UnitsTest {
 
     public static boolean compareTwoBigDecimal(BigDecimal expected, BigDecimal actual, BigDecimal delta) {
         BigDecimal diff =
@@ -36,6 +35,25 @@ public class UnitConverterTest {
         if (diff.compareTo(delta) == -1) return true;
         return false;
     }
+
+    @Test
+    public void testComplexUnitConverterSorting() {
+
+        MeasureUnitImpl source = MeasureUnitImpl.forIdentifier("meter");
+        MeasureUnitImpl target = MeasureUnitImpl.forIdentifier("inch-and-foot");
+        ConversionRates conversionRates = new ConversionRates();
+
+        ComplexUnitsConverter complexConverter = new ComplexUnitsConverter(source, target, conversionRates);
+        List<Measure> measures = complexConverter.convert(BigDecimal.valueOf(10.0));
+
+        assertEquals(measures.size(), 2);
+        assertEquals("inch-and-foot unit 0", "foot", measures.get(0).getUnit().getIdentifier());
+        assertEquals("inch-and-foot unit 1", "inch", measures.get(1).getUnit().getIdentifier());
+
+        assertTrue("inch-and-foot value 0", compareTwoBigDecimal(BigDecimal.valueOf(32), BigDecimal.valueOf(measures.get(0).getNumber().doubleValue()), BigDecimal.valueOf(0.0001)));
+        assertTrue("inch-and-foot value 1", compareTwoBigDecimal(BigDecimal.valueOf(9.7008), BigDecimal.valueOf(measures.get(1).getNumber().doubleValue()), BigDecimal.valueOf(0.0001)));
+    }
+
 
     @Test
     public void testExtractConvertibility() {
@@ -149,7 +167,7 @@ public class UnitConverterTest {
             if (compareTwoBigDecimal(testCase.expected, converter.convert(testCase.input), BigDecimal.valueOf(0.000001))) {
                 continue;
             } else {
-                Assert.fail(new StringBuilder()
+                fail(new StringBuilder()
                         .append(testCase.category)
                         .append(" ")
                         .append(testCase.sourceString)
@@ -160,6 +178,98 @@ public class UnitConverterTest {
                         .append(" expected  ")
                         .append(testCase.expected.toString())
                         .toString());
+            }
+        }
+    }
+
+    @Test
+    public void testUnitPreferencesFromUnitTests() throws IOException {
+        class TestCase {
+
+            final ArrayList<Pair<String, MeasureUnitImpl>> outputUnitInOrder = new ArrayList<>();
+            final ArrayList<BigDecimal> expectedInOrder = new ArrayList<>();
+            /**
+             * Test Case Data
+             */
+            String category;
+            String usage;
+            String region;
+            Pair<String, MeasureUnitImpl> inputUnit;
+            BigDecimal input;
+
+            TestCase(String line) {
+                String[] fields = line
+                        .replaceAll(" ", "") // Remove all the spaces.
+                        .replaceAll(",", "") // Remove all the commas.
+                        .replaceAll("\t", "")
+                        .split(";");
+
+                String category = fields[0];
+                String usage = fields[1];
+                String region = fields[2];
+                String inputValue = fields[4];
+                String inputUnit = fields[5];
+                ArrayList<Pair<String, String>> outputs = new ArrayList<>();
+
+                for (int i = 6; i < fields.length - 2; i += 2) {
+                    if (i == fields.length - 3) { // last field
+                        outputs.add(Pair.of(fields[i + 2], fields[i + 1]));
+                    } else {
+                        outputs.add(Pair.of(fields[i + 1], fields[i]));
+                    }
+                }
+
+                this.insertData(category, usage, region, inputUnit, inputValue, outputs);
+            }
+
+            private void insertData(String category,
+                                    String usage,
+                                    String region,
+                                    String inputUnitString,
+                                    String inputValue,
+                                    ArrayList<Pair<String, String>> outputs /* Unit Identifier, expected value */) {
+                this.category = category;
+                this.usage = usage;
+                this.region = region;
+                this.inputUnit = Pair.of(inputUnitString, MeasureUnitImpl.UnitsParser.parseForIdentifier(inputUnitString));
+                this.input = new BigDecimal(inputValue);
+                for (Pair<String, String> output :
+                        outputs) {
+                    outputUnitInOrder.add(Pair.of(output.first, MeasureUnitImpl.UnitsParser.parseForIdentifier(output.first)));
+                    expectedInOrder.add(new BigDecimal(output.second));
+                }
+            }
+        }
+
+        // Read Test data from the unitPreferencesTest
+        String codePage = "UTF-8";
+        BufferedReader f = TestUtil.getDataReader("cldr/units/unitPreferencesTest.txt", codePage);
+        ArrayList<TestCase> tests = new ArrayList<>();
+        while (true) {
+            String line = f.readLine();
+            if (line == null) break;
+            if (line.isEmpty() || line.startsWith("#")) continue;
+            tests.add(new TestCase(line));
+        }
+
+        for (TestCase testCase :
+                tests) {
+            UnitsRouter router = new UnitsRouter(testCase.inputUnit.second, testCase.region, testCase.usage);
+            List<Measure> measures = router.route(testCase.input).measures;
+
+            assertEquals("Measures size must be the same as expected units",
+                    measures.size(), testCase.expectedInOrder.size());
+            assertEquals("Measures size must be the same as output units",
+                    measures.size(), testCase.outputUnitInOrder.size());
+
+
+            for (int i = 0; i < measures.size(); i++) {
+                if (!UnitsTest
+                        .compareTwoBigDecimal(testCase.expectedInOrder.get(i),
+                                BigDecimal.valueOf(measures.get(i).getNumber().doubleValue()),
+                                BigDecimal.valueOf(0.00001))) {
+                    fail(testCase.toString() + measures.toString());
+                }
             }
         }
     }

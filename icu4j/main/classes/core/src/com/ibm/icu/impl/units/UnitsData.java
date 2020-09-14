@@ -77,8 +77,8 @@ public class UnitsData {
     public UnitPreferences.UnitPreference[] getPreferencesFor(String category, String usage, String region) {
         return this.unitPreferences.getPreferencesFor(category, usage, region);
     }
-    
-public static class SimpleUnitIdentifiersSink extends UResource.Sink {
+
+    public static class SimpleUnitIdentifiersSink extends UResource.Sink {
         String[] simpleUnits = null;
 
         @Override

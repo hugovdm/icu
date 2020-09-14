@@ -11,11 +11,11 @@ import com.ibm.icu.util.UResourceBundle;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.TreeMap;
+import java.util.HashMap;
 
 public class UnitPreferences {
 
-    private TreeMap<String, TreeMap<String, UnitPreference[]>> mapToUnitPreferences = new TreeMap<>();
+    private HashMap<String, HashMap<String, UnitPreference[]>> mapToUnitPreferences = new HashMap<>();
 
     public UnitPreferences() {
         // Read unit preferences
@@ -80,7 +80,7 @@ public class UnitPreferences {
     private UnitPreference[] getUnitPreferences(String category, String usage, String region) {
         String key = formMapKey(category, usage);
         if (this.mapToUnitPreferences.containsKey(key)) {
-            TreeMap<String, UnitPreference[]> unitPreferencesMap = this.mapToUnitPreferences.get(key);
+            HashMap<String, UnitPreference[]> unitPreferencesMap = this.mapToUnitPreferences.get(key);
             UnitPreference[] result =
                     unitPreferencesMap.containsKey(region) ?
                             unitPreferencesMap.get(region) :
@@ -120,13 +120,13 @@ public class UnitPreferences {
 
     public static class UnitPreferencesSink extends UResource.Sink {
 
-        private TreeMap<String, TreeMap<String, UnitPreference[]>> mapToUnitPreferences;
+        private HashMap<String, HashMap<String, UnitPreference[]>> mapToUnitPreferences;
 
         public UnitPreferencesSink() {
-            this.mapToUnitPreferences = new TreeMap<>();
+            this.mapToUnitPreferences = new HashMap<>();
         }
 
-        public TreeMap<String, TreeMap<String, UnitPreference[]>> getMapToUnitPreferences() {
+        public HashMap<String, HashMap<String, UnitPreference[]>> getMapToUnitPreferences() {
             return mapToUnitPreferences;
         }
 
@@ -175,7 +175,7 @@ public class UnitPreferences {
                                 } else if ("skeleton".equals(keyString)) {
                                     skeleton = value.getString();
                                 } else {
-                                    assert false:"key must be unit, geq or skeleton";
+                                    assert false : "key must be unit, geq or skeleton";
                                 }
                             }
                             assert (unit != null);
@@ -196,11 +196,11 @@ public class UnitPreferences {
 
         private void insertUnitPreferences(String category, String usage, String region, UnitPreference[] unitPreferences) {
             String key = formMapKey(category, usage);
-            TreeMap<String, UnitPreference[]> shouldInsert;
+            HashMap<String, UnitPreference[]> shouldInsert;
             if (this.mapToUnitPreferences.containsKey(key)) {
                 shouldInsert = this.mapToUnitPreferences.get(key);
             } else {
-                shouldInsert = new TreeMap<>();
+                shouldInsert = new HashMap<>();
                 this.mapToUnitPreferences.put(key, shouldInsert);
             }
 
