@@ -8,6 +8,20 @@
  */
 package com.ibm.icu.util;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.ibm.icu.impl.CollectionSet;
 import com.ibm.icu.impl.ICUData;
 import com.ibm.icu.impl.ICUResourceBundle;
@@ -17,8 +31,6 @@ import com.ibm.icu.impl.units.MeasureUnitImpl;
 import com.ibm.icu.impl.units.SingleUnitImpl;
 import com.ibm.icu.text.UnicodeSet;
 
-import java.io.*;
-import java.util.*;
 
 /**
  * A unit such as length, mass, volume, currency, etc.  A unit is
@@ -309,8 +321,10 @@ public class MeasureUnit implements Serializable {
     }
 
     /**
-     * Construct a MeasureUnit from a CLDR Sequence Unit Identifier, defined in UTS 35.
+     * Construct a MeasureUnit from a CLDR Unit Identifier, defined in UTS 35.
      * Validates and canonicalizes the identifier.
+     *
+     * Note: dimensionless <code>MeasureUnit</code> is <code>null</code>
      *
      * <pre>
      * MeasureUnit example = MeasureUnit::forIdentifier("furlong-per-nanosecond")
@@ -322,6 +336,10 @@ public class MeasureUnit implements Serializable {
      * @provisional This API might change or be removed in a future release.
      */
     public static MeasureUnit forIdentifier(String identifier) {
+        if (identifier == null || identifier.isEmpty()) {
+            return NoUnit.BASE;
+        }
+
         return MeasureUnitImpl.forIdentifier(identifier).build();
     }
 
@@ -445,12 +463,7 @@ public class MeasureUnit implements Serializable {
      * @provisional This API might change or be removed in a future release.
      */
     public int getDimensionality() {
-        SingleUnitImpl singleUnit = getSingleUnitImpl();
-        if (singleUnit.isDimensionless()) {
-            return 0;
-        }
-
-        return singleUnit.getDimensionality();
+        return getSingleUnitImpl().getDimensionality();
     }
 
     /**
@@ -511,6 +524,11 @@ public class MeasureUnit implements Serializable {
      */
     public MeasureUnit product(MeasureUnit other) {
         MeasureUnitImpl implCopy = getCopyOfMeasureUnitImpl();
+
+        if (other == null /* dimensionless */) {
+            return implCopy.build();
+        }
+
         final MeasureUnitImpl otherImplRef = other.getMayBeReferenceOfMeasureUnitImpl();
         if (implCopy.getComplexity() == Complexity.MIXED || otherImplRef.getComplexity() == Complexity.MIXED) {
             throw new UnsupportedOperationException();
@@ -989,12 +1007,6 @@ public class MeasureUnit implements Serializable {
     public static final MeasureUnit MOLE = MeasureUnit.internalGetInstance("concentr", "mole");
 
     /**
-     * Constant for unit of concentr: permillion
-     * @stable ICU 57
-     */
-    public static final MeasureUnit PART_PER_MILLION = MeasureUnit.internalGetInstance("concentr", "permillion");
-
-    /**
      * Constant for unit of concentr: percent
      * @stable ICU 63
      */
@@ -1005,6 +1017,12 @@ public class MeasureUnit implements Serializable {
      * @stable ICU 63
      */
     public static final MeasureUnit PERMILLE = MeasureUnit.internalGetInstance("concentr", "permille");
+
+    /**
+     * Constant for unit of concentr: permillion
+     * @stable ICU 57
+     */
+    public static final MeasureUnit PART_PER_MILLION = MeasureUnit.internalGetInstance("concentr", "permillion");
 
     /**
      * Constant for unit of concentr: permyriad
@@ -1122,8 +1140,7 @@ public class MeasureUnit implements Serializable {
 
     /**
      * Constant for unit of duration: decade
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit DECADE = MeasureUnit.internalGetInstance("duration", "decade");
 
@@ -1273,8 +1290,7 @@ public class MeasureUnit implements Serializable {
 
     /**
      * Constant for unit of energy: therm-us
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit THERM_US = MeasureUnit.internalGetInstance("energy", "therm-us");
 
@@ -1315,51 +1331,51 @@ public class MeasureUnit implements Serializable {
     public static final MeasureUnit MEGAHERTZ = MeasureUnit.internalGetInstance("frequency", "megahertz");
 
     /**
-     * Constant for unit of graphics: dot-per-centimeter
-     * @draft ICU 65
+     * Constant for unit of graphics: dot
+     * @draft ICU 68
      * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit DOT = MeasureUnit.internalGetInstance("graphics", "dot");
+
+    /**
+     * Constant for unit of graphics: dot-per-centimeter
+     * @stable ICU 65
      */
     public static final MeasureUnit DOT_PER_CENTIMETER = MeasureUnit.internalGetInstance("graphics", "dot-per-centimeter");
 
     /**
      * Constant for unit of graphics: dot-per-inch
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit DOT_PER_INCH = MeasureUnit.internalGetInstance("graphics", "dot-per-inch");
 
     /**
      * Constant for unit of graphics: em
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit EM = MeasureUnit.internalGetInstance("graphics", "em");
 
     /**
      * Constant for unit of graphics: megapixel
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit MEGAPIXEL = MeasureUnit.internalGetInstance("graphics", "megapixel");
 
     /**
      * Constant for unit of graphics: pixel
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit PIXEL = MeasureUnit.internalGetInstance("graphics", "pixel");
 
     /**
      * Constant for unit of graphics: pixel-per-centimeter
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit PIXEL_PER_CENTIMETER = MeasureUnit.internalGetInstance("graphics", "pixel-per-centimeter");
 
     /**
      * Constant for unit of graphics: pixel-per-inch
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit PIXEL_PER_INCH = MeasureUnit.internalGetInstance("graphics", "pixel-per-inch");
 
@@ -1380,6 +1396,13 @@ public class MeasureUnit implements Serializable {
      * @stable ICU 54
      */
     public static final MeasureUnit DECIMETER = MeasureUnit.internalGetInstance("length", "decimeter");
+
+    /**
+     * Constant for unit of length: earth-radius
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit EARTH_RADIUS = MeasureUnit.internalGetInstance("length", "earth-radius");
 
     /**
      * Constant for unit of length: fathom
@@ -1490,6 +1513,20 @@ public class MeasureUnit implements Serializable {
     public static final MeasureUnit YARD = MeasureUnit.internalGetInstance("length", "yard");
 
     /**
+     * Constant for unit of light: candela
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit CANDELA = MeasureUnit.internalGetInstance("light", "candela");
+
+    /**
+     * Constant for unit of light: lumen
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit LUMEN = MeasureUnit.internalGetInstance("light", "lumen");
+
+    /**
      * Constant for unit of light: lux
      * @stable ICU 54
      */
@@ -1518,6 +1555,13 @@ public class MeasureUnit implements Serializable {
      * @stable ICU 64
      */
     public static final MeasureUnit EARTH_MASS = MeasureUnit.internalGetInstance("mass", "earth-mass");
+
+    /**
+     * Constant for unit of mass: grain
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit GRAIN = MeasureUnit.internalGetInstance("mass", "grain");
 
     /**
      * Constant for unit of mass: gram
@@ -1629,8 +1673,7 @@ public class MeasureUnit implements Serializable {
 
     /**
      * Constant for unit of pressure: bar
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit BAR = MeasureUnit.internalGetInstance("pressure", "bar");
 
@@ -1672,8 +1715,7 @@ public class MeasureUnit implements Serializable {
 
     /**
      * Constant for unit of pressure: pascal
-     * @draft ICU 65
-     * @provisional This API might change or be removed in a future release.
+     * @stable ICU 65
      */
     public static final MeasureUnit PASCAL = MeasureUnit.internalGetInstance("pressure", "pascal");
 
@@ -1828,6 +1870,34 @@ public class MeasureUnit implements Serializable {
     public static final MeasureUnit DECILITER = MeasureUnit.internalGetInstance("volume", "deciliter");
 
     /**
+     * Constant for unit of volume: dessert-spoon
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit DESSERT_SPOON = MeasureUnit.internalGetInstance("volume", "dessert-spoon");
+
+    /**
+     * Constant for unit of volume: dessert-spoon-imperial
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit DESSERT_SPOON_IMPERIAL = MeasureUnit.internalGetInstance("volume", "dessert-spoon-imperial");
+
+    /**
+     * Constant for unit of volume: dram
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit DRAM = MeasureUnit.internalGetInstance("volume", "dram");
+
+    /**
+     * Constant for unit of volume: drop
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit DROP = MeasureUnit.internalGetInstance("volume", "drop");
+
+    /**
      * Constant for unit of volume: fluid-ounce
      * @stable ICU 54
      */
@@ -1858,6 +1928,13 @@ public class MeasureUnit implements Serializable {
     public static final MeasureUnit HECTOLITER = MeasureUnit.internalGetInstance("volume", "hectoliter");
 
     /**
+     * Constant for unit of volume: jigger
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit JIGGER = MeasureUnit.internalGetInstance("volume", "jigger");
+
+    /**
      * Constant for unit of volume: liter
      * @stable ICU 53
      */
@@ -1874,6 +1951,13 @@ public class MeasureUnit implements Serializable {
      * @stable ICU 54
      */
     public static final MeasureUnit MILLILITER = MeasureUnit.internalGetInstance("volume", "milliliter");
+
+    /**
+     * Constant for unit of volume: pinch
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit PINCH = MeasureUnit.internalGetInstance("volume", "pinch");
 
     /**
      * Constant for unit of volume: pint
@@ -1894,6 +1978,13 @@ public class MeasureUnit implements Serializable {
     public static final MeasureUnit QUART = MeasureUnit.internalGetInstance("volume", "quart");
 
     /**
+     * Constant for unit of volume: quart-imperial
+     * @draft ICU 68
+     * @provisional This API might change or be removed in a future release.
+    */
+    public static final MeasureUnit QUART_IMPERIAL = MeasureUnit.internalGetInstance("volume", "quart-imperial");
+
+    /**
      * Constant for unit of volume: tablespoon
      * @stable ICU 54
      */
@@ -1912,12 +2003,14 @@ public class MeasureUnit implements Serializable {
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.LITER, MeasureUnit.KILOMETER), MeasureUnit.LITER_PER_KILOMETER);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.POUND, MeasureUnit.SQUARE_INCH), MeasureUnit.POUND_PER_SQUARE_INCH);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.PIXEL, MeasureUnit.CENTIMETER), MeasureUnit.PIXEL_PER_CENTIMETER);
+        unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.DOT, MeasureUnit.CENTIMETER), MeasureUnit.DOT_PER_CENTIMETER);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.MILE, MeasureUnit.HOUR), MeasureUnit.MILE_PER_HOUR);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.MILLIGRAM, MeasureUnit.DECILITER), MeasureUnit.MILLIGRAM_PER_DECILITER);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.MILE, MeasureUnit.GALLON_IMPERIAL), MeasureUnit.MILE_PER_GALLON_IMPERIAL);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.KILOMETER, MeasureUnit.HOUR), MeasureUnit.KILOMETER_PER_HOUR);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.MILE, MeasureUnit.GALLON), MeasureUnit.MILE_PER_GALLON);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.PIXEL, MeasureUnit.INCH), MeasureUnit.PIXEL_PER_INCH);
+        unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.DOT, MeasureUnit.INCH), MeasureUnit.DOT_PER_INCH);
         unitPerUnitToSingleUnit.put(Pair.<MeasureUnit, MeasureUnit>of(MeasureUnit.METER, MeasureUnit.SECOND), MeasureUnit.METER_PER_SECOND);
     }
 

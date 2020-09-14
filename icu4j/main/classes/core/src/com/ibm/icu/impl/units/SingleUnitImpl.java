@@ -1,16 +1,9 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
 
 package com.ibm.icu.impl.units;
 
 import com.ibm.icu.util.MeasureUnit;
-import jdk.nashorn.internal.runtime.regexp.joni.exception.InternalException;
 
 public class SingleUnitImpl {
     /**
@@ -58,18 +51,15 @@ public class SingleUnitImpl {
     /**
      * Generates an neutral identifier string for a single unit which means we do not include the dimension signal.
      *
-     * @throws InternalException if a dimensionless SingleUnitImpl
+     * @throws IllegalArgumentException
      */
     public String getNeutralIdentifier() {
-        if (this.isDimensionless()) {
-            throw new InternalException("getIdentifier does not support the dimensionless");
-        }
-
         StringBuilder result = new StringBuilder();
         int posPower = Math.abs(this.getDimensionality());
-        if (posPower == 0) {
-            throw new InternalException("getIdentifier does not support the dimensionless");
-        } else if (posPower == 1) {
+
+        assert posPower > 0 : "getIdentifier does not support the dimensionless";
+
+        if (posPower == 1) {
             // no-op
         } else if (posPower == 2) {
             result.append("square-");
@@ -87,17 +77,6 @@ public class SingleUnitImpl {
         result.append(this.getSimpleUnit());
 
         return result.toString();
-    }
-
-    /**
-     * Returns true if this unit is the "dimensionless base unit", as produced
-     * by the MeasureUnit() default constructor.
-     * <p>
-     * NOTE:
-     * (This does not include the likes of concentrations or angles.)
-     */
-    public boolean isDimensionless() {
-        return simpleUnit.isEmpty();
     }
 
     /**

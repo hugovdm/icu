@@ -11,7 +11,7 @@ import com.ibm.icu.util.MeasureUnit;
 import com.ibm.icu.util.UResourceBundle;
 
 import java.util.ArrayList;
-import java.util.TreeMap;
+import java.util.HashMap;
 
 /**
  * Responsible for all units data operations (retriever, analysis, extraction certain data ... etc.).
@@ -39,7 +39,7 @@ public class UnitsData {
         // Read simple units
         ICUResourceBundle resource;
         resource = (ICUResourceBundle) UResourceBundle.getBundleInstance(ICUData.ICU_BASE_NAME, "units");
-        SimpleUnitsSink sink = new SimpleUnitsSink();
+        SimpleUnitIdentifiersSink sink = new SimpleUnitIdentifiersSink();
         resource.getAllItemsWithFallback("convertUnits", sink);
         simpleUnits = sink.simpleUnits;
 
@@ -55,10 +55,8 @@ public class UnitsData {
     }
 
     /**
-     * TODO: add comment
-     *
      * @param measureUnit
-     * @return
+     * @return the corresponding category.
      */
     public String getCategory(MeasureUnitImpl measureUnit) {
         MeasureUnitImpl baseMeasureUnit
@@ -79,14 +77,14 @@ public class UnitsData {
     public UnitPreferences.UnitPreference[] getPreferencesFor(String category, String usage, String region) {
         return this.unitPreferences.getPreferencesFor(category, usage, region);
     }
-
-    public static class SimpleUnitsSink extends UResource.Sink {
+    
+public static class SimpleUnitIdentifiersSink extends UResource.Sink {
         String[] simpleUnits = null;
 
         @Override
         public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
-            assert (key.toString().equals(Constants.CONVERSION_UNIT_TABLE_NAME));
-            assert (value.getType() == UResourceBundle.TABLE);
+            assert key.toString().equals(Constants.CONVERSION_UNIT_TABLE_NAME);
+            assert value.getType() == UResourceBundle.TABLE;
 
             UResource.Table simpleUnitsTable = value.getTable();
             ArrayList<String> simpleUnits = new ArrayList<>();
@@ -144,7 +142,7 @@ public class UnitsData {
          * Contains the map between units in their base units into their category.
          * For example:  meter-per-second --> "speed"
          */
-        TreeMap<String, String> mapFromUnitToCategory;
+        HashMap<String, String> mapFromUnitToCategory;
 
 
         public Categories() {
@@ -162,10 +160,10 @@ public class UnitsData {
          * Contains the map between units in their base units into their category.
          * For example:  meter-per-second --> "speed"
          */
-        TreeMap<String, String> mapFromUnitToCategory;
+        HashMap<String, String> mapFromUnitToCategory;
 
         public CategoriesSink() {
-            mapFromUnitToCategory = new TreeMap<>();
+            mapFromUnitToCategory = new HashMap<>();
         }
 
         @Override
@@ -180,7 +178,7 @@ public class UnitsData {
             }
         }
 
-        public TreeMap<String, String> getMapFromUnitToCategory() {
+        public HashMap<String, String> getMapFromUnitToCategory() {
             return mapFromUnitToCategory;
         }
     }

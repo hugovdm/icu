@@ -44,6 +44,7 @@ public class UnitRouterTest {
                 String[] fields = line
                         .replaceAll(" ", "") // Remove all the spaces.
                         .replaceAll(",", "") // Remove all the commas.
+                        .replaceAll("\t", "")
                         .split(";");
 
                 String category = fields[0];

@@ -118,6 +118,7 @@ public class UnitConverterTest {
                 String[] fields = line
                         .replaceAll(" ", "") // Remove all the spaces.
                         .replaceAll(",", "") // Remove all the commas.
+                        .replaceAll("\t", "")
                         .split(";");
 
                 this.category = fields[0].replaceAll(" ", "");
