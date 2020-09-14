@@ -1,11 +1,6 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+
 
 package com.ibm.icu.impl.units;
 
@@ -29,7 +24,7 @@ public class UnitPreferences {
         resource = (ICUResourceBundle) UResourceBundle.getBundleInstance(ICUData.ICU_BASE_NAME, "units");
         UnitPreferencesSink sink = new UnitPreferencesSink();
         resource.getAllItemsWithFallback(UnitsData.Constants.UNIT_PREFERENCE_TABLE_NAME, sink);
-        this.mapToUnitPreferences =  sink.getMapToUnitPreferences();
+        this.mapToUnitPreferences = sink.getMapToUnitPreferences();
     }
 
     public static String formMapKey(String category, String usage) {
@@ -39,7 +34,8 @@ public class UnitPreferences {
     /**
      * Extracts all the sub-usages from a usage including the default one in the end.
      * The usages will be in order starting with the longest matching one.
-     * For example: if usage:                   "person-height-child"
+     * For example:
+     * if usage                :   "person-height-child"
      * the function will return:   "person-height-child"
      * "person-height"
      * "person"
@@ -72,8 +68,7 @@ public class UnitPreferences {
             if (result != null) break;
         }
 
-        // At least the category must be exist
-        Assert.assrt(result != null);
+        assert (result != null) : "At least the category must be exist";
         return result;
     }
 
@@ -82,7 +77,6 @@ public class UnitPreferences {
      * @param usage
      * @param region
      * @return null if there is no entry associated to the category and usage. O.W. returns the corresponding UnitPreference[]
-     * @throws error if the category and usage exist, but the region or the default region are not.
      */
     private UnitPreference[] getUnitPreferences(String category, String usage, String region) {
         String key = formMapKey(category, usage);
@@ -93,7 +87,7 @@ public class UnitPreferences {
                             unitPreferencesMap.get(region) :
                             unitPreferencesMap.get(UnitsData.Constants.DEFAULT_REGION);
 
-            Assert.assrt(result != null);
+            assert (result != null);
             return result;
         }
 
@@ -101,10 +95,9 @@ public class UnitPreferences {
     }
 
     public static class UnitPreference {
-        // TODO: make them final.
-        private String unit;
-        private BigDecimal geq;
-        private String skeleton;
+        private final String unit;
+        private final BigDecimal geq;
+        private final String skeleton;
 
 
         public UnitPreference(String unit, String geq, String skeleton) {
@@ -146,27 +139,27 @@ public class UnitPreferences {
          */
         @Override
         public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
-            Assert.assrt(UnitsData.Constants.UNIT_PREFERENCE_TABLE_NAME.equals(key.toString()));
+            assert (UnitsData.Constants.UNIT_PREFERENCE_TABLE_NAME.equals(key.toString()));
 
             UResource.Table categoryTable = value.getTable();
             for (int i = 0; categoryTable.getKeyAndValue(i, key, value); i++) {
-                Assert.assrt(value.getType() == UResourceBundle.TABLE);
+                assert (value.getType() == UResourceBundle.TABLE);
 
                 String category = key.toString();
                 UResource.Table usageTable = value.getTable();
                 for (int j = 0; usageTable.getKeyAndValue(j, key, value); j++) {
-                    Assert.assrt(value.getType() == UResourceBundle.TABLE);
+                    assert (value.getType() == UResourceBundle.TABLE);
 
                     String usage = key.toString();
                     UResource.Table regionTable = value.getTable();
                     for (int k = 0; regionTable.getKeyAndValue(k, key, value); k++) {
-                        Assert.assrt(value.getType() == UResourceBundle.ARRAY);
+                        assert (value.getType() == UResourceBundle.ARRAY);
 
                         String region = key.toString();
                         UResource.Array preferencesTable = value.getArray();
                         ArrayList<UnitPreference> unitPreferences = new ArrayList<>();
                         for (int l = 0; preferencesTable.getValue(l, value); l++) {
-                            Assert.assrt(value.getType() == UResourceBundle.TABLE);
+                            assert (value.getType() == UResourceBundle.TABLE);
 
                             UResource.Table singlePrefTable = value.getTable();
                             // TODO collect the data
@@ -174,7 +167,7 @@ public class UnitPreferences {
                             String geq = "1";
                             String skeleton = "";
                             for (int m = 0; singlePrefTable.getKeyAndValue(m, key, value); m++) {
-                                Assert.assrt(value.getType() == UResourceBundle.STRING);
+                                assert (value.getType() == UResourceBundle.STRING);
                                 String keyString = key.toString();
                                 if ("unit".equals(keyString)) {
                                     unit = value.getString();
@@ -186,11 +179,11 @@ public class UnitPreferences {
                                     Assert.fail("key must be unit, geq or skeleton");
                                 }
                             }
-                            Assert.assrt(unit != null);
+                            assert (unit != null);
                             unitPreferences.add(new UnitPreference(unit, geq, skeleton));
                         }
 
-                        Assert.assrt(!unitPreferences.isEmpty());
+                        assert (!unitPreferences.isEmpty());
                         this.insertUnitPreferences(
                                 category,
                                 usage,

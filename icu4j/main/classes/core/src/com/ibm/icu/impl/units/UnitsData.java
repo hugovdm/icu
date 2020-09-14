@@ -1,15 +1,9 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
 import com.ibm.icu.impl.ICUData;
 import com.ibm.icu.impl.ICUResourceBundle;
 import com.ibm.icu.impl.UResource;
@@ -91,8 +85,8 @@ public class UnitsData {
 
         @Override
         public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
-            Assert.assrt(key.toString().equals(Constants.CONVERSION_UNIT_TABLE_NAME));
-            Assert.assrt(value.getType() == UResourceBundle.TABLE);
+            assert (key.toString().equals(Constants.CONVERSION_UNIT_TABLE_NAME));
+            assert (value.getType() == UResourceBundle.TABLE);
 
             UResource.Table simpleUnitsTable = value.getTable();
             ArrayList<String> simpleUnits = new ArrayList<>();
@@ -176,12 +170,12 @@ public class UnitsData {
 
         @Override
         public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
-            Assert.assrt(key.toString() == Constants.CATEGORY_TABLE_NAME);
-            Assert.assrt(value.getType() == UResourceBundle.TABLE);
+            assert (key.toString() == Constants.CATEGORY_TABLE_NAME);
+            assert (value.getType() == UResourceBundle.TABLE);
 
             UResource.Table categoryTable = value.getTable();
             for (int i = 0; categoryTable.getKeyAndValue(i, key, value); i++) {
-                Assert.assrt(value.getType() == UResourceBundle.STRING);
+                assert (value.getType() == UResourceBundle.STRING);
                 mapFromUnitToCategory.put(key.toString(), value.toString());
             }
         }

@@ -1,21 +1,16 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
-import com.ibm.icu.impl.Pair;
+
 import com.ibm.icu.util.Measure;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Converts from single or compound unit to single, compound or mixed units.
@@ -27,7 +22,8 @@ import java.util.Collections;
  * instances of the `UnitConverter` to perform the conversion.
  */
 public class ComplexUnitsConverter {
-    private static final double EPSILON = Math.ulp(1.0);
+    private static final BigDecimal EPSILON = BigDecimal.valueOf(Math.ulp(1.0));
+    private static final BigDecimal EPSILON_MULTIPLIER = BigDecimal.valueOf(1).add(EPSILON);
     private ArrayList<UnitConverter> unitConverters_;
     private ArrayList<MeasureUnitImpl> units_;
 
@@ -43,7 +39,7 @@ public class ComplexUnitsConverter {
     public ComplexUnitsConverter(MeasureUnitImpl inputUnit, MeasureUnitImpl outputUnits,
                                  ConversionRates conversionRates) {
         units_ = outputUnits.extractIndividualUnits();
-        Assert.assrt(!units_.isEmpty());
+        assert (!units_.isEmpty());
 
         // Sort the units in a descending order.
         Collections.sort(
@@ -84,10 +80,10 @@ public class ComplexUnitsConverter {
      * `foot` with the `limit`.
      */
     public boolean greaterThanOrEqual(BigDecimal quantity, BigDecimal limit) {
-        assert !units_.isEmpty() ;
+        assert !units_.isEmpty();
 
         // NOTE: First converter converts to the biggest quantity.
-        return unitConverters_.get(0).convert(quantity).multiply(BigDecimal.valueOf(1 + EPSILON)).compareTo(limit) >= 0;
+        return unitConverters_.get(0).convert(quantity).multiply(EPSILON_MULTIPLIER).compareTo(limit) >= 0;
     }
 
     /**
@@ -98,9 +94,8 @@ public class ComplexUnitsConverter {
      * the smallest element is the only element that could have fractional values. And all
      * other elements are floored to the nearest integer
      */
-    public Pair<ArrayList<Measure>, ArrayList<Pair<MeasureUnitImpl, BigDecimal>>> convert(BigDecimal quantity) {
-        ArrayList<Measure> result = new ArrayList<>();
-        ArrayList<Pair<MeasureUnitImpl, BigDecimal>> tempResult = new ArrayList<>();
+    public List<Measure> convert(BigDecimal quantity) {
+        List<Measure> result = new ArrayList<>();
 
         for (int i = 0, n = unitConverters_.size(); i < n; ++i) {
             quantity = (unitConverters_.get(i)).convert(quantity);
@@ -112,23 +107,19 @@ public class ComplexUnitsConverter {
                 // decision is made. However after the thresholding, we use the
                 // original values to ensure unbiased accuracy (to the extent of
                 // double's capabilities).
-                Number newQuantity = Math.floor(quantity.doubleValue() * (1 + EPSILON));
+                Number newQuantity = Math.floor(quantity.multiply(EPSILON_MULTIPLIER).doubleValue());
 
-                // NOTE: Measure would own its MeasureUnit. // TODO?
-                //  result.add(new Measure(newQuantity, units_.get(i).build()));
-                tempResult.add(Pair.of(units_.get(i), BigDecimal.valueOf(newQuantity.doubleValue())));
+                result.add(new Measure(newQuantity, units_.get(i).build()));
 
                 // Keep the residual of the quantity.
                 //   For example: `3.6 feet`, keep only `0.6 feet`
                 quantity = quantity.subtract(BigDecimal.valueOf(newQuantity.longValue()));
             } else { // LAST ELEMENT
-                // NOTE: Measure would own its MeasureUnit. // TODO?
-                // result.add(new Measure(quantity, units_.get(i).build()));
-                tempResult.add(Pair.of(units_.get(i), BigDecimal.valueOf(quantity.doubleValue())));
+                result.add(new Measure(quantity, units_.get(i).build()));
             }
         }
 
-        return Pair.of(result, tempResult);
+        return result;
     }
 }
 

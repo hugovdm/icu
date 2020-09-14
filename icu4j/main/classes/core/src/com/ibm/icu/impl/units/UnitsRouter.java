@@ -1,21 +1,15 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
-import com.ibm.icu.impl.Pair;
 import com.ibm.icu.util.Measure;
 import com.ibm.icu.util.MeasureUnit;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * `UnitsRouter` responsible for converting from a single unit (such as `meter` or `meter-per-second`) to
@@ -46,18 +40,11 @@ import java.util.ArrayList;
  * desired complex units and to check the limit too.
  */
 public class UnitsRouter {
-    public class RouteResult {
-        public ArrayList<Measure> measures;
-        public String precision;
-        public ArrayList<Pair<MeasureUnitImpl, BigDecimal>> tempResults; // TODO: remove this after implementing build function.
-
-        RouteResult(Pair<ArrayList<Measure>, ArrayList<Pair<MeasureUnitImpl, BigDecimal>>> results, String precision) {
-            this.measures = results.first;
-            ;
-            this.precision = precision;
-            this.tempResults = results.second;
-        }
-    }
+    // List of possible output units. TODO: converterPreferences_ now also has
+    // this data available. Maybe drop outputUnits_ and have getOutputUnits
+    // construct a the list from data in converterPreferences_ instead?
+    private ArrayList<MeasureUnit> outputUnits_ = new ArrayList<>();
+    private ArrayList<ConverterPreference> converterPreferences_ = new ArrayList<>();
 
     public UnitsRouter(MeasureUnitImpl inputUnitImpl, String region, String usage) {
         // TODO: do we want to pass in ConversionRates and UnitPreferences instead?
@@ -66,7 +53,7 @@ public class UnitsRouter {
 
         //MeasureUnitImpl inputUnitImpl = MeasureUnitImpl.forMeasureUnitMaybeCopy(inputUnit);
         String category = data.getCategory(inputUnitImpl);
-        UnitPreferences.UnitPreference[] unitPreferences = data.getPreferencesFor(category,  usage, region);
+        UnitPreferences.UnitPreference[] unitPreferences = data.getPreferencesFor(category, usage, region);
 
         for (int i = 0; i < unitPreferences.length; ++i) {
             UnitPreferences.UnitPreference preference = unitPreferences[i];
@@ -82,7 +69,7 @@ public class UnitsRouter {
             // NOTE:
             //  It is allowed to have an empty precision.
             if (!precision.isEmpty() && !precision.startsWith("precision-increment")) {
-                Assert.fail("Only `precision-increment` is allowed");
+                throw new AssertionError("Only `precision-increment` is allowed");
             }
 
             outputUnits_.add(complexTargetUnitImpl.build());
@@ -116,21 +103,14 @@ public class UnitsRouter {
         return this.outputUnits_;
     }
 
-
-    // List of possible output units. TODO: converterPreferences_ now also has
-    // this data available. Maybe drop outputUnits_ and have getOutputUnits
-    // construct a the list from data in converterPreferences_ instead?
-    private ArrayList<MeasureUnit> outputUnits_ = new ArrayList<>();
-    private ArrayList<ConverterPreference> converterPreferences_ = new ArrayList<>();
-
     /**
      * Contains the complex unit converter and the limit which representing the smallest value that the
      * converter should accept. For example, if the converter is converting to `foot+inch` and the limit
      * equals 3.0, thus means the converter should not convert to a value less than `3.0 feet`.
-     *
+     * <p>
      * NOTE:
-     *    if the limit doest not has a value `i.e. (std::numeric_limits<double>::lowest())`, this mean there
-     *    is no limit for the converter.
+     * if the limit doest not has a value `i.e. (std::numeric_limits<double>::lowest())`, this mean there
+     * is no limit for the converter.
      */
     public static class ConverterPreference {
         ComplexUnitsConverter converter;
@@ -148,6 +128,16 @@ public class UnitsRouter {
                                    BigDecimal limit, String precision, ConversionRates conversionRates) {
             this.converter = new ComplexUnitsConverter(source, outputUnits, conversionRates);
             this.limit = limit;
+            this.precision = precision;
+        }
+    }
+
+    public class RouteResult {
+        public List<Measure> measures;
+        public String precision;
+
+        RouteResult(List<Measure> measures, String precision) {
+            this.measures = measures;
             this.precision = precision;
         }
     }

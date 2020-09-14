@@ -1,11 +1,6 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+
 
 package com.ibm.icu.impl.units;
 
@@ -19,9 +14,14 @@ import com.ibm.icu.util.UResourceBundle;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
-import java.util.TreeMap;
+import java.util.HashMap;
 
 public class ConversionRates {
+
+    /**
+     * Map from any simple unit (i.e. "meter", "foot", "inch") to its basic/root conversion rate info.
+     */
+    private HashMap<String, ConversionRateInfo> mapToConversionRate;
 
     public ConversionRates() {
         // Read the conversion rates from the data (units.txt).
@@ -41,7 +41,7 @@ public class ConversionRates {
     private UnitConverter.Factor getFactorToBase(SingleUnitImpl singleUnit) {
         int power = singleUnit.getDimensionality();
         MeasureUnit.SIPrefix siPrefix = singleUnit.getSiPrefix();
-        UnitConverter.Factor result = UnitConverter.Factor.precessFactor(mapToConversionRate.get(singleUnit.getSimpleUnit()).getConversionRate());
+        UnitConverter.Factor result = UnitConverter.Factor.processFactor(mapToConversionRate.get(singleUnit.getSimpleUnit()).getConversionRate());
 
         return result.applySiPrefix(siPrefix).power(power); // NOTE: you must apply the SI prefixes before the power.
     }
@@ -74,7 +74,7 @@ public class ConversionRates {
     }
 
     public MeasureUnitImpl getBasicMeasureUnitImplWithoutSIPrefix(MeasureUnitImpl measureUnit) {
-        ArrayList<SingleUnitImpl> baseUnits =  this.getBasicUnitsWithoutSIPrefix(measureUnit);
+        ArrayList<SingleUnitImpl> baseUnits = this.getBasicUnitsWithoutSIPrefix(measureUnit);
 
         MeasureUnitImpl result = new MeasureUnitImpl();
         for (SingleUnitImpl baseUnit :
@@ -84,7 +84,6 @@ public class ConversionRates {
 
         return result;
     }
-
 
     public ArrayList<SingleUnitImpl> getBasicUnitsWithoutSIPrefix(MeasureUnitImpl measureUnitImpl) {
         ArrayList<SingleUnitImpl> result = new ArrayList<>();
@@ -132,12 +131,12 @@ public class ConversionRates {
         return true;
     }
 
-    /**
-     * Map from any simple unit (i.e. "meter", "foot", "inch") to its basic/root conversion rate info.
-     */
-    private TreeMap<String, ConversionRate> mapToConversionRate;
-
     public static class ConversionRatesSink extends UResource.Sink {
+        /**
+         * Map from any simple unit (i.e. "meter", "foot", "inch") to its basic/root conversion rate info.
+         */
+        private HashMap<String, ConversionRateInfo> mapToConversionRate = new HashMap<>();
+
         @Override
         public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
             Assert.assrt(UnitsData.Constants.CONVERSION_UNIT_TABLE_NAME.equals(key.toString()));
@@ -157,7 +156,7 @@ public class ConversionRates {
 
 
                     String keyString = key.toString();
-                    String valueString = value.toString().replaceAll(" ","");
+                    String valueString = value.toString().replaceAll(" ", "");
                     if ("target".equals(keyString)) {
                         target = valueString;
                     } else if ("factor".equals(keyString)) {
@@ -173,29 +172,40 @@ public class ConversionRates {
                 Assert.assrt(target != null);
                 Assert.assrt(factor != null);
 
-                mapToConversionRate.put(simpleUnit, new ConversionRate(simpleUnit, target, factor, offset));
+                mapToConversionRate.put(simpleUnit, new ConversionRateInfo(simpleUnit, target, factor, offset));
             }
 
 
         }
 
-        public TreeMap<String, ConversionRate> getMapToConversionRate() {
+        public HashMap<String, ConversionRateInfo> getMapToConversionRate() {
             return mapToConversionRate;
         }
-
-        /**
-         * Map from any simple unit (i.e. "meter", "foot", "inch") to its basic/root conversion rate info.
-         */
-        private TreeMap<String, ConversionRate> mapToConversionRate = new TreeMap<>();
     }
 
-    public static class ConversionRate {
+    public static class ConversionRateInfo {
 
-        public ConversionRate(String simpleUnit, String target, String conversionRate, String offset) {
+        private final String simpleUnit;
+        private final String target;
+        private final String conversionRate;
+        private final BigDecimal offset;
+
+        public ConversionRateInfo(String simpleUnit, String target, String conversionRate, String offset) {
             this.simpleUnit = simpleUnit;
             this.target = target;
             this.conversionRate = conversionRate;
             this.offset = forNumberWithDivision(offset);
+        }
+
+        private static BigDecimal forNumberWithDivision(String numberWithDivision) {
+            String[] numbers = numberWithDivision.split("/");
+            Assert.assrt(numbers.length <= 2);
+
+            if (numbers.length == 1) {
+                return new BigDecimal(numbers[0]);
+            }
+
+            return new BigDecimal(numbers[0]).divide(new BigDecimal(numbers[1]), MathContext.DECIMAL128);
         }
 
         /**
@@ -209,7 +219,6 @@ public class ConversionRates {
         }
 
         /**
-         *
          * @return The offset from this unit to the base unit.
          */
         public BigDecimal getOffset() {
@@ -217,27 +226,10 @@ public class ConversionRates {
         }
 
         /**
-         *
          * @return The conversion rate from this unit to the base unit.
          */
         public String getConversionRate() {
             return conversionRate;
-        }
-
-        private final String simpleUnit;
-        private final String target;
-        private final String conversionRate;
-        private final BigDecimal offset;
-
-        private static BigDecimal forNumberWithDivision(String numberWithDivision) {
-            String[] numbers = numberWithDivision.split("/");
-            Assert.assrt(numbers.length <= 2);
-
-            if (numbers.length == 1) {
-                return new BigDecimal(numbers[0]);
-            }
-
-            return new BigDecimal(numbers[0]).divide(new BigDecimal(numbers[1]), MathContext.DECIMAL128);
         }
     }
 }

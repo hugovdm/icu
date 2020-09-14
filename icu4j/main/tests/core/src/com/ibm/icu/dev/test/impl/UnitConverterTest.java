@@ -131,7 +131,7 @@ public class UnitConverterTest {
         }
 
         String codePage = "UTF-8";
-        BufferedReader f = TestUtil.getDataReader("units/unitsTest.txt", codePage);
+        BufferedReader f = TestUtil.getDataReader("cldr/units/unitsTest.txt", codePage);
         ArrayList<TestCase> tests = new ArrayList<>();
         while (true) {
             String line = f.readLine();

@@ -1,15 +1,9 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-/*
- *******************************************************************************
- * Copyright (C) 2004-2020, Google Inc, International Business Machines
- * Corporation and others. All Rights Reserved.
- *******************************************************************************
- */
+
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
 import com.ibm.icu.util.MeasureUnit;
 
 import java.math.BigDecimal;
@@ -35,7 +29,7 @@ public class UnitConverter {
      */
     public UnitConverter(MeasureUnitImpl source, MeasureUnitImpl target, ConversionRates conversionRates) {
         Convertibility convertibility = extractConvertibility(source, target, conversionRates);
-        Assert.assrt(convertibility == Convertibility.CONVERTIBLE || convertibility == Convertibility.RECIPROCAL);
+        assert (convertibility == Convertibility.CONVERTIBLE || convertibility == Convertibility.RECIPROCAL);
 
         Factor sourceToBase = conversionRates.getFactorToBase(source);
         Factor targetToBase = conversionRates.getFactorToBase(target);
@@ -126,14 +120,14 @@ public class UnitConverter {
             this.factorDen = BigDecimal.valueOf(1);
         }
 
-        public static Factor precessFactor(String factor) {
-            Assert.assrt(!factor.isEmpty());
+        public static Factor processFactor(String factor) {
+            assert (!factor.isEmpty());
 
             // Remove all spaces in the factor
             factor.replaceAll("\\s+", "");
 
             String[] fractions = factor.split("/");
-            Assert.assrt(fractions.length == 1 || fractions.length == 2);
+            assert (fractions.length == 1 || fractions.length == 2);
 
             if (fractions.length == 1) {
                 return processFactorWithoutDivision(fractions[0]);
@@ -180,12 +174,12 @@ public class UnitConverter {
         public BigDecimal getConversionRate() {
             Factor resultCollector = this.clone();
 
-            resultCollector.substitute(BigDecimal.valueOf(0.3048), this.CONSTANT_FT2M);
-            resultCollector.substitute(BigDecimal.valueOf(411557987.0).divide(BigDecimal.valueOf(131002976.0), DECIMAL128), this.CONSTANT_PI);
-            resultCollector.substitute(BigDecimal.valueOf(9.80665), this.CONSTANT_GRAVITY);
+            resultCollector.substitute(new BigDecimal("0.3048"), this.CONSTANT_FT2M);
+            resultCollector.substitute(new BigDecimal("411557987.0").divide(new BigDecimal("131002976.0"), DECIMAL128), this.CONSTANT_PI);
+            resultCollector.substitute(new BigDecimal("9.80665"), this.CONSTANT_GRAVITY);
             resultCollector.substitute(new BigDecimal("6.67408E-11"), this.CONSTANT_G);
-            resultCollector.substitute(BigDecimal.valueOf(0.00454609), this.CONSTANT_GAL_IMP2M3);
-            resultCollector.substitute(BigDecimal.valueOf(0.45359237), this.CONSTANT_LB2KG);
+            resultCollector.substitute(new BigDecimal("0.00454609"), this.CONSTANT_GAL_IMP2M3);
+            resultCollector.substitute(new BigDecimal("0.45359237"), this.CONSTANT_LB2KG);
 
             return resultCollector.factorNum.divide(resultCollector.factorDen, DECIMAL128);
         }
@@ -276,7 +270,7 @@ public class UnitConverter {
          */
         private void addPoweredEntity(String poweredEntity) {
             String[] entities = poweredEntity.split(Pattern.quote("^"));
-            Assert.assrt(entities.length == 1 || entities.length == 2);
+            assert (entities.length == 1 || entities.length == 2);
 
             int power = entities.length == 2 ? Integer.parseInt(entities[1]) : 1;
             this.addEntity(entities[0], power);

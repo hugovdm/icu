@@ -14,12 +14,15 @@ import com.ibm.icu.impl.Assert;
 import com.ibm.icu.impl.Pair;
 import com.ibm.icu.impl.units.MeasureUnitImpl;
 import com.ibm.icu.impl.units.UnitsRouter;
+import com.ibm.icu.util.Measure;
 import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.List;
+
 
 public class UnitRouterTest {
     @Test
@@ -61,7 +64,12 @@ public class UnitRouterTest {
                 this.insertData(category, usage, region, inputUnit, inputValue, outputs);
             }
 
-            private void insertData(String category, String usage, String region, String inputUnitString, String inputValue, ArrayList<Pair<String, String>> outputs /* Unit Identifier, expected value */) {
+            private void insertData(String category,
+                                    String usage,
+                                    String region,
+                                    String inputUnitString,
+                                    String inputValue,
+                                    ArrayList<Pair<String, String>> outputs /* Unit Identifier, expected value */) {
                 this.category = category;
                 this.usage = usage;
                 this.region = region;
@@ -77,7 +85,7 @@ public class UnitRouterTest {
 
         // Read Test data from the unitPreferencesTest
         String codePage = "UTF-8";
-        BufferedReader f = TestUtil.getDataReader("units/unitPreferencesTest.txt", codePage);
+        BufferedReader f = TestUtil.getDataReader("cldr/units/unitPreferencesTest.txt", codePage);
         ArrayList<TestCase> tests = new ArrayList<>();
         while (true) {
             String line = f.readLine();
@@ -89,17 +97,17 @@ public class UnitRouterTest {
         for (TestCase testCase :
                 tests) {
             UnitsRouter router = new UnitsRouter(testCase.inputUnit.second, testCase.region, testCase.usage);
-            ArrayList<Pair<MeasureUnitImpl, BigDecimal>> outputs = router.route(testCase.input).tempResults;
+            List<Measure> measures = router.route(testCase.input).measures;
 
-            Assert.assrt(outputs.size() == testCase.expectedInOrder.size()
-                    && outputs.size() == testCase.outputUnitInOrder.size());
+            Assert.assrt(measures.size() == testCase.expectedInOrder.size()
+                    && measures.size() == testCase.outputUnitInOrder.size());
 
-            for (int i = 0; i < outputs.size(); i++) {
+            for (int i = 0; i < measures.size(); i++) {
                 if (!UnitConverterTest
                         .compareTwoBigDecimal(testCase.expectedInOrder.get(i),
-                                outputs.get(i).second,
-                                BigDecimal.valueOf(0.0001))) {
-                    Assert.fail(testCase.toString() + outputs.toString());
+                                BigDecimal.valueOf(measures.get(i).getNumber().doubleValue()),
+                                BigDecimal.valueOf(0.00001))) {
+                    Assert.fail(testCase.toString() + measures.toString());
                 }
             }
         }
