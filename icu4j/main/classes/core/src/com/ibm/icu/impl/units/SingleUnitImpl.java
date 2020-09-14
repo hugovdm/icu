@@ -52,7 +52,7 @@ public class SingleUnitImpl {
     /**
      * Generates an neutral identifier string for a single unit which means we do not include the dimension signal.
      *
-     * @throws InternalException if a dimensionless SingleUnitImpl
+     * @throws IllegalArgumentException
      */
     public String getNeutralIdentifier() {
         assert  !this.isDimensionless();
