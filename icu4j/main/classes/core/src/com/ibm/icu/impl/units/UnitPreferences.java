@@ -4,7 +4,6 @@
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
 import com.ibm.icu.impl.ICUData;
 import com.ibm.icu.impl.ICUResourceBundle;
 import com.ibm.icu.impl.UResource;
@@ -176,7 +175,7 @@ public class UnitPreferences {
                                 } else if ("skeleton".equals(keyString)) {
                                     skeleton = value.getString();
                                 } else {
-                                    Assert.fail("key must be unit, geq or skeleton");
+                                    assert false:"key must be unit, geq or skeleton";
                                 }
                             }
                             assert (unit != null);

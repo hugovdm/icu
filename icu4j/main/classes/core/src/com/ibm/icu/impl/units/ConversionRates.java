@@ -4,7 +4,6 @@
 
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.impl.Assert;
 import com.ibm.icu.impl.ICUData;
 import com.ibm.icu.impl.ICUResourceBundle;
 import com.ibm.icu.impl.UResource;
@@ -139,11 +138,11 @@ public class ConversionRates {
 
         @Override
         public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
-            Assert.assrt(UnitsData.Constants.CONVERSION_UNIT_TABLE_NAME.equals(key.toString()));
+            assert (UnitsData.Constants.CONVERSION_UNIT_TABLE_NAME.equals(key.toString()));
 
             UResource.Table conversionRateTable = value.getTable();
             for (int i = 0; conversionRateTable.getKeyAndValue(i, key, value); i++) {
-                Assert.assrt(value.getType() == UResourceBundle.TABLE);
+                assert (value.getType() == UResourceBundle.TABLE);
 
                 String simpleUnit = key.toString();
 
@@ -152,7 +151,7 @@ public class ConversionRates {
                 String factor = null;
                 String offset = "0";
                 for (int j = 0; simpleUnitConversionInfo.getKeyAndValue(j, key, value); j++) {
-                    Assert.assrt(value.getType() == UResourceBundle.STRING);
+                    assert (value.getType() == UResourceBundle.STRING);
 
 
                     String keyString = key.toString();
@@ -164,13 +163,13 @@ public class ConversionRates {
                     } else if ("offset".equals(keyString)) {
                         offset = valueString;
                     } else {
-                        Assert.fail("The key must be target, factor or offset");
+                        assert false: "The key must be target, factor or offset";
                     }
                 }
 
                 // HERE a single conversion rate data should be loaded
-                Assert.assrt(target != null);
-                Assert.assrt(factor != null);
+                assert (target != null);
+                assert (factor != null);
 
                 mapToConversionRate.put(simpleUnit, new ConversionRateInfo(simpleUnit, target, factor, offset));
             }
@@ -199,7 +198,7 @@ public class ConversionRates {
 
         private static BigDecimal forNumberWithDivision(String numberWithDivision) {
             String[] numbers = numberWithDivision.split("/");
-            Assert.assrt(numbers.length <= 2);
+            assert (numbers.length <= 2);
 
             if (numbers.length == 1) {
                 return new BigDecimal(numbers[0]);
