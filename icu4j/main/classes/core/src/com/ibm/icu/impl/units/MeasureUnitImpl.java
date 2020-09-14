@@ -389,9 +389,9 @@ public class MeasureUnitImpl {
             this.simpleUnits = UnitsData.getSimpleUnits();
             this.fSource = identifier;
 
-            if (savedTrie != null) {
+            if (UnitsParser.savedTrie != null) {
                 try {
-                    this.trie = savedTrie.clone();
+                    this.trie = UnitsParser.savedTrie.clone();
                 } catch (CloneNotSupportedException e) {
                     throw new ICUCloneNotSupportedException();
                 }
@@ -437,10 +437,10 @@ public class MeasureUnitImpl {
             }
 
             // TODO: Use SLOW or FAST here?
-            this.savedTrie = trieBuilder.build(StringTrieBuilder.Option.FAST);
+            UnitsParser.savedTrie = trieBuilder.build(StringTrieBuilder.Option.FAST);
 
             try {
-                this.trie = this.savedTrie.clone();
+                this.trie = UnitsParser.savedTrie.clone();
             } catch (CloneNotSupportedException e) {
                 throw new ICUCloneNotSupportedException();
             }
