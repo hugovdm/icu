@@ -60,7 +60,7 @@ public class UnitsData {
      */
     public String getCategory(MeasureUnitImpl measureUnit) {
         MeasureUnitImpl baseMeasureUnit
-                = this.getConversionRates().getBasicMeasureUnitImplWithoutSIPrefix(measureUnit);
+                = this.getConversionRates().extractCompoundBaseUnit(measureUnit);
         String baseUnitIdentifier = MeasureUnit.fromMeasureUnitImpl(baseMeasureUnit).getIdentifier();
 
         if (baseUnitIdentifier.equals("meter-per-cubic-meter")) {

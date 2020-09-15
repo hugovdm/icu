@@ -72,8 +72,8 @@ public class ConversionRates {
 
     }
 
-    public MeasureUnitImpl getBasicMeasureUnitImplWithoutSIPrefix(MeasureUnitImpl measureUnit) {
-        ArrayList<SingleUnitImpl> baseUnits = this.getBasicUnitsWithoutSIPrefix(measureUnit);
+    public MeasureUnitImpl extractCompoundBaseUnit(MeasureUnitImpl measureUnit) {
+        ArrayList<SingleUnitImpl> baseUnits = this.extractBaseUnits(measureUnit);
 
         MeasureUnitImpl result = new MeasureUnitImpl();
         for (SingleUnitImpl baseUnit :
@@ -84,12 +84,12 @@ public class ConversionRates {
         return result;
     }
 
-    public ArrayList<SingleUnitImpl> getBasicUnitsWithoutSIPrefix(MeasureUnitImpl measureUnitImpl) {
+    public ArrayList<SingleUnitImpl> extractBaseUnits(MeasureUnitImpl measureUnitImpl) {
         ArrayList<SingleUnitImpl> result = new ArrayList<>();
         ArrayList<SingleUnitImpl> singleUnits = measureUnitImpl.getSingleUnits();
         for (SingleUnitImpl singleUnit :
                 singleUnits) {
-            result.addAll(getBasicUnitsWithoutSIPrefix(singleUnit));
+            result.addAll(extractBaseUnits(singleUnit));
         }
 
         return result;
@@ -102,7 +102,7 @@ public class ConversionRates {
      * NOTE:
      * This method is helpful when checking the convertibility because no need to check convertibility.
      */
-    public ArrayList<SingleUnitImpl> getBasicUnitsWithoutSIPrefix(SingleUnitImpl singleUnit) {
+    public ArrayList<SingleUnitImpl> extractBaseUnits(SingleUnitImpl singleUnit) {
         String target = mapToConversionRate.get(singleUnit.getSimpleUnit()).getTarget();
         MeasureUnitImpl targetImpl = MeasureUnitImpl.UnitsParser.parseForIdentifier(target);
 

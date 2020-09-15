@@ -3103,12 +3103,12 @@ public class MeasureUnitTest extends TestFmwk {
                     throw new IllegalStateException();
                 }
                 checkForDup(seen, name, unit);
-                System.out.printf("MeasureUnit *MeasureUnit.create%s(UErrorCode &status) {\n", name);
-                System.out.printf("    return MeasureUnit.create(%d, %d, status);\n",
+                System.out.printf("MeasureUnit *MeasureUnit::create%s(UErrorCode &status) {\n", name);
+                System.out.printf("    return MeasureUnit::create(%d, %d, status);\n",
                         typeSubType.first, typeSubType.second);
                 System.out.println("}");
                 System.out.println();
-                System.out.printf("MeasureUnit MeasureUnit.get%s() {\n", name);
+                System.out.printf("MeasureUnit MeasureUnit::get%s() {\n", name);
                 System.out.printf("    return MeasureUnit(%d, %d);\n",
                         typeSubType.first, typeSubType.second);
                 System.out.println("}");
@@ -3191,8 +3191,8 @@ public class MeasureUnitTest extends TestFmwk {
             for (MeasureUnit unit : entry.getValue()) {
                 String camelCase = toCamelCase(unit);
                 checkForDup(seen, camelCase, unit);
-                System.out.printf("    measureUnit.adoptInstead(MeasureUnit.create%s(status));\n", camelCase);
-                System.out.printf("    measureUnitValue = MeasureUnit.get%s();\n", camelCase);
+                System.out.printf("    measureUnit.adoptInstead(MeasureUnit::create%s(status));\n", camelCase);
+                System.out.printf("    measureUnitValue = MeasureUnit::get%s();\n", camelCase);
             }
         }
         System.out.println("    assertSuccess(\"\", status);");

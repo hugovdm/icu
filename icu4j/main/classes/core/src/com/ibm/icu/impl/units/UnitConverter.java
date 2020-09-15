@@ -45,8 +45,8 @@ public class UnitConverter {
     }
 
     static public Convertibility extractConvertibility(MeasureUnitImpl source, MeasureUnitImpl target, ConversionRates conversionRates) {
-        ArrayList<SingleUnitImpl> sourceSingleUnits = conversionRates.getBasicUnitsWithoutSIPrefix(source);
-        ArrayList<SingleUnitImpl> targetSingleUnits = conversionRates.getBasicUnitsWithoutSIPrefix(target);
+        ArrayList<SingleUnitImpl> sourceSingleUnits = conversionRates.extractBaseUnits(source);
+        ArrayList<SingleUnitImpl> targetSingleUnits = conversionRates.extractBaseUnits(target);
 
         HashMap<String, Integer> dimensionMap = new HashMap<>();
 
@@ -58,7 +58,7 @@ public class UnitConverter {
         insertInMap(dimensionMap, targetSingleUnits, 2);
         if (areDimensionsZeroes(dimensionMap)) return Convertibility.RECIPROCAL;
 
-        return Convertibility.INCONVERTIBLE;
+        return Convertibility.UNCONVERTIBLE;
     }
 
     /**
@@ -91,8 +91,10 @@ public class UnitConverter {
     public enum Convertibility {
         CONVERTIBLE,
         RECIPROCAL,
-        INCONVERTIBLE,
+        UNCONVERTIBLE,
     }
+
+    // TODO: improve documentation and Constant implementation
 
     /**
      * Responsible for all the Factor operation
