@@ -2102,8 +2102,8 @@ class U_I18N_API NumberFormatterSettings {
 
 #ifndef U_HIDE_DRAFT_API
     /**
-     * Specifies the usage for which numbers will be formatted ("person",
-     * "road", "person", etc.)
+     * Specifies the usage for which numbers will be formatted ("person-height",
+     * "road", "rainfall", etc.)
      *
      * When a `usage` is specified, the output unit will change depending on the
      * `Locale` and the unit quantity. For example, formatting length
@@ -2679,7 +2679,6 @@ class U_I18N_API FormattedNumber : public UMemory, public FormattedValue {
     explicit FormattedNumber(UErrorCode errorCode)
         : fData(nullptr), fErrorCode(errorCode) {}
 
-    // TODO(ICU-20775): Propose this as API.
     void toDecimalNumber(ByteSink& sink, UErrorCode& status) const;
 
     // To give LocalizedNumberFormatter format methods access to this class's constructor:
@@ -2777,4 +2776,3 @@ U_NAMESPACE_END
 #endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // __NUMBERFORMATTER_H__
-
