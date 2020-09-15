@@ -23,8 +23,8 @@ import java.util.List;
  * instances of the `UnitConverter` to perform the conversion.
  */
 public class ComplexUnitsConverter {
-    private static final BigDecimal EPSILON = BigDecimal.valueOf(Math.ulp(1.0));
-    private static final BigDecimal EPSILON_MULTIPLIER = BigDecimal.valueOf(1).add(EPSILON);
+    public static final BigDecimal EPSILON = BigDecimal.valueOf(Math.ulp(1.0));
+    public static final BigDecimal EPSILON_MULTIPLIER = BigDecimal.valueOf(1).add(EPSILON);
     private ArrayList<UnitConverter> unitConverters_;
     private ArrayList<MeasureUnitImpl> units_;
 
@@ -115,6 +115,9 @@ public class ComplexUnitsConverter {
                 // Keep the residual of the quantity.
                 //   For example: `3.6 feet`, keep only `0.6 feet`
                 quantity = quantity.subtract(newQuantity);
+                if (quantity.compareTo(BigDecimal.ZERO) == -1) {
+                    quantity = BigDecimal.ZERO;
+                }
             } else { // LAST ELEMENT
                 result.add(new Measure(quantity, units_.get(i).build()));
             }
