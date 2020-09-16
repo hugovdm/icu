@@ -34,21 +34,13 @@ struct RouteResult : UMemory {
     // TODO(icu-units/icu#21): figure out the right mixed unit API.
     MaybeStackVector<Measure> measures;
 
-    // A skeleton string starting with a precision-increment.
-    //
-    // TODO(hugovdm): generalise? or narrow down to only a precision-increment?
-    // or document that other skeleton elements are ignored?
-    //
-    // UPDATE/TODO: This can be deleted, it's moved into UnitsRouter!
-    UnicodeString precision;
-
     // The output unit for this RouteResult. This may be a MIXED unit - for
     // example: "yard-and-foot-and-inch", for which `measures` will have three
     // elements.
     MeasureUnitImpl outputUnit;
 
-    RouteResult(MaybeStackVector<Measure> measures, UnicodeString precision, MeasureUnitImpl outputUnit)
-        : measures(std::move(measures)), precision(std::move(precision)), outputUnit(std::move(outputUnit)) {}
+    RouteResult(MaybeStackVector<Measure> measures, MeasureUnitImpl outputUnit)
+        : measures(std::move(measures)), outputUnit(std::move(outputUnit)) {}
 };
 
 /**

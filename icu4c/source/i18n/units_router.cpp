@@ -117,7 +117,6 @@ RouteResult UnitsRouter::route(double quantity, icu::number::impl::RoundingImpl 
     }
 
     return RouteResult(converterPreference->converter.convert(quantity, rounder, status),
-                       converterPreference->precision,
                        converterPreference->targetUnit.copy(status));
 }
 
