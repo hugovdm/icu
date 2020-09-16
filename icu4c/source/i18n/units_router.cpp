@@ -80,14 +80,6 @@ UnitsRouter::UnitsRouter(MeasureUnit inputUnit, StringPiece region, StringPiece 
             return;
         }
 
-        if (!precision.isEmpty()) {
-            Precision precisionInstance = parseSkeletonToPrecision(precision, status);
-            // FIXME: do something with it.
-            if (U_FAILURE(status)) {
-                return;
-            }
-        }
-
         outputUnits_.emplaceBackAndCheckErrorCode(status,
                                                   complexTargetUnitImpl.copy(status).build(status));
         converterPreferences_.emplaceBackAndCheckErrorCode(status, inputUnitImpl, complexTargetUnitImpl,
@@ -101,21 +93,32 @@ UnitsRouter::UnitsRouter(MeasureUnit inputUnit, StringPiece region, StringPiece 
 }
 
 RouteResult UnitsRouter::route(double quantity, icu::number::impl::RoundingImpl *rounder, UErrorCode &status) const {
-    for (int i = 0, n = converterPreferences_.length(); i < n; i++) {
-        const auto &converterPreference = *converterPreferences_[i];
-        if (converterPreference.converter.greaterThanOrEqual(quantity * (1 + DBL_EPSILON),
-                                                             converterPreference.limit)) {
-            return RouteResult(converterPreference.converter.convert(quantity, rounder, status),
-                               converterPreference.precision,
-                               converterPreference.targetUnit.copy(status));
+    // Find the matching preference
+    const ConverterPreference *converterPreference = nullptr;
+    for (int32_t i = 0, n = converterPreferences_.length(); i < n; i++) {
+        converterPreference = converterPreferences_[i];
+        if (converterPreference->converter.greaterThanOrEqual(quantity * (1 + DBL_EPSILON),
+                                                              converterPreference->limit)) {
+            break;
+        }
+    }
+    U_ASSERT(converterPreference != nullptr);
+
+    // Set up the rounder for this preference's precision
+    if (rounder != nullptr && rounder->fPrecision.isBogus()) {
+        if (converterPreference->precision.length() > 0) {
+            rounder->fPrecision = parseSkeletonToPrecision(converterPreference->precision, status);
+        } else {
+            // We use the same rounding mode as COMPACT notation: known to be a
+            // human-friendly rounding mode: integers, but add a decimal digit
+            // as needed to ensure we have at least 2 significant digits.
+            rounder->fPrecision = Precision::integer().withMinDigits(2);
         }
     }
 
-    // In case of the `quantity` does not fit in any converter limit, use the last converter.
-    const auto &lastConverterPreference = (*converterPreferences_[converterPreferences_.length() - 1]);
-    return RouteResult(lastConverterPreference.converter.convert(quantity, rounder, status),
-                       lastConverterPreference.precision,
-                       lastConverterPreference.targetUnit.copy(status));
+    return RouteResult(converterPreference->converter.convert(quantity, rounder, status),
+                       converterPreference->precision,
+                       converterPreference->targetUnit.copy(status));
 }
 
 const MaybeStackVector<MeasureUnit> *UnitsRouter::getOutputUnits() const {

@@ -38,6 +38,8 @@ struct RouteResult : UMemory {
     //
     // TODO(hugovdm): generalise? or narrow down to only a precision-increment?
     // or document that other skeleton elements are ignored?
+    //
+    // UPDATE/TODO: This can be deleted, it's moved into UnitsRouter!
     UnicodeString precision;
 
     // The output unit for this RouteResult. This may be a MIXED unit - for
@@ -131,6 +133,16 @@ class U_I18N_API UnitsRouter {
     RouteResult route(double quantity, UErrorCode &status) const {
         return route(quantity, nullptr, status);
     }
+
+    /**
+     * Performs locale and usage sensitive unit conversion.
+     * @param quantity The quantity to convert, expressed in terms of inputUnit.
+     * @param rounder If not null, this RoundingImpl will be used to do rounding
+     *     on the converted value. If the rounder lacks an fPrecision, the
+     *     rounder will be modified to use the preferred precision for the usage
+     *     and locale preference, alternatively with the default precision.
+     * @param status Receives status.
+     */
     RouteResult route(double quantity, icu::number::impl::RoundingImpl *rounder, UErrorCode &status) const;
 
     /**
