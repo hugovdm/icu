@@ -119,7 +119,7 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity,
     // - N-1 converters convert to bigger units for which we want integers,
     // - the Nth converter (index N-1) converts to the smallest unit, for which
     //   we keep a double.
-    LocalArray<int64_t> intValues(new int64_t[unitConverters_.length() - 1]);
+    MaybeStackArray<int64_t, 3> intValues(unitConverters_.length() - 1, status);
     uprv_memset(intValues.getAlias(), 0, (unitConverters_.length() - 1) * sizeof(int64_t));
 
     for (int i = 0, n = unitConverters_.length(); i < n; ++i) {
@@ -198,7 +198,6 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity,
                 delete type;
             }
             if (U_FAILURE(status)) {
-                printf("status failure in ComplexUnitsConverter::convert - ZZ\n");
                 return result;
             }
         } else { // LAST ELEMENT
@@ -213,8 +212,7 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity,
                 delete type;
             }
             if (U_FAILURE(status)) {
-                printf("status failure in ComplexUnitsConverter::convert - B - LAST ELEMENT\n");
-                // return result;
+                return result;
             }
             U_ASSERT(result.length() == i + 1);
             U_ASSERT(result[i] != nullptr);
