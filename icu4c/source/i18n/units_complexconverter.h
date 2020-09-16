@@ -74,10 +74,12 @@ class U_I18N_API ComplexUnitsConverter : public UMemory {
     //         NOTE:
     //           the smallest element is the only element that could have fractional values. And all
     //           other elements are floored to the nearest integer
+    MaybeStackVector<Measure>
+    convert(double quantity, icu::number::impl::RoundingImpl *rounder, UErrorCode &status) const;
+
     MaybeStackVector<Measure> convert(double quantity, UErrorCode &status) const {
-      return convert(quantity, nullptr, status);
+        return convert(quantity, nullptr, status);
     }
-    MaybeStackVector<Measure> convert(double quantity, icu::number::impl::RoundingImpl *rounder, UErrorCode &status) const;
 
   private:
     MaybeStackVector<UnitConverter> unitConverters_;

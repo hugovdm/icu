@@ -24,7 +24,6 @@
  
 #if !UCONFIG_NO_FORMATTING
 
-#include "uassert.h"
 #include "unicode/fmtable.h"
 
 U_NAMESPACE_BEGIN
@@ -155,7 +154,6 @@ inline const Formattable& Measure::getNumber() const {
 }
 
 inline const MeasureUnit& Measure::getUnit() const {
-    U_ASSERT(unit != nullptr);
     return *unit;
 }
 

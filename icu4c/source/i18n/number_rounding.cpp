@@ -24,47 +24,6 @@ using namespace icu::number::impl;
 using double_conversion::DoubleToStringConverter;
 using icu::StringSegment;
 
-// Original full body of blueprint_helpers::parseIncrementOption (FIXME delete):
-//
-// // Most blueprint_helpers live in number_skeletons.cpp. This one is in
-// // number_rounding.cpp for dependency reasons.
-// void blueprint_helpers::parseIncrementOption(const StringSegment &segment, MacroProps &macros,
-//                                              UErrorCode &status) {
-//     // Need to do char <-> UChar conversion...
-//     U_ASSERT(U_SUCCESS(status));
-//     CharString buffer;
-//     SKELETON_UCHAR_TO_CHAR(buffer, segment.toTempUnicodeString(), 0, segment.length(), status);
-
-//     // Utilize DecimalQuantity/decNumber to parse this for us.
-//     DecimalQuantity dq;
-//     UErrorCode localStatus = U_ZERO_ERROR;
-//     dq.setToDecNumber({buffer.data(), buffer.length()}, localStatus);
-//     if (U_FAILURE(localStatus)) {
-//         // throw new SkeletonSyntaxException("Invalid rounding increment", segment, e);
-//         status = U_NUMBER_SKELETON_SYNTAX_ERROR;
-//         return;
-//     }
-//     double increment = dq.toDouble();
-
-//     // We also need to figure out how many digits. Do a brute force string operation.
-//     int decimalOffset = 0;
-//     while (decimalOffset < segment.length() && segment.charAt(decimalOffset) != '.') {
-//         decimalOffset++;
-//     }
-//     if (decimalOffset == segment.length()) {
-//         macros.precision = Precision::increment(increment);
-//     } else {
-//         int32_t fractionLength = segment.length() - decimalOffset - 1;
-//         macros.precision = Precision::increment(increment).withMinFraction(fractionLength);
-//     }
-// }
-
-// Modified version of blueprint_helpers::parseIncrementOption to remove
-// MacroProps, thereby avoiding need for symbols
-// number::impl::SymbolsWrapper::~SymbolsWrapper(),
-// number::impl::Usage::~Usage(), number::Scale::~Scale() in the dependencies.
-// (Could this trickiness alternatively be improved by moving destructors into
-// header files?)
 void number::impl::parseIncrementOption(const StringSegment &segment, Precision &precision,
                                         UErrorCode &status) {
     // Need to do char <-> UChar conversion...

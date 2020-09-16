@@ -199,14 +199,14 @@ class RoundingImpl {
     friend class UnitConversionHandler;
 };
 
-/* We want to be able to parse Precision-related skeleton strings without
- * needing to pull in the .o files required for instantiating MacroProps
- * instances.
- * - blueprint_helpers::parseIncrementOption uses MacroProps.
- * - UnitsRouter needs to parse skeletons
+/**
+ * Parses Precision-related skeleton strings without knowledge of MacroProps
+ * - see blueprint_helpers::parseIncrementOption().
+ *
+ * Referencing MacroProps means needing to pull in the .o files that have the
+ * destructors for the SymbolsWrapper, Usage, and Scale classes.
  */
-void parseIncrementOption(const StringSegment &segment, Precision &precision,
-                                    UErrorCode &status);
+void parseIncrementOption(const StringSegment &segment, Precision &precision, UErrorCode &status);
 
 } // namespace impl
 } // namespace number

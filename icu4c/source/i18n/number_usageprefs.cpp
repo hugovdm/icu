@@ -151,27 +151,6 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     mixedMeasuresToMicros(routedUnits, &quantity, &micros, status);
 }
 
-// TODO: deduplicate this code, number_usageprefs.cpp & units_router.cpp
-Precision UsagePrefsHandler::parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton,
-                                                      UErrorCode status) {
-    if (U_FAILURE(status)) {
-        // As a member of UsagePrefsHandler, which is a friend of Precision, we
-        // get access to the default constructor.
-        return {};
-    }
-    constexpr int32_t kSkelPrefixLen = 20;
-    if (!precisionSkeleton.startsWith(UNICODE_STRING_SIMPLE("precision-increment/"))) {
-        status = U_INVALID_FORMAT_ERROR;
-        return {};
-    }
-    U_ASSERT(precisionSkeleton[kSkelPrefixLen - 1] == u'/');
-    StringSegment segment(precisionSkeleton, false);
-    segment.adjustOffset(kSkelPrefixLen);
-    Precision result;
-    number::impl::parseIncrementOption(segment, result, status);
-    return result;
-}
-
 UnitConversionHandler::UnitConversionHandler(const MeasureUnit &unit, const MicroPropsGenerator *parent,
                                              UErrorCode &status)
     : fOutputUnit(unit), fParent(parent) {

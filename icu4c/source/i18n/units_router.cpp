@@ -22,7 +22,6 @@ namespace units {
 using number::Precision;
 using number::impl::parseIncrementOption;
 
-// TODO: deduplicate this code, number_usageprefs.cpp & units_router.cpp
 Precision UnitsRouter::parseSkeletonToPrecision(icu::UnicodeString precisionSkeleton,
                                                 UErrorCode &status) {
     if (U_FAILURE(status)) {
