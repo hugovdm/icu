@@ -193,7 +193,7 @@ class RoundingImpl {
     bool fPassThrough = true;  // default value
 
     // Permits access to fPrecision.
-    friend class UsagePrefsHandler;
+    friend class units::UnitsRouter;
 
     // Permits access to fPrecision.
     friend class UnitConversionHandler;

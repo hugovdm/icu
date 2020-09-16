@@ -408,6 +408,10 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
     msg.clear();
     msg.append("Converting 1000 ", status).append(x, status).append(" to ", status).append(y, status);
     unitsTest->assertEqualsNear(msg.data(), expected, got, 0.0001 * expected);
+    double inverted = converter.convertInverse(got);
+    msg.clear();
+    msg.append("Converting back to ", status).append(x, status).append(" from ", status).append(y, status);
+    unitsTest->assertEqualsNear(msg.data(), 1000, inverted, 0.0001);
 }
 
 /**
@@ -439,7 +443,7 @@ void UnitsTest::testConversions() {
 }
 
 void UnitsTest::testComplexUnitsConverter() {
-    IcuTestErrorCode status(*this, "UnitsTest::testComplexUnitConversions");
+    IcuTestErrorCode status(*this, "UnitsTest::testComplexUnitsConverter");
     ConversionRates rates(status);
     MeasureUnit input = MeasureUnit::getFoot();
     MeasureUnit output = MeasureUnit::forIdentifier("foot-and-inch", status);

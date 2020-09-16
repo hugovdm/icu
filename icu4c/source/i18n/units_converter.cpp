@@ -510,12 +510,31 @@ double UnitConverter::convert(double inputValue) const {
 
     result -= conversionRate_.targetOffset; // Set the result to its index.
 
-    if (result == 0)
+    if (result == 0) {
+        // TODO: test the resulting behaviour when we have 0.0 and reciprocal.
+        // (Theoretical result: infinity.)
         return 0.0; // If the result is zero, it does not matter if the conversion are reciprocal or not.
+    }
     if (conversionRate_.reciprocal) {
         result = 1.0 / result;
     }
 
+    return result;
+}
+
+double UnitConverter::convertInverse(double inputValue) const {
+    double result = inputValue;
+    if (result == 0) {
+        // TODO: test the resulting behaviour when we have 0.0 and reciprocal.
+        // (Theoretical result: infinity.) For now, we follow convert()'s shortcut:
+        return 0.0;
+    }
+    if (conversionRate_.reciprocal) {
+        result = 1.0 / result;
+    }
+    result += conversionRate_.targetOffset;
+    result *= conversionRate_.factorDen / conversionRate_.factorNum;
+    result -= conversionRate_.sourceOffset;
     return result;
 }
 

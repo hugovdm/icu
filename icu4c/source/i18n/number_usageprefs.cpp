@@ -138,7 +138,7 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     }
 
     quantity.roundToInfinity(); // Enables toDouble
-    const auto routed = fUnitsRouter.route(quantity.toDouble(), &micros.rounder, status);
+    const units::RouteResult routed = fUnitsRouter.route(quantity.toDouble(), &micros.rounder, status);
     if (U_FAILURE(status)) {
         return;
     }
@@ -149,18 +149,6 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     }
 
     mixedMeasuresToMicros(routedUnits, &quantity, &micros, status);
-
-    UnicodeString precisionSkeleton = routed.precision;
-    if (micros.rounder.fPrecision.isBogus()) {
-        if (precisionSkeleton.length() > 0) {
-            micros.rounder.fPrecision = parseSkeletonToPrecision(precisionSkeleton, status);
-        } else {
-            // We use the same rounding mode as COMPACT notation: known to be a
-            // human-friendly rounding mode: integers, but add a decimal digit
-            // as needed to ensure we have at least 2 significant digits.
-            micros.rounder.fPrecision = Precision::integer().withMinDigits(2);
-        }
-    }
 }
 
 // TODO: deduplicate this code, number_usageprefs.cpp & units_router.cpp
@@ -216,19 +204,14 @@ void UnitConversionHandler::processQuantity(DecimalQuantity &quantity, MicroProp
         return;
     }
     quantity.roundToInfinity(); // Enables toDouble
-    MaybeStackVector<Measure> measures = fUnitConverter->convert(quantity.toDouble(), &micros.rounder, status);
+    MaybeStackVector<Measure> measures =
+        fUnitConverter->convert(quantity.toDouble(), &micros.rounder, status);
     micros.outputUnit = fOutputUnit;
     if (U_FAILURE(status)) {
         return;
     }
 
     mixedMeasuresToMicros(measures, &quantity, &micros, status);
-
-    // TODO: add tests to explore behaviour that may suggest a more
-    // human-centric default rounder?
-    // if (micros.rounder.fPrecision.isBogus()) {
-    //     micros.rounder.fPrecision = Precision::integer().withMinDigits(2);
-    // }
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
