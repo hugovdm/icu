@@ -190,10 +190,10 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity,
     // Package values into Measure instances in result:
     for (int i = 0, n = unitConverters_.length(); i < n; ++i) {
         if (i < n - 1) {
-            Formattable formattableNewQuantity(intValues[i]);
+            Formattable formattableQuantity(intValues[i]);
             // Measure takes ownership of the MeasureUnit*
             MeasureUnit *type = new MeasureUnit(units_[i]->copy(status).build(status));
-            if (result.emplaceBackAndCheckErrorCode(status, formattableNewQuantity, type, status) ==
+            if (result.emplaceBackAndCheckErrorCode(status, formattableQuantity, type, status) ==
                 nullptr) {
                 // Ownership wasn't taken
                 U_ASSERT(U_FAILURE(status));
