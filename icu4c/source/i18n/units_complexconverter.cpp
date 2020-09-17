@@ -119,7 +119,10 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity,
     // - N-1 converters convert to bigger units for which we want integers,
     // - the Nth converter (index N-1) converts to the smallest unit, for which
     //   we keep a double.
-    MaybeStackArray<int64_t, 3> intValues(unitConverters_.length() - 1, status);
+    MaybeStackArray<int64_t, 5> intValues(unitConverters_.length() - 1, status);
+    if (U_FAILURE(status)) {
+        return result;
+    }
     uprv_memset(intValues.getAlias(), 0, (unitConverters_.length() - 1) * sizeof(int64_t));
 
     for (int i = 0, n = unitConverters_.length(); i < n; ++i) {
@@ -154,7 +157,6 @@ MaybeStackVector<Measure> ComplexUnitsConverter::convert(double quantity,
             // TODO(ICU-21288): get smarter about precision for mixed units.
             number::impl::DecimalQuantity quant;
             quant.setToDouble(quantity);
-            quant.roundToInfinity();
             rounder->apply(quant, status);
             if (U_FAILURE(status)) {
                 return result;

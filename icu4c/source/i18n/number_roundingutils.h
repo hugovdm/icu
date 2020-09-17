@@ -206,7 +206,7 @@ class RoundingImpl {
  * Referencing MacroProps means needing to pull in the .o files that have the
  * destructors for the SymbolsWrapper, Usage, and Scale classes.
  */
-void parseIncrementOption(const StringSegment &segment, Precision &precision, UErrorCode &status);
+void parseIncrementOption(const StringSegment &segment, Precision &outPrecision, UErrorCode &status);
 
 } // namespace impl
 } // namespace number

@@ -77,10 +77,6 @@ class U_I18N_API ComplexUnitsConverter : public UMemory {
     MaybeStackVector<Measure>
     convert(double quantity, icu::number::impl::RoundingImpl *rounder, UErrorCode &status) const;
 
-    MaybeStackVector<Measure> convert(double quantity, UErrorCode &status) const {
-        return convert(quantity, nullptr, status);
-    }
-
   private:
     MaybeStackVector<UnitConverter> unitConverters_;
     // Individual units of mixed units, sorted big to small

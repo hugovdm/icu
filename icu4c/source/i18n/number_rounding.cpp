@@ -24,7 +24,8 @@ using namespace icu::number::impl;
 using double_conversion::DoubleToStringConverter;
 using icu::StringSegment;
 
-void number::impl::parseIncrementOption(const StringSegment &segment, Precision &precision,
+void number::impl::parseIncrementOption(const StringSegment &segment,
+                                        Precision &outPrecision,
                                         UErrorCode &status) {
     // Need to do char <-> UChar conversion...
     U_ASSERT(U_SUCCESS(status));
@@ -48,10 +49,10 @@ void number::impl::parseIncrementOption(const StringSegment &segment, Precision 
         decimalOffset++;
     }
     if (decimalOffset == segment.length()) {
-        precision = Precision::increment(increment);
+        outPrecision = Precision::increment(increment);
     } else {
         int32_t fractionLength = segment.length() - decimalOffset - 1;
-        precision = Precision::increment(increment).withMinFraction(fractionLength);
+        outPrecision = Precision::increment(increment).withMinFraction(fractionLength);
     }
 }
 
