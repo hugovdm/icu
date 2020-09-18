@@ -1100,7 +1100,7 @@ class U_I18N_API Scale : public UMemory {
     }
 
     UBool copyErrorTo(UErrorCode &status) const {
-        if (fError != U_ZERO_ERROR) {
+        if (U_FAILURE(fError)) {
             status = fError;
             return true;
         }
@@ -1160,12 +1160,14 @@ class U_I18N_API Usage : public UMemory {
     int16_t length() const { return fLength; }
 
     /** @internal
-     * Makes a copy of value.
+     * Makes a copy of value. Set to "" to unset.
      */
     void set(StringPiece value);
 
     /** @internal */
     bool isSet() const { return fLength > 0; }
+
+#endif // U_HIDE_INTERNAL_API
 
   private:
     char *fUsage;
@@ -1174,16 +1176,24 @@ class U_I18N_API Usage : public UMemory {
 
     Usage() : fUsage(nullptr), fLength(0), fError(U_ZERO_ERROR) {}
 
+    /** @internal */
+    UBool copyErrorTo(UErrorCode &status) const {
+        if (U_FAILURE(fError)) {
+            status = fError;
+            return true;
+        }
+        return false;
+    }
+
     // Allow NumberFormatterImpl to access fUsage.
     friend class impl::NumberFormatterImpl;
 
     // Allow skeleton generation code to access private members.
     friend class impl::GeneratorHelpers;
 
-    // Allow MacroProps/MicroProps to initialize empty instances.
+    // Allow MacroProps/MicroProps to initialize empty instances and to call
+    // copyErrorTo().
     friend struct impl::MacroProps;
-
-#endif // U_HIDE_INTERNAL_API
 };
 
 // Do not enclose entire SymbolsWrapper with #ifndef U_HIDE_INTERNAL_API, needed for a protected field
@@ -1493,7 +1503,7 @@ struct U_I18N_API MacroProps : public UMemory {
     bool copyErrorTo(UErrorCode &status) const {
         return notation.copyErrorTo(status) || precision.copyErrorTo(status) ||
                padder.copyErrorTo(status) || integerWidth.copyErrorTo(status) ||
-               symbols.copyErrorTo(status) || scale.copyErrorTo(status);
+               symbols.copyErrorTo(status) || scale.copyErrorTo(status) || usage.copyErrorTo(status);
     }
 };
 
@@ -2108,8 +2118,8 @@ class U_I18N_API NumberFormatterSettings {
 
 #ifndef U_HIDE_DRAFT_API
     /**
-     * Specifies the usage for which numbers will be formatted ("person",
-     * "road", "person", etc.)
+     * Specifies the usage for which numbers will be formatted ("person-height",
+     * "road", "rainfall", etc.)
      *
      * When a `usage` is specified, the output unit will change depending on the
      * `Locale` and the unit quantity. For example, formatting length
@@ -2685,7 +2695,6 @@ class U_I18N_API FormattedNumber : public UMemory, public FormattedValue {
     explicit FormattedNumber(UErrorCode errorCode)
         : fData(nullptr), fErrorCode(errorCode) {}
 
-    // TODO(ICU-20775): Propose this as API.
     void toDecimalNumber(ByteSink& sink, UErrorCode& status) const;
 
     // To give LocalizedNumberFormatter format methods access to this class's constructor:
@@ -2783,4 +2792,3 @@ U_NAMESPACE_END
 #endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // __NUMBERFORMATTER_H__
-

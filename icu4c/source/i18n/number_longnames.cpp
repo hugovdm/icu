@@ -10,6 +10,7 @@
 #include "ureslocs.h"
 #include "charstr.h"
 #include "uresimp.h"
+#include "measunit_impl.h"
 #include "number_longnames.h"
 #include "number_microprops.h"
 #include <algorithm>
@@ -410,13 +411,14 @@ void MixedUnitLongNameHandler::forMeasureUnit(const Locale &loc, const MeasureUn
     U_ASSERT(mixedUnit.getComplexity(status) == UMEASURE_UNIT_MIXED);
     U_ASSERT(fillIn != nullptr);
 
-    LocalArray<MeasureUnit> individualUnits =
-        mixedUnit.splitToSingleUnits(fillIn->fMixedUnitCount, status);
+    MeasureUnitImpl temp;
+    const MeasureUnitImpl& impl = MeasureUnitImpl::forMeasureUnit(mixedUnit, temp, status);
+    fillIn->fMixedUnitCount = impl.units.length();
     fillIn->fMixedUnitData.adoptInstead(new UnicodeString[fillIn->fMixedUnitCount * ARRAY_LENGTH]);
     for (int32_t i = 0; i < fillIn->fMixedUnitCount; i++) {
         // Grab data for each of the components.
         UnicodeString *unitData = &fillIn->fMixedUnitData[i * ARRAY_LENGTH];
-        getMeasureData(loc, individualUnits[i], width, unitData, status);
+        getMeasureData(loc, impl.units[i]->build(status), width, unitData, status);
     }
 
     UListFormatterWidth listWidth = ULISTFMT_WIDTH_SHORT;
@@ -448,10 +450,8 @@ void MixedUnitLongNameHandler::processQuantity(DecimalQuantity &quantity, MicroP
 const Modifier *MixedUnitLongNameHandler::getMixedUnitModifier(DecimalQuantity &quantity,
                                                                MicroProps &micros,
                                                                UErrorCode &status) const {
-    // TODO(icu-units#21): mixed units without usage() is not yet supported.
-    // That should be the only reason why this happens, so delete this whole if
-    // once fixed:
     if (micros.mixedMeasuresCount == 0) {
+        U_ASSERT(micros.mixedMeasuresCount > 0); // Mixed unit: we must have more than one unit value
         status = U_UNSUPPORTED_ERROR;
         return &micros.helpers.emptyWeakModifier;
     }
@@ -496,6 +496,7 @@ const Modifier *MixedUnitLongNameHandler::getMixedUnitModifier(DecimalQuantity &
         auto appendable = UnicodeStringAppendable(num);
         fIntegerFormatter.formatDecimalQuantity(fdec, status).appendTo(appendable, status);
         compiledFormatter.format(num, outputMeasuresList[i], status);
+        // TODO(icu-units#67): fix field positions
     }
 
     UnicodeString *finalSimpleFormats = &fMixedUnitData[(fMixedUnitCount - 1) * ARRAY_LENGTH];
@@ -513,6 +514,7 @@ const Modifier *MixedUnitLongNameHandler::getMixedUnitModifier(DecimalQuantity &
         return &micros.helpers.emptyWeakModifier;
     }
 
+    // TODO(icu-units#67): fix field positions
     // Return a SimpleModifier for the "premixed" pattern
     micros.helpers.mixedUnitModifier =
         SimpleModifier(premixedCompiled, kUndefinedField, false, {this, SIGNUM_POS_ZERO, finalPlural});

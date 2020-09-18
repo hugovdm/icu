@@ -28,21 +28,33 @@ using icu::StringSegment;
 using icu::units::ConversionRates;
 
 // Copy constructor
-Usage::Usage(const Usage &other) : fUsage(nullptr), fLength(other.fLength), fError(other.fError) {
-    if (other.fUsage != nullptr) {
-        fUsage = (char *)uprv_malloc(fLength + 1);
-        uprv_strncpy(fUsage, other.fUsage, fLength + 1);
-    }
+Usage::Usage(const Usage &other) : Usage() {
+    this->operator=(other);
 }
 
 // Copy assignment operator
 Usage &Usage::operator=(const Usage &other) {
-    fLength = other.fLength;
-    if (other.fUsage != nullptr) {
-        fUsage = (char *)uprv_malloc(fLength + 1);
-        uprv_strncpy(fUsage, other.fUsage, fLength + 1);
-    }
+    fLength = 0;
     fError = other.fError;
+    if (fUsage != nullptr) {
+        uprv_free(fUsage);
+        fUsage = nullptr;
+    }
+    if (other.fUsage == nullptr) {
+        return *this;
+    }
+    if (U_FAILURE(other.fError)) {
+        // We don't bother trying to allocating memory if we're in any case busy
+        // copying an errored Usage.
+        return *this;
+    }
+    fUsage = (char *)uprv_malloc(other.fLength + 1);
+    if (fUsage == nullptr) {
+        fError = U_MEMORY_ALLOCATION_ERROR;
+        return *this;
+    }
+    fLength = other.fLength;
+    uprv_strncpy(fUsage, other.fUsage, fLength + 1);
     return *this;
 }
 
@@ -82,10 +94,17 @@ void Usage::set(StringPiece value) {
     }
     fLength = value.length();
     fUsage = (char *)uprv_malloc(fLength + 1);
+    if (fUsage == nullptr) {
+        fLength = 0;
+        fError = U_MEMORY_ALLOCATION_ERROR;
+        return;
+    }
     uprv_strncpy(fUsage, value.data(), fLength);
     fUsage[fLength] = 0;
 }
 
+// Populates micros.mixedMeasures and modifies quantity, based on the values in
+// measures.
 void mixedMeasuresToMicros(const MaybeStackVector<Measure> &measures, DecimalQuantity *quantity,
                            MicroProps *micros, UErrorCode status) {
     micros->mixedMeasuresCount = measures.length() - 1;
@@ -94,14 +113,14 @@ void mixedMeasuresToMicros(const MaybeStackVector<Measure> &measures, DecimalQua
         U_ASSERT(micros->outputUnit.getComplexity(status) == UMEASURE_UNIT_MIXED);
         U_ASSERT(U_SUCCESS(status));
         // Check that we received measurements with the expected MeasureUnits:
-        int32_t singleUnitsCount;
-        LocalArray<MeasureUnit> singleUnits =
-            micros->outputUnit.splitToSingleUnits(singleUnitsCount, status);
+        MeasureUnitImpl temp;
+        const MeasureUnitImpl& impl = MeasureUnitImpl::forMeasureUnit(micros->outputUnit, temp, status);
         U_ASSERT(U_SUCCESS(status));
-        U_ASSERT(measures.length() == singleUnitsCount);
+        U_ASSERT(measures.length() == impl.units.length());
         for (int32_t i = 0; i < measures.length(); i++) {
-            U_ASSERT(measures[i]->getUnit() == singleUnits[i]);
+            U_ASSERT(measures[i]->getUnit() == impl.units[i]->build(status));
         }
+        (void)impl;
 #endif
         // Mixed units: except for the last value, we pass all values to the
         // LongNameHandler via micros->mixedMeasures.
@@ -142,30 +161,35 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     if (U_FAILURE(status)) {
         return;
     }
-    const MaybeStackVector<Measure>& routedUnits = routed.measures;
+    const MaybeStackVector<Measure>& routedMeasures = routed.measures;
     micros.outputUnit = routed.outputUnit.copy(status).build(status);
     if (U_FAILURE(status)) {
         return;
     }
 
-    mixedMeasuresToMicros(routedUnits, &quantity, &micros, status);
+    mixedMeasuresToMicros(routedMeasures, &quantity, &micros, status);
+
+    UnicodeString precisionSkeleton = routed.precision;
+    if (micros.rounder.fPrecision.isBogus()) {
+        if (precisionSkeleton.length() > 0) {
+            micros.rounder.fPrecision = parseSkeletonToPrecision(precisionSkeleton, status);
+        } else {
+            // We use the same rounding mode as COMPACT notation: known to be a
+            // human-friendly rounding mode: integers, but add a decimal digit
+            // as needed to ensure we have at least 2 significant digits.
+            micros.rounder.fPrecision = Precision::integer().withMinDigits(2);
+        }
+    }
 }
 
-UnitConversionHandler::UnitConversionHandler(const MeasureUnit &unit, const MicroPropsGenerator *parent,
-                                             UErrorCode &status)
-    : fOutputUnit(unit), fParent(parent) {
-    MeasureUnitImpl temp;
-    const MeasureUnitImpl &outputUnit = MeasureUnitImpl::forMeasureUnit(unit, temp, status);
-    const MeasureUnitImpl *inputUnit = &outputUnit;
-    MaybeStackVector<MeasureUnitImpl> singleUnits;
-    U_ASSERT(outputUnit.complexity == UMEASURE_UNIT_MIXED);
-    // When we wish to support unit conversion, replace the above assert with this if:
-    // if (outputUnit.complexity == UMEASURE_UNIT_MIXED) {
-    {
-        singleUnits = outputUnit.extractIndividualUnits(status);
-        U_ASSERT(singleUnits.length() > 0);
-        inputUnit = singleUnits[0];
-    }
+UnitConversionHandler::UnitConversionHandler(const MeasureUnit &inputUnit, const MeasureUnit &outputUnit,
+                                             const MicroPropsGenerator *parent, UErrorCode &status)
+    : fOutputUnit(outputUnit), fParent(parent) {
+    MeasureUnitImpl tempInput, tempOutput;
+    const MeasureUnitImpl &inputUnitImpl = MeasureUnitImpl::forMeasureUnit(inputUnit, tempInput, status);
+    const MeasureUnitImpl &outputUnitImpl =
+        MeasureUnitImpl::forMeasureUnit(outputUnit, tempOutput, status);
+
     // TODO: this should become an initOnce thing? Review with other
     // ConversionRates usages.
     ConversionRates conversionRates(status);
@@ -173,7 +197,7 @@ UnitConversionHandler::UnitConversionHandler(const MeasureUnit &unit, const Micr
         return;
     }
     fUnitConverter.adoptInsteadAndCheckErrorCode(
-        new ComplexUnitsConverter(*inputUnit, outputUnit, conversionRates, status), status);
+        new ComplexUnitsConverter(inputUnitImpl, outputUnitImpl, conversionRates, status), status);
 }
 
 void UnitConversionHandler::processQuantity(DecimalQuantity &quantity, MicroProps &micros,

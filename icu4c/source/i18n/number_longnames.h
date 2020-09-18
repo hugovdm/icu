@@ -159,14 +159,13 @@ class MixedUnitLongNameHandler : public MicroPropsGenerator, public ModifierStor
     // Not owned
     const MicroPropsGenerator *parent;
 
-    // Total number of units in the MeasureUnit this LongNameHandler was
-    // configured for: for "foot-and-inch", this will be 2. (If not a mixed unit,
-    // this will be 1.)
+    // Total number of units in the MeasureUnit this handler was configured for:
+    // for "foot-and-inch", this will be 2.
     int32_t fMixedUnitCount = 1;
-    // If this LongNameHandler is for a mixed unit, this stores unit data for
-    // each of the individual units. For each unit, it stores ARRAY_LENGTH
-    // strings, as returned by getMeasureData. (Each unit with index `i` has
-    // ARRAY_LENGTH strings starting at index `i*ARRAY_LENGTH` in this array.)
+    // Stores unit data for each of the individual units. For each unit, it
+    // stores ARRAY_LENGTH strings, as returned by getMeasureData. (Each unit
+    // with index `i` has ARRAY_LENGTH strings starting at index
+    // `i*ARRAY_LENGTH` in this array.)
     LocalArray<UnicodeString> fMixedUnitData;
     // A localized NumberFormatter used to format the integer-valued bigger
     // units of Mixed Unit measurements.
@@ -187,12 +186,6 @@ class MixedUnitLongNameHandler : public MicroPropsGenerator, public ModifierStor
     // Enables MemoryPool<LongNameHandler>::emplaceBack(): requires access to
     // the private constructors.
     friend class MemoryPool<MixedUnitLongNameHandler>;
-
-    // Fills in LongNameHandler fields for formatting mixed units. Each unit in
-    // a mixed unit must be a built-in unit.
-    static void forMixedUnit(const Locale &loc, const MeasureUnit &unit, const UNumberUnitWidth &width,
-                             const PluralRules *rules, const MicroPropsGenerator *parent,
-                             MixedUnitLongNameHandler *fillIn, UErrorCode &status);
 
     // For a mixed unit, returns a Modifier that takes only one parameter: the
     // smallest and final unit of the set. The bigger units' values and labels

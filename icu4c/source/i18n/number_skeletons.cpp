@@ -1550,7 +1550,7 @@ bool GeneratorHelpers::perUnit(const MacroProps& macros, UnicodeString& sb, UErr
 }
 
 bool GeneratorHelpers::usage(const MacroProps& macros, UnicodeString& sb, UErrorCode& /* status */) {
-    if (macros.usage.fLength > 0) {
+    if (macros.usage.isSet()) {
         sb.append(u"usage/", -1);
         sb.append(UnicodeString(macros.usage.fUsage, -1, US_INV));
         return true;
