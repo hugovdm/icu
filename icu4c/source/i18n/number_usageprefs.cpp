@@ -168,18 +168,6 @@ void UsagePrefsHandler::processQuantity(DecimalQuantity &quantity, MicroProps &m
     }
 
     mixedMeasuresToMicros(routedMeasures, &quantity, &micros, status);
-
-    UnicodeString precisionSkeleton = routed.precision;
-    if (micros.rounder.fPrecision.isBogus()) {
-        if (precisionSkeleton.length() > 0) {
-            micros.rounder.fPrecision = parseSkeletonToPrecision(precisionSkeleton, status);
-        } else {
-            // We use the same rounding mode as COMPACT notation: known to be a
-            // human-friendly rounding mode: integers, but add a decimal digit
-            // as needed to ensure we have at least 2 significant digits.
-            micros.rounder.fPrecision = Precision::integer().withMinDigits(2);
-        }
-    }
 }
 
 UnitConversionHandler::UnitConversionHandler(const MeasureUnit &inputUnit, const MeasureUnit &outputUnit,
