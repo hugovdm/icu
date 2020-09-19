@@ -135,11 +135,11 @@ public class UnitsTest {
         List<Measure> measures = complexConverter.convert(BigDecimal.valueOf(10.0), null);
 
         assertEquals(measures.size(), 2);
-        assertEquals("inch-and-foot unit 0", "foot", measures.get(0).getUnit().getIdentifier());
-        assertEquals("inch-and-foot unit 1", "inch", measures.get(1).getUnit().getIdentifier());
+        assertEquals("inch-and-foot unit 0", "inch", measures.get(0).getUnit().getIdentifier());
+        assertEquals("inch-and-foot unit 1", "foot", measures.get(1).getUnit().getIdentifier());
 
-        assertTrue("inch-and-foot value 0", compareTwoBigDecimal(BigDecimal.valueOf(32), BigDecimal.valueOf(measures.get(0).getNumber().doubleValue()), BigDecimal.valueOf(0.0001)));
-        assertTrue("inch-and-foot value 1", compareTwoBigDecimal(BigDecimal.valueOf(9.7008), BigDecimal.valueOf(measures.get(1).getNumber().doubleValue()), BigDecimal.valueOf(0.0001)));
+        assertEquals("inch-and-foot value 0", 9.7008, measures.get(0).getNumber().doubleValue(), 0.0001);
+        assertEquals("inch-and-foot value 1", 32, measures.get(1).getNumber().doubleValue(), 0.0001);
     }
 
 

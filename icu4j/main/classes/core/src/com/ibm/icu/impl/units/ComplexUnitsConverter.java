@@ -6,6 +6,7 @@ import com.ibm.icu.impl.number.DecimalQuantity;
 import com.ibm.icu.impl.number.DecimalQuantity_DualStorageBCD;
 import com.ibm.icu.number.Precision;
 import com.ibm.icu.util.Measure;
+import com.ibm.icu.util.MeasureUnit;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,7 +27,10 @@ public class ComplexUnitsConverter {
     public static final BigDecimal EPSILON = BigDecimal.valueOf(Math.ulp(1.0));
     public static final BigDecimal EPSILON_MULTIPLIER = BigDecimal.valueOf(1).add(EPSILON);
     private ArrayList<UnitConverter> unitConverters_;
+    // Individual units of mixed units, sorted big to small
     private ArrayList<MeasureUnitImpl> units_;
+    // Individual units of mixed units, sorted in desired output order
+    private ArrayList<MeasureUnit> outputUnits_;
 
     /**
      * Constructor of `ComplexUnitsConverter`.
@@ -40,6 +44,10 @@ public class ComplexUnitsConverter {
     public ComplexUnitsConverter(MeasureUnitImpl inputUnit, MeasureUnitImpl outputUnits,
                                  ConversionRates conversionRates) {
         units_ = outputUnits.extractIndividualUnits();
+        outputUnits_ = new ArrayList<>(units_.size());
+        for (MeasureUnitImpl itr : units_) {
+            outputUnits_.add(itr.build());
+        }
         assert (!units_.isEmpty());
 
         // Sort the units in a descending order.
@@ -177,6 +185,19 @@ public class ComplexUnitsConverter {
             }
         }
 
+        for (int i = 0; i < result.size(); i++) {
+            for (int j = i; j < result.size(); j++) {
+                // Find the next expected unit, and swap it into place.
+                if (result.get(j).getUnit().equals(outputUnits_.get(i))) {
+                    if (j != i) {
+                        Measure tmp = result.get(j);
+                        result.set(j, result.get(i));
+                        result.set(i, tmp);
+                    }
+                }
+            }
+        }
+    
         return result;
     }
 
