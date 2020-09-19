@@ -82,7 +82,7 @@ public class UnitsRouter {
 
     /** If micros.rounder is a BogusRounder, this function replaces it with a valid one. */
     public RouteResult route(BigDecimal quantity, MicroProps micros) {
-        Precision rounder = micros.rounder;
+        Precision rounder = micros == null ? null : micros.rounder;
         ConverterPreference converterPreference = null;
         for (ConverterPreference itr : converterPreferences_) {
             converterPreference = itr;
@@ -106,10 +106,11 @@ public class UnitsRouter {
             }
         }
 
-        micros.rounder = rounder;
+        if (micros != null) {
+            micros.rounder = rounder;
+        }
         return new RouteResult(
                 converterPreference.converter.convert(quantity, rounder),
-                converterPreference.precision,
                 converterPreference.targetUnit
         );
     }
@@ -180,20 +181,13 @@ public class UnitsRouter {
         // TODO(icu-units/icu#21): figure out the right mixed unit API.
         public final List<Measure> measures;
 
-        // A skeleton string starting with a precision-increment.
-        //
-        // TODO(hugovdm): generalise? or narrow down to only a precision-increment?
-        // or document that other skeleton elements are ignored?
-        public final String precision;
-
         // The output unit for this RouteResult. This may be a MIXED unit - for
         // example: "yard-and-foot-and-inch", for which `measures` will have three
         // elements.
         public final MeasureUnitImpl outputUnit;
 
-        RouteResult(List<Measure> measures, String precision, MeasureUnitImpl outputUnit) {
+        RouteResult(List<Measure> measures, MeasureUnitImpl outputUnit) {
             this.measures = measures;
-            this.precision = precision;
             this.outputUnit = outputUnit;
         }
     }
