@@ -716,7 +716,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                 "4 metric tons, 285 kilograms, 710 grams");
 
         assertFormatSingle(
-                "Demonstrating the \"1 foot 12 inches\" problem",
+                "Testing \"1 foot 12 inches\"",
                 null,
                 "unit/foot-and-inch",
                 NumberFormatter.with()
@@ -725,7 +725,6 @@ public class NumberFormatterApiTest extends TestFmwk {
                         .unitWidth(UnitWidth.FULL_NAME),
                 new ULocale("en-US"),
                 1.9999,
-                // This is undesireable but current behaviour:
                 "2 feet, 0 inches");
     }
 
@@ -1115,7 +1114,11 @@ public class NumberFormatterApiTest extends TestFmwk {
                 new ULocale("en-ZA"),
                 30500,
                 "350 m");
-}
+
+        // TODO(icu-units#38): improve unit testing coverage. E.g. add
+        // vehicle-fuel triggering inversion conversion code. Test with 0 too,
+        // to see divide-by-zero behaviour.
+    }
 
 
     @Test

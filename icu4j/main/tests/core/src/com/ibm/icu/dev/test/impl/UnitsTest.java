@@ -1,7 +1,5 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-
-
 package com.ibm.icu.dev.test.impl;
 
 import com.ibm.icu.dev.test.TestUtil;
@@ -254,20 +252,35 @@ public class UnitsTest {
         for (TestCase testCase :
                 tests) {
             UnitConverter converter = new UnitConverter(testCase.source, testCase.target, conversionRates);
-            if (compareTwoBigDecimal(testCase.expected, converter.convert(testCase.input), BigDecimal.valueOf(0.000001))) {
+            BigDecimal got = converter.convert(testCase.input);
+            if (compareTwoBigDecimal(testCase.expected, got, BigDecimal.valueOf(0.000001))) {
                 continue;
             } else {
                 fail(new StringBuilder()
                         .append(testCase.category)
-                        .append(" ")
+                        .append(": Converting 1000 ")
                         .append(testCase.sourceString)
-                        .append(" ")
+                        .append(" to ")
                         .append(testCase.targetString)
-                        .append(" ")
-                        .append(converter.convert(testCase.input).toString())
-                        .append(" expected  ")
+                        .append(", got ")
+                        .append(got)
+                        .append(", expected ")
                         .append(testCase.expected.toString())
                         .toString());
+            }
+            BigDecimal inverted = converter.convertInverse(testCase.input);
+            if (compareTwoBigDecimal(BigDecimal.valueOf(1000), inverted, BigDecimal.valueOf(0.000001))) {
+                continue;
+            } else {
+                fail(new StringBuilder()
+                .append("Converting back to ")
+                .append(testCase.sourceString)
+                .append(" from ")
+                .append(testCase.targetString)
+                .append(": got ")
+                .append(inverted)
+                .append(", expected 1000")
+                .toString());
             }
         }
     }

@@ -8,7 +8,6 @@ import com.ibm.icu.impl.units.UnitsData;
 import com.ibm.icu.util.Measure;
 import com.ibm.icu.util.MeasureUnit;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**

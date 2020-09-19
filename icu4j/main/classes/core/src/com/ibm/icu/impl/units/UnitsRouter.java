@@ -1,9 +1,9 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-
-
 package com.ibm.icu.impl.units;
 
+import com.ibm.icu.impl.IllegalIcuArgumentException;
+import com.ibm.icu.impl.number.MicroProps;
 import com.ibm.icu.number.Precision;
 import com.ibm.icu.util.Measure;
 import com.ibm.icu.util.MeasureUnit;
@@ -80,25 +80,52 @@ public class UnitsRouter {
         }
     }
 
-    public RouteResult route(BigDecimal quantity, Precision rounder) {
-        for (ConverterPreference converterPreference :
-                converterPreferences_) {
+    /** If micros.rounder is a BogusRounder, this function replaces it with a valid one. */
+    public RouteResult route(BigDecimal quantity, MicroProps micros) {
+        Precision rounder = micros.rounder;
+        ConverterPreference converterPreference = null;
+        for (ConverterPreference itr : converterPreferences_) {
+            converterPreference = itr;
             if (converterPreference.converter.greaterThanOrEqual(quantity, converterPreference.limit)) {
-                return new RouteResult(
-                        converterPreference.converter.convert(quantity, rounder),
-                        converterPreference.precision,
-                        converterPreference.targetUnit
-                );
+                break;
+            }
+        }
+        assert converterPreference != null;
+        assert converterPreference.precision != null;
+
+        // Set up the rounder for this preference's precision
+        if (rounder != null && rounder instanceof Precision.BogusRounder) {
+            Precision.BogusRounder bogus = (Precision.BogusRounder)rounder;
+            if (converterPreference.precision.length() > 0) {
+                rounder = bogus.into(parseSkeletonToPrecision(converterPreference.precision));
+            } else {
+                // We use the same rounding mode as COMPACT notation: known to be a
+                // human-friendly rounding mode: integers, but add a decimal digit
+                // as needed to ensure we have at least 2 significant digits.
+                rounder = bogus.into(Precision.integer().withMinDigits(2));
             }
         }
 
-        // In case of the `quantity` does not fit in any converter limit, use the last converter.
-        ConverterPreference lastConverterPreference = converterPreferences_.get(converterPreferences_.size() - 1);
+        micros.rounder = rounder;
         return new RouteResult(
-                lastConverterPreference.converter.convert(quantity, rounder),
-                lastConverterPreference.precision,
-                lastConverterPreference.targetUnit
+                converterPreference.converter.convert(quantity, rounder),
+                converterPreference.precision,
+                converterPreference.targetUnit
         );
+    }
+
+    private static Precision parseSkeletonToPrecision(String precisionSkeleton) {
+        final String kSkeletonPrefix = "precision-increment/";
+        if (!precisionSkeleton.startsWith(kSkeletonPrefix)) {
+            throw new IllegalIcuArgumentException("precisionSkeleton is only precision-increment");
+        }
+
+        // TODO(icu-units#104): the C++ code uses a more sophisticated
+        // parseIncrementOption which supports "withMinFraction" - e.g.
+        // "precision-increment/0.5". Test with a unit preference that uses
+        // this, and fix Java.
+        String incrementValue = precisionSkeleton.substring(kSkeletonPrefix.length());
+        return Precision.increment(new BigDecimal(incrementValue));
     }
 
     /**

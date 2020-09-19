@@ -1157,6 +1157,10 @@ void NumberFormatterApiTest::unitUsage() {
             Locale("en-ZA"),
             30500,
             u"350 m");
+
+    // TODO(icu-units#38): improve unit testing coverage. E.g. add vehicle-fuel
+    // triggering inversion conversion code. Test with 0 too, to see
+    // divide-by-zero behaviour.
 }
 
 void NumberFormatterApiTest::unitUsageErrorCodes() {
