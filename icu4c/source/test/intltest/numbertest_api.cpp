@@ -927,10 +927,11 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"unit/square-meter-per-square-meter", //
          u"measure-unit/area-square-meter per-measure-unit/area-square-meter"},
 
-        // ICU 67: hectometer not supported. toSkeleton returns invalid skeleton:
-        {"short-form that doesn't consist of built-in units",
-         u"unit/hectometer-per-second", //
-         u"measure-unit/- per-measure-unit/duration-second"},
+        // ICU 68-current: hectometer not a built-in, so toSkeleton returns
+        // invalid skeleton, and this results in an error:
+        // {"short-form that doesn't consist of built-in units",
+        //  u"unit/hectometer-per-second", //
+        //  u"measure-unit/- per-measure-unit/duration-second"},
     };
     for (auto &cas : cases) {
         IcuTestErrorCode status(*this, cas.msg);
@@ -951,11 +952,11 @@ void NumberFormatterApiTest::unitSkeletons() {
         UErrorCode expectedForSkelStatus;
         UErrorCode expectedToSkelStatus;
     } failCases[] = {
-        // ICU 67: no errors for invalid skeletons:
+        // ICU 68-current: explicit error for the invalid skeleton
         {"short-form that doesn't consist of built-in units",
          u"unit/hectometer-per-second", //
          U_ZERO_ERROR,                  //
-         U_ZERO_ERROR},
+         U_UNSUPPORTED_ERROR},
     };
     for (auto &cas : failCases) {
         IcuTestErrorCode status(*this, cas.msg);
