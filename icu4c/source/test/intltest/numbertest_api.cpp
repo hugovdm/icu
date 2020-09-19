@@ -49,6 +49,7 @@ NumberFormatterApiTest::NumberFormatterApiTest(UErrorCode& status)
     }
     METER = *unit;
 
+    METER_PER_SECOND = *LocalPointer<MeasureUnit>(MeasureUnit::createMeterPerSecond(status));
     DAY = *LocalPointer<MeasureUnit>(MeasureUnit::createDay(status));
     SQUARE_METER = *LocalPointer<MeasureUnit>(MeasureUnit::createSquareMeter(status));
     FAHRENHEIT = *LocalPointer<MeasureUnit>(MeasureUnit::createFahrenheit(status));
@@ -73,6 +74,7 @@ void NumberFormatterApiTest::runIndexedTest(int32_t index, UBool exec, const cha
         TESTCASE_AUTO(notationCompact);
         TESTCASE_AUTO(unitMeasure);
         TESTCASE_AUTO(unitCompoundMeasure);
+        TESTCASE_AUTO(unitSkeletons);
         TESTCASE_AUTO(unitCurrency);
         TESTCASE_AUTO(unitPercent);
         if (!quick) {
@@ -739,6 +741,105 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
     //         u"0.08765 J/fur",
     //         u"0.008765 J/fur",
     //         u"0 J/fur");
+
+    // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
+    // When specifying built-in types, one can give both a unit and a perUnit.
+    // Resolving to a built-in unit does not always work.
+    //
+    // (Unit-testing philosophy: do we leave this enabled to demonstrate current
+    // behaviour, and changing behaviour in the future? Or comment it out to
+    // avoid asserting this is "correct"?)
+    assertFormatSingle(
+            u"DEMONSTRATING BAD BEHAVIOUR? TODO(icu-units#59)",
+            u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+            u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+            NumberFormatter::with().unit(METER_PER_SECOND).perUnit(SECOND),
+            Locale("en-GB"),
+            2.4,
+            "2.4 m/s/s");
+}
+
+void NumberFormatterApiTest::unitSkeletons() {
+    const struct TestCase {
+        const char *msg;
+        const char16_t *inputSkeleton;
+        const char16_t *normalizedSkeleton;
+    } cases[] = {
+        {"old-form built-in compound unit",      //
+         u"measure-unit/speed-meter-per-second", //
+         u"measure-unit/speed-meter-per-second"},
+
+        {"old-form compound construction, subtle difference to built-in",
+         u"measure-unit/length-meter per-measure-unit/duration-second",
+         u"measure-unit/length-meter per-measure-unit/duration-second"},
+
+        {"old-form compound construction which does not simplify to a built-in",
+         u"measure-unit/energy-joule per-measure-unit/length-meter",
+         u"measure-unit/energy-joule per-measure-unit/length-meter"},
+
+        {"old-form compound-compound ugliness which should be fixed?",
+         u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+         u"measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
+
+        {"short-form built-in compound units get split up unconditionally", //
+         u"unit/meter-per-second",                                          //
+         u"measure-unit/length-meter per-measure-unit/duration-second"},
+
+        {"short-form compound units get split", //
+         u"unit/square-meter-per-square-meter", //
+         u"measure-unit/area-square-meter per-measure-unit/area-square-meter"},
+
+        // ICU 67: hectometer not supported. toSkeleton returns invalid skeleton:
+        {"short-form that doesn't consist of built-in units",
+         u"unit/hectometer-per-second", //
+         u"measure-unit/- per-measure-unit/duration-second"},
+    };
+    for (auto &cas : cases) {
+        IcuTestErrorCode status(*this, cas.msg);
+        auto nf = NumberFormatter::forSkeleton(cas.inputSkeleton, status);
+        if (status.errIfFailureAndReset("NumberFormatter::forSkeleton failed")) {
+            continue;
+        }
+        assertEquals(                                                       //
+            UnicodeString(TRUE, cas.inputSkeleton, -1) + u" normalization", //
+            cas.normalizedSkeleton,                                         //
+            nf.toSkeleton(status));
+        status.errIfFailureAndReset("NumberFormatter::toSkeleton failed");
+    }
+
+    const struct FailCase {
+        const char *msg;
+        const char16_t *inputSkeleton;
+        UErrorCode expectedForSkelStatus;
+        UErrorCode expectedToSkelStatus;
+    } failCases[] = {
+        // ICU 67: no errors for invalid skeletons:
+        {"short-form that doesn't consist of built-in units",
+         u"unit/hectometer-per-second", //
+         U_ZERO_ERROR,                  //
+         U_ZERO_ERROR},
+    };
+    for (auto &cas : failCases) {
+        IcuTestErrorCode status(*this, cas.msg);
+        auto nf = NumberFormatter::forSkeleton(cas.inputSkeleton, status);
+        if (status.expectErrorAndReset(cas.expectedForSkelStatus, cas.msg)) {
+                continue;
+        }
+        nf.toSkeleton(status);
+        status.expectErrorAndReset(cas.expectedToSkelStatus, cas.msg);
+    }
+
+    IcuTestErrorCode status(*this, "unitSkeletons");
+    MeasureUnit METER_PER_SECOND = MeasureUnit::forIdentifier("meter-per-second", status);
+
+    assertEquals( //
+        ".unit(METER_PER_SECOND) normalization",
+        u"measure-unit/speed-meter-per-second",
+        NumberFormatter::with().unit(METER_PER_SECOND).toSkeleton(status));
+    assertEquals(                                     //
+        ".unit(METER).perUnit(SECOND) normalization", //
+        u"measure-unit/length-meter per-measure-unit/duration-second",
+        NumberFormatter::with().unit(METER).perUnit(SECOND).toSkeleton(status));
 }
 
 void NumberFormatterApiTest::unitCurrency() {
@@ -2829,12 +2930,35 @@ void NumberFormatterApiTest::fieldPositionCoverage() {
     }
 
     {
-        const char16_t* message = u"Measure unit field position with prefix and suffix";
+        const char16_t* message = u"Measure unit field position with prefix and suffix, composed m/s";
         FormattedNumber result = assertFormatSingle(
                 message,
                 u"measure-unit/length-meter per-measure-unit/duration-second unit-width-full-name",
                 u"unit/meter-per-second unit-width-full-name",
                 NumberFormatter::with().unit(METER).perUnit(SECOND).unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
+                "ky", // locale with the interesting data
+                68,
+                u"секундасына 68 метр");
+        static const UFieldPosition expectedFieldPositions[] = {
+                // field, begin index, end index
+                {UNUM_MEASURE_UNIT_FIELD, 0, 11},
+                {UNUM_INTEGER_FIELD, 12, 14},
+                {UNUM_MEASURE_UNIT_FIELD, 15, 19}};
+        assertNumberFieldPositions(
+                message,
+                result,
+                expectedFieldPositions,
+                UPRV_LENGTHOF(expectedFieldPositions));
+    }
+
+    {
+        const char16_t* message = u"Measure unit field position with prefix and suffix, built-in m/s";
+        FormattedNumber result = assertFormatSingle(
+                message,
+                u"measure-unit/speed-meter-per-second unit-width-full-name",
+                // Does not round-trip, because parsing of unit/* splits it up:
+                u"~unit/meter-per-second unit-width-full-name",
+                NumberFormatter::with().unit(METER_PER_SECOND).unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
                 "ky", // locale with the interesting data
                 68,
                 u"секундасына 68 метр");
@@ -3411,6 +3535,15 @@ void NumberFormatterApiTest::toDecimalNumber() {
 }
 
 
+/* For skeleton comparisons: this checks the toSkeleton output for `f` and for
+ * `conciseSkeleton` against the normalized version of `uskeleton` - this does
+ * not round-trip uskeleton itself.
+ *
+ * If `conciseSkeleton` starts with a "~", its round-trip check is skipped.
+ *
+ * If `uskeleton` is nullptr, toSkeleton is expected to return an
+ * U_UNSUPPORTED_ERROR.
+ */
 void NumberFormatterApiTest::assertFormatDescending(
         const char16_t* umessage,
         const char16_t* uskeleton,
@@ -3472,6 +3605,15 @@ void NumberFormatterApiTest::assertFormatDescending(
     }
 }
 
+/* For skeleton comparisons: this checks the toSkeleton output for `f` and for
+ * `conciseSkeleton` against the normalized version of `uskeleton` - this does
+ * not round-trip uskeleton itself.
+ *
+ * If `conciseSkeleton` starts with a "~", its round-trip check is skipped.
+ *
+ * If `uskeleton` is nullptr, toSkeleton is expected to return an
+ * U_UNSUPPORTED_ERROR.
+ */
 void NumberFormatterApiTest::assertFormatDescendingBig(
         const char16_t* umessage,
         const char16_t* uskeleton,
@@ -3533,6 +3675,15 @@ void NumberFormatterApiTest::assertFormatDescendingBig(
     }
 }
 
+/* For skeleton comparisons: this checks the toSkeleton output for `f` and for
+ * `conciseSkeleton` against the normalized version of `uskeleton` - this does
+ * not round-trip uskeleton itself.
+ *
+ * If `conciseSkeleton` starts with a "~", its round-trip check is skipped.
+ *
+ * If `uskeleton` is nullptr, toSkeleton is expected to return an
+ * U_UNSUPPORTED_ERROR.
+ */
 FormattedNumber
 NumberFormatterApiTest::assertFormatSingle(
         const char16_t* umessage,

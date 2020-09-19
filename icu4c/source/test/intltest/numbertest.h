@@ -54,6 +54,7 @@ class NumberFormatterApiTest : public IntlTestWithFieldPosition {
     void notationCompact();
     void unitMeasure();
     void unitCompoundMeasure();
+    void unitSkeletons();
     void unitCurrency();
     void unitPercent();
     void percentParity();
@@ -98,6 +99,7 @@ class NumberFormatterApiTest : public IntlTestWithFieldPosition {
     CurrencyUnit CNY;
 
     MeasureUnit METER;
+    MeasureUnit METER_PER_SECOND;
     MeasureUnit DAY;
     MeasureUnit SQUARE_METER;
     MeasureUnit FAHRENHEIT;
