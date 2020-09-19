@@ -736,7 +736,7 @@ void unitPreferencesTestDataLineFn(void *context, char *fields[][2], int32_t fie
     if (status.errIfFailureAndReset("Failure before router.route")) {
         return;
     }
-    auto routeResult = router.route(inputAmount, status);
+    RouteResult routeResult = router.route(inputAmount, nullptr, status);
     if (status.errIfFailureAndReset("router.route(inputAmount, ...)")) {
         return;
     }

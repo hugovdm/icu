@@ -122,10 +122,6 @@ class U_I18N_API UnitsRouter {
   public:
     UnitsRouter(MeasureUnit inputUnit, StringPiece locale, StringPiece usage, UErrorCode &status);
 
-    RouteResult route(double quantity, UErrorCode &status) const {
-        return route(quantity, nullptr, status);
-    }
-
     /**
      * Performs locale and usage sensitive unit conversion.
      * @param quantity The quantity to convert, expressed in terms of inputUnit.
