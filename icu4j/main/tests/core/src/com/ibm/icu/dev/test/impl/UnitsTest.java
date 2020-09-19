@@ -47,7 +47,7 @@ public class UnitsTest {
         ComplexUnitsConverter converter = new ComplexUnitsConverter(inputImpl, outputImpl, rates);
 
         // Significantly less than 2.0.
-        List<Measure> measures = converter.convert(BigDecimal.valueOf(1.9999));
+        List<Measure> measures = converter.convert(BigDecimal.valueOf(1.9999), null);
         assertEquals("measures length", 2, measures.size());
         assertEquals("1.9999: measures[0] value", BigDecimal.valueOf(1), measures.get(0).getNumber());
         assertEquals("1.9999: measures[0] unit", MeasureUnit.FOOT.getIdentifier(),
@@ -58,13 +58,14 @@ public class UnitsTest {
         assertEquals("1.9999: measures[1] unit", MeasureUnit.INCH.getIdentifier(),
                 measures.get(1).getUnit().getIdentifier());
 
-        // TODO: consider factoring out the set of tests to make this function more
-        // data-driven, *after* dealing appropriately with the memory leaks that can
-        // be demonstrated by this code.
+        // TODO(icu-units#100): consider factoring out the set of tests to make
+        // this function more data-driven, *after* dealing appropriately with
+        // the C++ memory leaks that can be demonstrated by the C++ version of
+        // this code.
 
-        // TODO: reusing measures results in a leak.
         // A minimal nudge under 2.0.
-        List<Measure> measures2 = converter.convert(BigDecimal.valueOf(2.0).subtract(ComplexUnitsConverter.EPSILON));
+        List<Measure> measures2 =
+            converter.convert(BigDecimal.valueOf(2.0).subtract(ComplexUnitsConverter.EPSILON), null);
         assertEquals("measures length", 2, measures2.size());
         assertEquals("1 - eps: measures[0] value", BigDecimal.valueOf(2), measures2.get(0).getNumber());
         assertEquals("1 - eps: measures[0] unit", MeasureUnit.FOOT.getIdentifier(),
@@ -83,11 +84,10 @@ public class UnitsTest {
         final MeasureUnitImpl inputImpl3 = MeasureUnitImpl.forIdentifier(input.getIdentifier());
         final MeasureUnitImpl outputImpl3 = MeasureUnitImpl.forIdentifier(output.getIdentifier());
 
-        // TODO: reusing converter results in a leak.
         ComplexUnitsConverter converter3 = new ComplexUnitsConverter(inputImpl3, outputImpl3, rates);
 
-        // TODO: reusing measures results in a leak.
-        List<Measure> measures3 = converter3.convert(BigDecimal.valueOf(2.0).subtract(ComplexUnitsConverter.EPSILON));
+        List<Measure> measures3 =
+            converter3.convert(BigDecimal.valueOf(2.0).subtract(ComplexUnitsConverter.EPSILON), null);
         assertEquals("measures length", 2, measures3.size());
         assertEquals("light-year test: measures[0] value", BigDecimal.valueOf(2), measures3.get(0).getNumber());
         assertEquals("light-year test: measures[0] unit", MeasureUnit.LIGHT_YEAR.getIdentifier(),
@@ -99,7 +99,7 @@ public class UnitsTest {
         // 1e-15 light years is 9.46073 meters (calculated using "bc" and the CLDR
         // conversion factor). With double-precision maths, we get 10.5. In this
         // case, we're off by almost 1 meter.
-        List<Measure> measures4 = converter3.convert(BigDecimal.valueOf(1.0 + 1e-15));
+        List<Measure> measures4 = converter3.convert(BigDecimal.valueOf(1.0 + 1e-15), null);
         assertEquals("measures length", 2, measures4.size());
         assertEquals("light-year test: measures[0] value", BigDecimal.ONE, measures4.get(0).getNumber());
         assertEquals("light-year test: measures[0] unit", MeasureUnit.LIGHT_YEAR.getIdentifier(),
@@ -112,7 +112,7 @@ public class UnitsTest {
 
         // 2e-16 light years is 1.892146 meters. We consider this in the noise, and
         // thus expect a 0. (This test fails when 2e-16 is increased to 4e-16.)
-        List<Measure> measures5 = converter3.convert(BigDecimal.valueOf(1.0 + 2e-17));
+        List<Measure> measures5 = converter3.convert(BigDecimal.valueOf(1.0 + 2e-17), null);
         assertEquals("measures length", 2, measures5.size());
         assertEquals("light-year test: measures[0] value", BigDecimal.ONE, measures5.get(0).getNumber());
         assertEquals("light-year test: measures[0] unit", MeasureUnit.LIGHT_YEAR.getIdentifier(),
@@ -134,7 +134,7 @@ public class UnitsTest {
         ConversionRates conversionRates = new ConversionRates();
 
         ComplexUnitsConverter complexConverter = new ComplexUnitsConverter(source, target, conversionRates);
-        List<Measure> measures = complexConverter.convert(BigDecimal.valueOf(10.0));
+        List<Measure> measures = complexConverter.convert(BigDecimal.valueOf(10.0), null);
 
         assertEquals(measures.size(), 2);
         assertEquals("inch-and-foot unit 0", "foot", measures.get(0).getUnit().getIdentifier());
@@ -345,7 +345,7 @@ public class UnitsTest {
         for (TestCase testCase :
                 tests) {
             UnitsRouter router = new UnitsRouter(testCase.inputUnit.second, testCase.region, testCase.usage);
-            List<Measure> measures = router.route(testCase.input).measures;
+            List<Measure> measures = router.route(testCase.input, null).measures;
 
             assertEquals("Measures size must be the same as expected units",
                     measures.size(), testCase.expectedInOrder.size());

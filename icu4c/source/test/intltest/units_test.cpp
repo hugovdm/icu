@@ -462,11 +462,11 @@ void UnitsTest::testComplexUnitsConverter() {
     assertEquals("1.9999: measures[1] unit", MeasureUnit::getInch().getIdentifier(),
                  measures[1]->getUnit().getIdentifier());
 
-    // TODO: consider factoring out the set of tests to make this function more
+    // TODO(icu-units#100): consider factoring out the set of tests to make this function more
     // data-driven, *after* dealing appropriately with the memory leaks that can
     // be demonstrated by this code.
 
-    // TODO: reusing measures results in a leak.
+    // TODO(icu-units#100): reusing measures results in a leak.
     // A minimal nudge under 2.0.
     MaybeStackVector<Measure> measures2 = converter.convert((2.0 - DBL_EPSILON), nullptr, status);
     assertEquals("measures length", 2, measures2.length());
@@ -484,13 +484,13 @@ void UnitsTest::testComplexUnitsConverter() {
     // An epsilon's nudge under one light-year: should give 1 ly, 0 m.
     input = MeasureUnit::getLightYear();
     output = MeasureUnit::forIdentifier("light-year-and-meter", status);
-    // TODO: reusing tempInput and tempOutput results in a leak.
+    // TODO(icu-units#100): reusing tempInput and tempOutput results in a leak.
     MeasureUnitImpl tempInput3, tempOutput3;
     const MeasureUnitImpl &inputImpl3 = MeasureUnitImpl::forMeasureUnit(input, tempInput3, status);
     const MeasureUnitImpl &outputImpl3 = MeasureUnitImpl::forMeasureUnit(output, tempOutput3, status);
-    // TODO: reusing converter results in a leak.
+    // TODO(icu-units#100): reusing converter results in a leak.
     ComplexUnitsConverter converter3 = ComplexUnitsConverter(inputImpl3, outputImpl3, rates, status);
-    // TODO: reusing measures results in a leak.
+    // TODO(icu-units#100): reusing measures results in a leak.
     MaybeStackVector<Measure> measures3 = converter3.convert((2.0 - DBL_EPSILON), nullptr, status);
     assertEquals("measures length", 2, measures3.length());
     assertEquals("light-year test: measures[0] value", 2.0, measures3[0]->getNumber().getDouble(status));

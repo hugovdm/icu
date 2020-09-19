@@ -4,6 +4,7 @@
 
 package com.ibm.icu.impl.units;
 
+import com.ibm.icu.number.Precision;
 import com.ibm.icu.util.Measure;
 import com.ibm.icu.util.MeasureUnit;
 
@@ -79,12 +80,12 @@ public class UnitsRouter {
         }
     }
 
-    public RouteResult route(BigDecimal quantity) {
+    public RouteResult route(BigDecimal quantity, Precision rounder) {
         for (ConverterPreference converterPreference :
                 converterPreferences_) {
             if (converterPreference.converter.greaterThanOrEqual(quantity, converterPreference.limit)) {
                 return new RouteResult(
-                        converterPreference.converter.convert(quantity),
+                        converterPreference.converter.convert(quantity, rounder),
                         converterPreference.precision,
                         converterPreference.targetUnit
                 );
@@ -94,7 +95,7 @@ public class UnitsRouter {
         // In case of the `quantity` does not fit in any converter limit, use the last converter.
         ConverterPreference lastConverterPreference = converterPreferences_.get(converterPreferences_.size() - 1);
         return new RouteResult(
-                lastConverterPreference.converter.convert(quantity),
+                lastConverterPreference.converter.convert(quantity, rounder),
                 lastConverterPreference.precision,
                 lastConverterPreference.targetUnit
         );

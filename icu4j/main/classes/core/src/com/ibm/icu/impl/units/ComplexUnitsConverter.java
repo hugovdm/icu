@@ -4,7 +4,7 @@
 
 package com.ibm.icu.impl.units;
 
-
+import com.ibm.icu.number.Precision;
 import com.ibm.icu.util.Measure;
 
 import java.math.BigDecimal;
@@ -95,7 +95,7 @@ public class ComplexUnitsConverter {
      * the smallest element is the only element that could have fractional values. And all
      * other elements are floored to the nearest integer
      */
-    public List<Measure> convert(BigDecimal quantity) {
+    public List<Measure> convert(BigDecimal quantity, Precision rounder) {
         List<Measure> result = new ArrayList<>();
 
         for (int i = 0, n = unitConverters_.size(); i < n; ++i) {

@@ -93,7 +93,8 @@ public class UsagePrefsHandler implements MicroPropsGenerator {
         MicroProps micros = this.fParent.processQuantity(quantity);
 
         quantity.roundToInfinity(); // Enables toDouble
-        final UnitsRouter.RouteResult routed = fUnitsRouter.route(quantity.toBigDecimal());
+        final UnitsRouter.RouteResult routed =
+            fUnitsRouter.route(quantity.toBigDecimal(), micros.rounder);
 
         final List<Measure> routedMeasures = routed.measures;
         micros.outputUnit = routed.outputUnit.build();
