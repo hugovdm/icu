@@ -45,6 +45,7 @@ import com.ibm.icu.number.NumberFormatter.UnitWidth;
 import com.ibm.icu.number.Precision;
 import com.ibm.icu.number.Scale;
 import com.ibm.icu.number.ScientificNotation;
+import com.ibm.icu.number.SkeletonSyntaxException;
 import com.ibm.icu.number.UnlocalizedNumberFormatter;
 import com.ibm.icu.text.ConstrainedFieldPosition;
 import com.ibm.icu.text.DecimalFormatSymbols;
@@ -686,6 +687,110 @@ public class NumberFormatterApiTest {
                 "0.08765 J/fur",
                 "0.008765 J/fur",
                 "0 J/fur");
+    }
+
+    @Test
+    public void unitSkeletons() {
+        Object[][] cases = {
+            {"old-form built-in compound unit",     //
+             "measure-unit/speed-meter-per-second", //
+             "measure-unit/speed-meter-per-second"},
+
+            {"old-form compound construction, subtle difference to built-in",
+             "measure-unit/length-meter per-measure-unit/duration-second",
+             "measure-unit/length-meter per-measure-unit/duration-second"},
+
+            {"old-form compound construction which does not simplify to a built-in",
+             "measure-unit/energy-joule per-measure-unit/length-meter",
+             "measure-unit/energy-joule per-measure-unit/length-meter"},
+
+            {"old-form compound-compound ugliness which should be fixed?",
+             "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+             "measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
+
+        //     {"short-form built-in compound units get split up unconditionally", //
+        //      "unit/meter-per-second",                                           //
+        //      "measure-unit/length-meter per-measure-unit/duration-second"},
+            // Inconsistent with C++!
+            {"short-form built-in compound units", //
+             "unit/meter-per-second",              //
+             "measure-unit/speed-meter-per-second"},
+
+            {"short-form compound units get split", //
+             "unit/square-meter-per-square-meter",  //
+             "measure-unit/area-square-meter per-measure-unit/area-square-meter"},
+
+        //     // ICU 67: hectometer not supported. toSkeleton returns invalid skeleton:
+        //     {"short-form that doesn't consist of built-in units",
+        //      "unit/hectometer-per-second", //
+        //      "measure-unit/- per-measure-unit/duration-second"},
+            // Inconsistent with C++!
+        };
+        for (Object[] cas : cases) {
+            String msg = (String)cas[0];
+            String inputSkeleton = (String)cas[1];
+            String normalizedSkeleton = (String)cas[2];
+            UnlocalizedNumberFormatter nf = NumberFormatter.forSkeleton(inputSkeleton);
+            assertEquals(msg, normalizedSkeleton, nf.toSkeleton());
+        }
+
+        Object NoException = new Object();
+        Object[][] failCases = {
+            // ICU 67: no errors for invalid skeletons:
+            {"short-form that doesn't consist of built-in units",
+             "unit/hectometer", //
+             // Inconsistent with C++!
+             true, //
+             false},
+            // ICU 67: no errors for invalid skeletons:
+            {"short-form that doesn't consist of built-in units",
+             "unit/hectometer-per-second", //
+             // Inconsistent with C++!
+             true, //
+             false},
+            // Inconsistent with C++!
+            {"short-form that isn't a built-in unit",
+             "unit/hectometer-per-second", //
+             true,                         //
+             false},
+        };
+        for (Object[] cas : failCases) {
+            String msg = (String)cas[0];
+            String inputSkeleton = (String)cas[1];
+            boolean forSkeletonExpectFailure = (boolean)cas[2];
+            boolean toSkeletonExpectFailure = (boolean)cas[3];
+            UnlocalizedNumberFormatter nf = null;
+            try {
+                nf = NumberFormatter.forSkeleton(inputSkeleton);
+                if (forSkeletonExpectFailure) {
+                    fail("forSkeleton() should have failed: " + msg);
+                }
+            } catch (Exception e) {
+                if (!forSkeletonExpectFailure) {
+                    fail("forSkeleton() should not have failed: " + msg);
+                }
+                continue;
+            }
+            try {
+                nf.toSkeleton();
+                if (toSkeletonExpectFailure) {
+                    fail("toSkeleton() should have failed: " + msg);
+                }
+            } catch (Exception e) {
+                if (!toSkeletonExpectFailure) {
+                    fail("toSkeleton() should not have failed: " + msg);
+                }
+            }
+        }
+
+        assertEquals(                                //
+            ".unit(METER_PER_SECOND) normalization", //
+            "measure-unit/speed-meter-per-second",
+            NumberFormatter.with().unit(MeasureUnit.METER_PER_SECOND).toSkeleton());
+        assertEquals(                                     //
+            ".unit(METER).perUnit(SECOND) normalization", //
+            "measure-unit/length-meter per-measure-unit/duration-second",
+            NumberFormatter.with().unit(MeasureUnit.METER).perUnit(MeasureUnit.SECOND).toSkeleton());
     }
 
     @Test
