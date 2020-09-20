@@ -1091,8 +1091,7 @@ class NumberSkeletonImpl {
                 return;
             }
 
-            // TODO(ICU-20941): Clean this up (see also
-            // https://github.com/icu-units/icu/issues/35).
+            // TODO(ICU-20941): Clean this up.
             for (SingleUnitImpl subUnit : fullUnit.getSingleUnits()) {
                 if (subUnit.getDimensionality() > 0) {
                     if (macros.unit == null) {

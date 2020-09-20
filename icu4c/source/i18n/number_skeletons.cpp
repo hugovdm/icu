@@ -1072,8 +1072,7 @@ void blueprint_helpers::parseIdentifierUnitOption(const StringSegment& segment, 
         return;
     }
 
-    // TODO(ICU-20941): Clean this up (see also
-    // https://github.com/icu-units/icu/issues/35).
+    // TODO(ICU-20941): Clean this up.
     for (int32_t i = 0; i < fullUnit.units.length(); i++) {
         SingleUnitImpl* subUnit = fullUnit.units[i];
         if (subUnit->dimensionality > 0) {
