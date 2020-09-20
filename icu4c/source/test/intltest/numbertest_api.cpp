@@ -927,6 +927,10 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"unit/square-meter-per-square-meter", //
          u"measure-unit/area-square-meter per-measure-unit/area-square-meter"},
 
+        {"short-form compound units get split", //
+         u"unit/joule-per-furlong",             //
+         u"measure-unit/energy-joule per-measure-unit/length-furlong"},
+
         {"short-form that doesn't consist of built-in units",
          u"unit/hectometer-per-second", //
          u"unit/hectometer-per-second"},

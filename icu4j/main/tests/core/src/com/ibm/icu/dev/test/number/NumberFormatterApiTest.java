@@ -901,6 +901,10 @@ public class NumberFormatterApiTest extends TestFmwk {
              "unit/square-meter-per-square-meter",  //
              "measure-unit/area-square-meter per-measure-unit/area-square-meter"},
 
+            {"short-form compound units get split", //
+             "unit/joule-per-furlong",              //
+             "measure-unit/energy-joule per-measure-unit/length-furlong"},
+
             {"short-form that doesn't consist of built-in units",
              "unit/hectometer-per-second", //
              "unit/hectometer-per-second"},
