@@ -778,7 +778,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
     assertFormatDescending(
             u"Meters Per Second Short (unit that simplifies) and perUnit method",
             u"measure-unit/length-meter per-measure-unit/duration-second",
-            u"unit/meter-per-second",
+            u"measure-unit/length-meter per-measure-unit/duration-second",
             NumberFormatter::with().unit(METER).perUnit(SECOND),
             Locale::getEnglish(),
             u"87,650 m/s",
@@ -791,16 +791,21 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             u"0.008765 m/s",
             u"0 m/s");
 
-    // TODO(icu-units#35): does not normalize as desired: while "unit/*" does
-    // get split into unit/perUnit, ".unit(*)" and "measure-unit/*" don't:
-    assertFormatSingle(
-        u"Built-in unit, meter-per-second",
-        u"measure-unit/speed-meter-per-second",
-        u"~unit/meter-per-second",
-        NumberFormatter::with().unit(MeasureUnit::getMeterPerSecond()),
-        Locale("en-GB"),
-        2.4,
-        u"2.4 m/s");
+    assertFormatDescending(
+            u"Meters Per Second Short, built-in m/s",
+            u"measure-unit/speed-meter-per-second",
+            u"unit/meter-per-second",
+            NumberFormatter::with().unit(METER_PER_SECOND),
+            Locale::getEnglish(),
+            u"87,650 m/s",
+            u"8,765 m/s",
+            u"876.5 m/s",
+            u"87.65 m/s",
+            u"8.765 m/s",
+            u"0.8765 m/s",
+            u"0.08765 m/s",
+            u"0.008765 m/s",
+            u"0 m/s");
 
     assertFormatDescending(
             u"Pounds Per Square Mile Short (secondary unit has per-format) and adoptPerUnit method",
@@ -919,9 +924,9 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
          u"measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
 
-        {"short-form built-in compound units get split up unconditionally", //
+        {"short-form built-in units stick with the built-in", //
          u"unit/meter-per-second",                                          //
-         u"measure-unit/length-meter per-measure-unit/duration-second"},
+         u"measure-unit/speed-meter-per-second"},
 
         {"short-form compound units get split", //
          u"unit/square-meter-per-square-meter", //
@@ -3581,7 +3586,7 @@ void NumberFormatterApiTest::fieldPositionCoverage() {
         FormattedNumber result = assertFormatSingle(
                 message,
                 u"measure-unit/length-meter per-measure-unit/duration-second unit-width-full-name",
-                u"unit/meter-per-second unit-width-full-name",
+                u"measure-unit/length-meter per-measure-unit/duration-second unit-width-full-name",
                 NumberFormatter::with().unit(METER).perUnit(SECOND).unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
                 "ky", // locale with the interesting data
                 68,
@@ -3603,8 +3608,7 @@ void NumberFormatterApiTest::fieldPositionCoverage() {
         FormattedNumber result = assertFormatSingle(
                 message,
                 u"measure-unit/speed-meter-per-second unit-width-full-name",
-                // Does not round-trip, because parsing of unit/* splits it up:
-                u"~unit/meter-per-second unit-width-full-name",
+                u"unit/meter-per-second unit-width-full-name",
                 NumberFormatter::with().unit(METER_PER_SECOND).unitWidth(UNUM_UNIT_WIDTH_FULL_NAME),
                 "ky", // locale with the interesting data
                 68,

@@ -737,7 +737,7 @@ public class NumberFormatterApiTest extends TestFmwk {
         assertFormatDescending(
                 "Meters Per Second Short (unit that simplifies) and perUnit method",
                 "measure-unit/length-meter per-measure-unit/duration-second",
-                "~unit/meter-per-second", // does not round-trip to the full skeleton above
+                "measure-unit/length-meter per-measure-unit/duration-second",
                 NumberFormatter.with().unit(MeasureUnit.METER).perUnit(MeasureUnit.SECOND),
                 ULocale.ENGLISH,
                 "87,650 m/s",
@@ -750,16 +750,21 @@ public class NumberFormatterApiTest extends TestFmwk {
                 "0.008765 m/s",
                 "0 m/s");
 
-        // TODO(icu-units#35): does not normalize as desired: while "unit/*" does
-        // get split into unit/perUnit, ".unit(*)" and "measure-unit/*" don't:
-        assertFormatSingle(
-                "Built-in unit, meter-per-second",
+        assertFormatDescending(
+                "Meters Per Second Short, built-in m/s",
                 "measure-unit/speed-meter-per-second",
-                "~unit/meter-per-second",
+                "unit/meter-per-second",
                 NumberFormatter.with().unit(MeasureUnit.METER_PER_SECOND),
-                new ULocale("en-GB"),
-                2.4,
-                "2.4 m/s");
+                ULocale.ENGLISH,
+                "87,650 m/s",
+                "8,765 m/s",
+                "876.5 m/s",
+                "87.65 m/s",
+                "8.765 m/s",
+                "0.8765 m/s",
+                "0.08765 m/s",
+                "0.008765 m/s",
+                "0 m/s");
 
         assertFormatDescending(
                 "Pounds Per Square Mile Short (secondary unit has per-format)",
@@ -893,12 +898,8 @@ public class NumberFormatterApiTest extends TestFmwk {
              "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
              "measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
 
-        //     {"short-form built-in compound units get split up unconditionally", //
-        //      "unit/meter-per-second",                                           //
-        //      "measure-unit/length-meter per-measure-unit/duration-second"},
-            // Inconsistent with C++!
-            {"short-form built-in compound units", //
-             "unit/meter-per-second",              //
+            {"short-form built-in units stick with the built-in", //
+             "unit/meter-per-second",                             //
              "measure-unit/speed-meter-per-second"},
 
             {"short-form compound units get split", //
@@ -3481,7 +3482,7 @@ public class NumberFormatterApiTest extends TestFmwk {
             FormattedNumber result = assertFormatSingle(
                     message,
                     "measure-unit/length-meter per-measure-unit/duration-second unit-width-full-name",
-                    "~unit/meter-per-second unit-width-full-name", // unlike C++, does not round-trip
+                    "measure-unit/length-meter per-measure-unit/duration-second unit-width-full-name",
                     NumberFormatter.with().unit(MeasureUnit.METER).perUnit(MeasureUnit.SECOND).unitWidth(UnitWidth.FULL_NAME),
                     new ULocale("ky"), // locale with the interesting data
                     68,
@@ -3502,7 +3503,7 @@ public class NumberFormatterApiTest extends TestFmwk {
             FormattedNumber result = assertFormatSingle(
                     message,
                     "measure-unit/speed-meter-per-second unit-width-full-name",
-                    "unit/meter-per-second unit-width-full-name", // unlike C++, DOES round-trip
+                    "unit/meter-per-second unit-width-full-name",
                     NumberFormatter.with().unit(MeasureUnit.METER_PER_SECOND).unitWidth(UnitWidth.FULL_NAME),
                     new ULocale("ky"), // locale with the interesting data
                     68,

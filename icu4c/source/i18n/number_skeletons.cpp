@@ -1058,15 +1058,19 @@ void blueprint_helpers::parseIdentifierUnitOption(const StringSegment& segment, 
         return;
     }
 
-    // Mixed units can only be represented by a full MeasureUnit instances, so
-    // we ignore macros.perUnit.
+    // Mixed units can only be represented by full MeasureUnit instances, so we
+    // don't split the denominator into macros.perUnit.
     if (fullUnit.complexity == UMEASURE_UNIT_MIXED) {
         macros.unit = std::move(fullUnit).build(status);
         return;
     }
 
-    // FIXME: find the correct split-up logic for fullUnit. Perhaps only if it
-    // isn't a built-in unit?
+    // When we have a built-in unit (e.g. meter-per-second), we don't split it up
+    MeasureUnit testBuiltin = fullUnit.copy(status).build(status);
+    if (uprv_strcmp(testBuiltin.getType(), "") != 0) {
+        macros.unit = std::move(testBuiltin);
+        return;
+    }
 
     // TODO(ICU-20941): Clean this up (see also
     // https://github.com/icu-units/icu/issues/35).
