@@ -1610,7 +1610,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see #perUnit
      * @stable ICU 60
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived unit(const icu::MeasureUnit &unit) const &;
 
     /**
@@ -1622,7 +1621,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see #unit
      * @stable ICU 62
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived unit(const icu::MeasureUnit &unit) &&;
 
     /**
@@ -1638,7 +1636,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see MeasureUnit
      * @stable ICU 60
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived adoptUnit(icu::MeasureUnit *unit) const &;
 
     /**
@@ -1650,7 +1647,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see #adoptUnit
      * @stable ICU 62
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived adoptUnit(icu::MeasureUnit *unit) &&;
 
     /**
@@ -1675,7 +1671,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see #unit
      * @stable ICU 61
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived perUnit(const icu::MeasureUnit &perUnit) const &;
 
     /**
@@ -1687,7 +1682,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see #perUnit
      * @stable ICU 62
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived perUnit(const icu::MeasureUnit &perUnit) &&;
 
     /**
@@ -1703,7 +1697,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see MeasureUnit
      * @stable ICU 61
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived adoptPerUnit(icu::MeasureUnit *perUnit) const &;
 
     /**
@@ -1715,7 +1708,6 @@ class U_I18N_API NumberFormatterSettings {
      * @see #adoptPerUnit
      * @stable ICU 62
      */
-    // TODO(ICU-21266): update documentation when new behaviour is defined
     Derived adoptPerUnit(icu::MeasureUnit *perUnit) &&;
 
     /**
