@@ -1502,13 +1502,21 @@ class NumberSkeletonImpl {
             } else if (macros.unit == MeasureUnit.PERMILLE) {
                 sb.append("permille");
                 return true;
-            } else if (macros.unit.getType() != null) {
+            } else if (macros.unit.getType() != null &&      // unit is built-in
+                       (macros.perUnit == null ||            // and (no perUnit given,
+                        macros.perUnit.getType() != null)) { //      or perUnit is also built-in)
                 sb.append("measure-unit/");
                 BlueprintHelpers.generateMeasureUnitOption(macros.unit, sb);
                 return true;
             } else {
-                // TODO(icu-units#35): add support for not-built-in units.
-                throw new UnsupportedOperationException();
+                MeasureUnit unit = macros.unit;
+                if (macros.perUnit != null) {
+                    // TODO: is this an approved MeasureUnit API?
+                    unit = unit.product(macros.perUnit.reciprocal());
+                }
+                sb.append("unit/");
+                sb.append(unit.getIdentifier());
+                return true;
             }
         }
 
@@ -1517,6 +1525,10 @@ class NumberSkeletonImpl {
             if (macros.perUnit instanceof Currency) {
                 throw new UnsupportedOperationException(
                         "Cannot generate number skeleton with per-unit that is not a standard measure unit");
+            } else if (macros.unit.getType() == null || macros.perUnit.getType() == null) {
+                // Not a built-in perUnit: GeneratorHelpers.unit() will have
+                // created a "unit/*" that incorporates macros.perUnit too.
+                return false;
             } else {
                 sb.append("per-measure-unit/");
                 BlueprintHelpers.generateMeasureUnitOption(macros.perUnit, sb);

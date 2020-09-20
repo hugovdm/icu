@@ -696,10 +696,9 @@ void NumberFormatterApiTest::unitMeasure() {
             5,
             u"5 a\u00F1os");
 
-    // TODO(icu-units#35): skeleton generation.
     assertFormatSingle(
             u"Mixed unit",
-            nullptr,
+            u"unit/yard-and-foot-and-inch",
             u"unit/yard-and-foot-and-inch",
             NumberFormatter::with()
                 .unit(MeasureUnit::forIdentifier("yard-and-foot-and-inch", status)),
@@ -707,10 +706,9 @@ void NumberFormatterApiTest::unitMeasure() {
             3.65,
             "3 yd, 1 ft, 11.4 in");
 
-    // TODO(icu-units#35): skeleton generation.
     assertFormatSingle(
             u"Mixed unit, Scientific",
-            nullptr,
+            u"unit/yard-and-foot-and-inch E0",
             u"unit/yard-and-foot-and-inch E0",
             NumberFormatter::with()
                 .unit(MeasureUnit::forIdentifier("yard-and-foot-and-inch", status))
@@ -719,10 +717,9 @@ void NumberFormatterApiTest::unitMeasure() {
             3.65,
             "3 yd, 1 ft, 1.14E1 in");
 
-    // TODO(icu-units#35): skeleton generation.
     assertFormatSingle(
             u"Mixed Unit (Narrow Version)",
-            nullptr,
+            u"unit/metric-ton-and-kilogram-and-gram unit-width-narrow",
             u"unit/metric-ton-and-kilogram-and-gram unit-width-narrow",
             NumberFormatter::with()
                 .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
@@ -731,10 +728,9 @@ void NumberFormatterApiTest::unitMeasure() {
             4.28571,
             u"4t 285kg 710g");
 
-    // TODO(icu-units#35): skeleton generation.
     assertFormatSingle(
             u"Mixed Unit (Short Version)",
-            nullptr,
+            u"unit/metric-ton-and-kilogram-and-gram unit-width-short",
             u"unit/metric-ton-and-kilogram-and-gram unit-width-short",
             NumberFormatter::with()
                 .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
@@ -743,10 +739,9 @@ void NumberFormatterApiTest::unitMeasure() {
             4.28571,
             u"4 t, 285 kg, 710 g");
 
-    // TODO(icu-units#35): skeleton generation.
     assertFormatSingle(
             u"Mixed Unit (Full Name Version)",
-            nullptr,
+            u"unit/metric-ton-and-kilogram-and-gram unit-width-full-name",
             u"unit/metric-ton-and-kilogram-and-gram unit-width-full-name",
             NumberFormatter::with()
                 .unit(MeasureUnit::forIdentifier("metric-ton-and-kilogram-and-gram", status))
@@ -925,18 +920,20 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
 
         {"short-form built-in units stick with the built-in", //
-         u"unit/meter-per-second",                                          //
+         u"unit/meter-per-second",                            //
          u"measure-unit/speed-meter-per-second"},
 
         {"short-form compound units get split", //
          u"unit/square-meter-per-square-meter", //
          u"measure-unit/area-square-meter per-measure-unit/area-square-meter"},
 
-        // ICU 68-current: hectometer not a built-in, so toSkeleton returns
-        // invalid skeleton, and this results in an error:
-        // {"short-form that doesn't consist of built-in units",
-        //  u"unit/hectometer-per-second", //
-        //  u"measure-unit/- per-measure-unit/duration-second"},
+        {"short-form that doesn't consist of built-in units",
+         u"unit/hectometer-per-second", //
+         u"unit/hectometer-per-second"},
+
+        {"short-form that doesn't consist of built-in units",
+         u"unit/meter-per-hectosecond", //
+         u"unit/meter-per-hectosecond"},
     };
     for (auto &cas : cases) {
         IcuTestErrorCode status(*this, cas.msg);
@@ -957,11 +954,15 @@ void NumberFormatterApiTest::unitSkeletons() {
         UErrorCode expectedForSkelStatus;
         UErrorCode expectedToSkelStatus;
     } failCases[] = {
-        // ICU 68-current: explicit error for the invalid skeleton
-        {"short-form that doesn't consist of built-in units",
-         u"unit/hectometer-per-second", //
-         U_ZERO_ERROR,                  //
-         U_UNSUPPORTED_ERROR},
+        {"Parsing measure-unit/* results in failure if not built-in unit",
+         u"measure-unit/hectometer",     //
+         U_NUMBER_SKELETON_SYNTAX_ERROR, //
+         U_ZERO_ERROR},
+
+        {"Parsing per-measure-unit/* results in failure if not built-in unit",
+         u"measure-unit/meter per-measure-unit/hectosecond", //
+         U_NUMBER_SKELETON_SYNTAX_ERROR,                     //
+         U_ZERO_ERROR},
     };
     for (auto &cas : failCases) {
         IcuTestErrorCode status(*this, cas.msg);
@@ -984,6 +985,19 @@ void NumberFormatterApiTest::unitSkeletons() {
         ".unit(METER).perUnit(SECOND) normalization", //
         u"measure-unit/length-meter per-measure-unit/duration-second",
         NumberFormatter::with().unit(METER).perUnit(SECOND).toSkeleton(status));
+    assertEquals(                                                                  //
+        ".unit(MeasureUnit::forIdentifier(\"hectometer\", status)) normalization", //
+        u"unit/hectometer",
+        NumberFormatter::with()
+            .unit(MeasureUnit::forIdentifier("hectometer", status))
+            .toSkeleton(status));
+    assertEquals(                                                                  //
+        ".unit(MeasureUnit::forIdentifier(\"hectometer\", status)) normalization", //
+        u"unit/meter-per-hectosecond",
+        NumberFormatter::with()
+            .unit(METER)
+            .perUnit(MeasureUnit::forIdentifier("hectosecond", status))
+            .toSkeleton(status));
 }
 
 void NumberFormatterApiTest::unitUsage() {

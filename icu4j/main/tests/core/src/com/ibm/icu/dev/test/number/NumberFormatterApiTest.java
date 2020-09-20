@@ -656,10 +656,9 @@ public class NumberFormatterApiTest extends TestFmwk {
                 5,
                 "5 a\u00F1os");
             
-        // TODO(icu-units#35): skeleton generation.
         assertFormatSingle(
                 "Mixed unit",
-                null,
+                "unit/yard-and-foot-and-inch",
                 "unit/yard-and-foot-and-inch",
                 NumberFormatter.with()
                         .unit(MeasureUnit.forIdentifier("yard-and-foot-and-inch")),
@@ -667,10 +666,9 @@ public class NumberFormatterApiTest extends TestFmwk {
                 3.65,
                 "3 yd, 1 ft, 11.4 in");
 
-        // TODO(icu-units#35): skeleton generation.
         assertFormatSingle(
                 "Mixed unit, Scientific",
-                null,
+                "unit/yard-and-foot-and-inch E0",
                 "unit/yard-and-foot-and-inch E0",
                 NumberFormatter.with()
                         .unit(MeasureUnit.forIdentifier("yard-and-foot-and-inch"))
@@ -679,10 +677,9 @@ public class NumberFormatterApiTest extends TestFmwk {
                 3.65,
                 "3 yd, 1 ft, 1.14E1 in");
 
-        // TODO(icu-units#35): skeleton generation.
         assertFormatSingle(
                 "Mixed Unit (Narrow Version)",
-                null,
+                "unit/metric-ton-and-kilogram-and-gram unit-width-narrow",
                 "unit/metric-ton-and-kilogram-and-gram unit-width-narrow",
                 NumberFormatter.with()
                         .unit(MeasureUnit.forIdentifier("metric-ton-and-kilogram-and-gram"))
@@ -691,10 +688,9 @@ public class NumberFormatterApiTest extends TestFmwk {
                 4.28571,
                 "4t 285kg 710g");
 
-        // TODO(icu-units#35): skeleton generation.
         assertFormatSingle(
                 "Mixed Unit (Short Version)",
-                null,
+                "unit/metric-ton-and-kilogram-and-gram unit-width-short",
                 "unit/metric-ton-and-kilogram-and-gram unit-width-short",
                 NumberFormatter.with()
                         .unit(MeasureUnit.forIdentifier("metric-ton-and-kilogram-and-gram"))
@@ -703,10 +699,9 @@ public class NumberFormatterApiTest extends TestFmwk {
                 4.28571,
                 "4 t, 285 kg, 710 g");
 
-        // TODO(icu-units#35): skeleton generation.
         assertFormatSingle(
                 "Mixed Unit (Full Name Version)",
-                null,
+                "unit/metric-ton-and-kilogram-and-gram unit-width-full-name",
                 "unit/metric-ton-and-kilogram-and-gram unit-width-full-name",
                 NumberFormatter.with()
                         .unit(MeasureUnit.forIdentifier("metric-ton-and-kilogram-and-gram"))
@@ -906,11 +901,13 @@ public class NumberFormatterApiTest extends TestFmwk {
              "unit/square-meter-per-square-meter",  //
              "measure-unit/area-square-meter per-measure-unit/area-square-meter"},
 
-        //     // ICU 67: hectometer not supported. toSkeleton returns invalid skeleton:
-        //     {"short-form that doesn't consist of built-in units",
-        //      "unit/hectometer-per-second", //
-        //      "measure-unit/- per-measure-unit/duration-second"},
-            // Inconsistent with C++!
+            {"short-form that doesn't consist of built-in units",
+             "unit/hectometer-per-second", //
+             "unit/hectometer-per-second"},
+
+            {"short-form that doesn't consist of built-in units",
+             "unit/meter-per-hectosecond", //
+             "unit/meter-per-hectosecond"},
         };
         for (Object[] cas : cases) {
             String msg = (String)cas[0];
@@ -922,20 +919,14 @@ public class NumberFormatterApiTest extends TestFmwk {
 
         Object NoException = new Object();
         Object[][] failCases = {
-            {"short-form that doesn't consist of built-in units",
-             "unit/hectometer", //
-             // Inconsistent with C++!
-             true, //
+            {"Parsing measure-unit/* results in failure if not built-in unit",
+             "measure-unit/hectometer", //
+             true,                      //
              false},
-            {"short-form that doesn't consist of built-in units",
-             "unit/hectometer-per-second", //
-             // Inconsistent with C++!
-             true, //
-             false},
-            // Inconsistent with C++!
-            {"short-form that isn't a built-in unit",
-             "unit/hectometer-per-second", //
-             true,                         //
+
+            {"Parsing per-measure-unit/* results in failure if not built-in unit",
+             "measure-unit/meter per-measure-unit/hectosecond", //
+             true,                                              //
              false},
         };
         for (Object[] cas : failCases) {

@@ -1527,14 +1527,33 @@ bool GeneratorHelpers::unit(const MacroProps& macros, UnicodeString& sb, UErrorC
     } else if (utils::unitIsPermille(macros.unit)) {
         sb.append(u"permille", -1);
         return true;
-    } else if (uprv_strcmp(macros.unit.getType(), "") != 0) {
+    } else if (uprv_strcmp(macros.unit.getType(), "") != 0 &&      // unit is built-in,
+               (utils::unitIsBaseUnit(macros.perUnit) ||           // and (no perUnit given,
+                uprv_strcmp(macros.perUnit.getType(), "") != 0)) { //      or perUnit is also built-in)
         sb.append(u"measure-unit/", -1);
         blueprint_helpers::generateMeasureUnitOption(macros.unit, sb, status);
         return true;
     } else {
-        // TODO(icu-units#35): add support for not-built-in units.
-        status = U_UNSUPPORTED_ERROR;
-        return false;
+        MeasureUnit unit = macros.unit;
+        if (!utils::unitIsBaseUnit(macros.perUnit)) {
+            // Combine perUnit with unit
+            MeasureUnitImpl temp;
+            const MeasureUnitImpl &perUnit =
+                MeasureUnitImpl::forMeasureUnit(macros.perUnit, temp, status);
+            for (int32_t i = 0; i < perUnit.units.length(); i++) {
+                const SingleUnitImpl *subUnit = perUnit.units[i];
+                if (subUnit->dimensionality > 0) {
+                    SingleUnitImpl newSub = *subUnit;
+                    newSub.dimensionality *= -1;
+                    unit = unit.product(newSub.build(status), status);
+                } else {
+                    unit = unit.product(subUnit->build(status), status);
+                }
+            }
+        }
+        sb.append(u"unit/", -1);
+        sb.append(unit.getIdentifier());
+        return true;
     }
 }
 
@@ -1545,6 +1564,11 @@ bool GeneratorHelpers::perUnit(const MacroProps& macros, UnicodeString& sb, UErr
         return false;
     } else if (utils::unitIsCurrency(macros.perUnit)) {
         status = U_UNSUPPORTED_ERROR;
+        return false;
+    } else if (uprv_strcmp(macros.unit.getType(), "") == 0 ||
+               uprv_strcmp(macros.perUnit.getType(), "") == 0) {
+        // Not a built-in perUnit: GeneratorHelpers::unit() will have created a
+        // "unit/*" that incorporates macros.perUnit too.
         return false;
     } else {
         sb.append(u"per-measure-unit/", -1);
