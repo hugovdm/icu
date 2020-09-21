@@ -922,13 +922,17 @@ public class NumberFormatterApiTest extends TestFmwk {
              "unit/joule-per-furlong",              //
              "measure-unit/energy-joule per-measure-unit/length-furlong"},
 
-            {"short-form that doesn't consist of built-in units",
-             "unit/hectometer-per-second", //
+            {"short-form that doesn't consist of built-in units", //
+             "unit/hectometer-per-second",                        //
              "unit/hectometer-per-second"},
 
-            {"short-form that doesn't consist of built-in units",
-             "unit/meter-per-hectosecond", //
+            {"short-form that doesn't consist of built-in units", //
+             "unit/meter-per-hectosecond",                        //
              "unit/meter-per-hectosecond"},
+
+            {"Round-trip example from icu-units#35", //
+             "unit/kibijoule-per-furlong",           //
+             "unit/kibijoule-per-furlong"},
         };
         for (Object[] cas : cases) {
             String msg = (String)cas[0];

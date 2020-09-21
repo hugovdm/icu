@@ -595,7 +595,7 @@ void NumberFormatterApiTest::unitMeasure() {
 //             u"0.8765 hm",
 //             u"0.08765 hm",
 //             u"0.008765 hm",
-//             u"0 m");
+//             u"0 hm");
 
 //    TODO: Implement Measure in C++
 //    assertFormatSingleMeasure(
@@ -948,13 +948,17 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"unit/joule-per-furlong",             //
          u"measure-unit/energy-joule per-measure-unit/length-furlong"},
 
-        {"short-form that doesn't consist of built-in units",
-         u"unit/hectometer-per-second", //
+        {"short-form that doesn't consist of built-in units", //
+         u"unit/hectometer-per-second",                       //
          u"unit/hectometer-per-second"},
 
-        {"short-form that doesn't consist of built-in units",
-         u"unit/meter-per-hectosecond", //
+        {"short-form that doesn't consist of built-in units", //
+         u"unit/meter-per-hectosecond",                       //
          u"unit/meter-per-hectosecond"},
+
+        {"Round-trip example from icu-units#35", //
+         u"unit/kibijoule-per-furlong",          //
+         u"unit/kibijoule-per-furlong"},
     };
     for (auto &cas : cases) {
         IcuTestErrorCode status(*this, cas.msg);
