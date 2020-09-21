@@ -1510,7 +1510,6 @@ class NumberSkeletonImpl {
             } else {
                 MeasureUnit unit = macros.unit;
                 if (macros.perUnit != null) {
-                    // TODO: is this an approved MeasureUnit API?
                     unit = unit.product(macros.perUnit.reciprocal());
                 }
                 sb.append("unit/");

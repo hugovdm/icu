@@ -580,6 +580,23 @@ void NumberFormatterApiTest::unitMeasure() {
             u"0.0088 meters",
             u"0 meters");
 
+//     // TODO(ICU-20941): Support formatting for not-built-in units
+//     assertFormatDescending(
+//             u"Hectometers",
+//             u"measure-unit/length-hectometer",
+//             u"unit/hectometer",
+//             NumberFormatter::with().unit(MeasureUnit::forIdentifier("hectometer", status)),
+//             Locale::getEnglish(),
+//             u"87,650 hm",
+//             u"8,765 hm",
+//             u"876.5 hm",
+//             u"87.65 hm",
+//             u"8.765 hm",
+//             u"0.8765 hm",
+//             u"0.08765 hm",
+//             u"0.008765 hm",
+//             u"0 m");
+
 //    TODO: Implement Measure in C++
 //    assertFormatSingleMeasure(
 //            u"Meters with Measure Input",

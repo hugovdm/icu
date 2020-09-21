@@ -536,6 +536,23 @@ public class NumberFormatterApiTest extends TestFmwk {
                 "0.0088 meters",
                 "0 meters");
 
+        // // TODO(ICU-20941): Support formatting for not-built-in units
+        // assertFormatDescending(
+        //         "Hectometers",
+        //         "measure-unit/length-hectometer",
+        //         "unit/hectometer",
+        //         NumberFormatter.with().unit(MeasureUnit.forIdentifier("hectometer")),
+        //         ULocale.ENGLISH,
+        //         "87,650 hm",
+        //         "8,765 ham",
+        //         "876.5 hm",
+        //         "87.65 hm",
+        //         "8.765 hm",
+        //         "0.8765 hm",
+        //         "0.08765 hm",
+        //         "0.008765 hm",
+        //         "0 hm");
+
         assertFormatSingleMeasure(
                 "Meters with Measure Input",
                 "unit-width-full-name",
