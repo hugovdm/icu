@@ -956,9 +956,10 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"unit/meter-per-hectosecond",                       //
          u"unit/meter-per-hectosecond"},
 
-        {"Round-trip example from icu-units#35", //
-         u"unit/kibijoule-per-furlong",          //
-         u"unit/kibijoule-per-furlong"},
+        // // TODO: binary prefixes not supported yet!
+        // {"Round-trip example from icu-units#35", //
+        //  u"unit/kibijoule-per-furlong",          //
+        //  u"unit/kibijoule-per-furlong"},
     };
     for (auto &cas : cases) {
         IcuTestErrorCode status(*this, cas.msg);
