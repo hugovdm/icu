@@ -59,7 +59,9 @@ NumberFormatterApiTest::NumberFormatterApiTest(UErrorCode& status)
     FAHRENHEIT = *LocalPointer<MeasureUnit>(MeasureUnit::createFahrenheit(status));
     SECOND = *LocalPointer<MeasureUnit>(MeasureUnit::createSecond(status));
     POUND = *LocalPointer<MeasureUnit>(MeasureUnit::createPound(status));
+    POUND_FORCE = *LocalPointer<MeasureUnit>(MeasureUnit::createPoundForce(status));
     SQUARE_MILE = *LocalPointer<MeasureUnit>(MeasureUnit::createSquareMile(status));
+    SQUARE_INCH = *LocalPointer<MeasureUnit>(MeasureUnit::createSquareInch(status));
     JOULE = *LocalPointer<MeasureUnit>(MeasureUnit::createJoule(status));
     FURLONG = *LocalPointer<MeasureUnit>(MeasureUnit::createFurlong(status));
     KELVIN = *LocalPointer<MeasureUnit>(MeasureUnit::createKelvin(status));
@@ -851,35 +853,64 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             u"0.008765 J/fur",
             u"0 J/fur");
 
-    // TODO(ICU-20941): Support constructions such as this one.
-    // assertFormatDescending(
-    //         u"Joules Per Furlong Short with unit identifier via API",
-    //         u"measure-unit/energy-joule per-measure-unit/length-furlong",
-    //         u"unit/joule-per-furlong",
-    //         NumberFormatter::with().unit(MeasureUnit::forIdentifier("joule-per-furlong", status)),
-    //         Locale::getEnglish(),
-    //         u"87,650 J/fur",
-    //         u"8,765 J/fur",
-    //         u"876.5 J/fur",
-    //         u"87.65 J/fur",
-    //         u"8.765 J/fur",
-    //         u"0.8765 J/fur",
-    //         u"0.08765 J/fur",
-    //         u"0.008765 J/fur",
-    //         u"0 J/fur");
+    assertFormatDescending(
+            u"Pounds per Square Inch: composed",
+            u"measure-unit/force-pound-force per-measure-unit/area-square-inch",
+            u"unit/pound-force-per-square-inch",
+            NumberFormatter::with().unit(POUND_FORCE).perUnit(SQUARE_INCH),
+            Locale::getEnglish(),
+            u"87,650 psi",
+            u"8,765 psi",
+            u"876.5 psi",
+            u"87.65 psi",
+            u"8.765 psi",
+            u"0.8765 psi",
+            u"0.08765 psi",
+            u"0.008765 psi",
+            u"0 psi");
 
-    // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
-    // When specifying built-in types, one can give both a unit and a perUnit.
-    // Resolving to a built-in unit does not always work.
+    assertFormatDescending(
+            u"Pounds per Square Inch: built-in",
+            u"measure-unit/force-pound-force per-measure-unit/area-square-inch",
+            u"unit/pound-force-per-square-inch",
+            NumberFormatter::with().unit(MeasureUnit::getPoundPerSquareInch()),
+            Locale::getEnglish(),
+            u"87,650 psi",
+            u"8,765 psi",
+            u"876.5 psi",
+            u"87.65 psi",
+            u"8.765 psi",
+            u"0.8765 psi",
+            u"0.08765 psi",
+            u"0.008765 psi",
+            u"0 psi");
+
+// FIXME: number_formatimpl.cpp lines 171-188 ought to solve this, but currently still triggers a SIGSEGV.
+//
+//     assertFormatDescending(
+//             u"Joules Per Furlong Short with unit identifier via API",
+//             u"measure-unit/energy-joule per-measure-unit/length-furlong",
+//             u"unit/joule-per-furlong",
+//             NumberFormatter::with().unit(MeasureUnit::forIdentifier("joule-per-furlong", status)),
+//             Locale::getEnglish(),
+//             u"87,650 J/fur",
+//             u"8,765 J/fur",
+//             u"876.5 J/fur",
+//             u"87.65 J/fur",
+//             u"8.765 J/fur",
+//             u"0.8765 J/fur",
+//             u"0.08765 J/fur",
+//             u"0.008765 J/fur",
+//             u"0 J/fur");
+
     assertFormatSingle(
-            u"DEMONSTRATING BAD BEHAVIOUR? TODO(icu-units#59)",
+            u"m/s/s simplifies to m/s^2",
             u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-            u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+            u"unit/meter-per-square-second",
             NumberFormatter::with().unit(METER_PER_SECOND).perUnit(SECOND),
             Locale("en-GB"),
             2.4,
-            // UGLY:
-            "2.4 m/s/s");
+            "2.4 m/s\u00B2");
 
     // Testing the rejection of invalid specifications
 
@@ -898,12 +929,10 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
         status.assertSuccess();
     }
 
-    // .perUnit() may only be passed a built-in type, "square-second" is not a
-    // built-in type.
-    nf = NumberFormatter::with()
-             .unit(MeasureUnit::getMeter())
-             .perUnit(MeasureUnit::forIdentifier("square-second", status))
-             .locale("en-GB");
+    // .perUnit() may only be passed a built-in type, or something that combines
+    // to a built-in type together with .unit().
+    MeasureUnit SQUARE_SECOND = MeasureUnit::forIdentifier("square-second", status);
+    nf = NumberFormatter::with().unit(FURLONG).perUnit(SQUARE_SECOND).locale("en-GB");
     status.assertSuccess(); // Error is only returned once we try to format.
     num = nf.formatDouble(2.4, status);
     if (!status.expectErrorAndReset(U_UNSUPPORTED_ERROR)) {
@@ -911,6 +940,16 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
               nf.formatDouble(2.4, status).toString(status) + "\".");
         status.assertSuccess();
     }
+    // As above, "square-second" is not a built-in type, however this time,
+    // meter-per-square-second is a built-in type.
+    assertFormatSingle(
+            u"meter per square-second works as a composed unit",
+            u"unit/meter-per-square-second",
+            u"unit/meter-per-square-second",
+            NumberFormatter::with().unit(METER).perUnit(SQUARE_SECOND),
+            Locale("en-GB"),
+            2.4,
+            "2.4 m/s\u00B2");
 }
 
 void NumberFormatterApiTest::unitSkeletons() {
@@ -921,32 +960,31 @@ void NumberFormatterApiTest::unitSkeletons() {
     } cases[] = {
         {"old-form built-in compound unit",      //
          u"measure-unit/speed-meter-per-second", //
-         u"measure-unit/speed-meter-per-second"},
+         u"unit/meter-per-second"},
 
-        {"old-form compound construction, subtle difference to built-in",
-         u"measure-unit/length-meter per-measure-unit/duration-second",
-         u"measure-unit/length-meter per-measure-unit/duration-second"},
+        {"old-form compound construction, converts to built-in",        //
+         u"measure-unit/length-meter per-measure-unit/duration-second", //
+         u"unit/meter-per-second"},
 
-        {"old-form compound construction which does not simplify to a built-in",
-         u"measure-unit/energy-joule per-measure-unit/length-meter",
-         u"measure-unit/energy-joule per-measure-unit/length-meter"},
+        {"old-form compound construction which does not simplify to a built-in", //
+         u"measure-unit/energy-joule per-measure-unit/length-meter",             //
+         u"unit/joule-per-meter"},
 
-        // TODO(icu-units#59):
-        {"old-form compound-compound ugliness which should be fixed?",
-         u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-         u"measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
+        {"old-form compound-compound ugliness resolves neatly",                   //
+         u"measure-unit/speed-meter-per-second per-measure-unit/duration-second", //
+         u"unit/meter-per-square-second"},
 
         {"short-form built-in units stick with the built-in", //
          u"unit/meter-per-second",                            //
-         u"measure-unit/speed-meter-per-second"},
+         u"unit/meter-per-second"},
 
-        {"short-form compound units get split", //
-         u"unit/square-meter-per-square-meter", //
-         u"measure-unit/area-square-meter per-measure-unit/area-square-meter"},
+        {"short-form compound units stay as is", //
+         u"unit/square-meter-per-square-meter",  //
+         u"unit/square-meter-per-square-meter"},
 
-        {"short-form compound units get split", //
-         u"unit/joule-per-furlong",             //
-         u"measure-unit/energy-joule per-measure-unit/length-furlong"},
+        {"short-form compound units stay as is", //
+         u"unit/joule-per-furlong",              //
+         u"unit/joule-per-furlong"},
 
         {"short-form that doesn't consist of built-in units", //
          u"unit/hectometer-per-second",                       //
@@ -1003,13 +1041,13 @@ void NumberFormatterApiTest::unitSkeletons() {
     IcuTestErrorCode status(*this, "unitSkeletons");
     MeasureUnit METER_PER_SECOND = MeasureUnit::forIdentifier("meter-per-second", status);
 
-    assertEquals( //
-        ".unit(METER_PER_SECOND) normalization",
-        u"measure-unit/speed-meter-per-second",
+    assertEquals(                                //
+        ".unit(METER_PER_SECOND) normalization", //
+        u"unit/meter-per-second",                //
         NumberFormatter::with().unit(METER_PER_SECOND).toSkeleton(status));
     assertEquals(                                     //
         ".unit(METER).perUnit(SECOND) normalization", //
-        u"measure-unit/length-meter per-measure-unit/duration-second",
+        u"unit/meter-per-second",
         NumberFormatter::with().unit(METER).perUnit(SECOND).toSkeleton(status));
     assertEquals(                                                                  //
         ".unit(MeasureUnit::forIdentifier(\"hectometer\", status)) normalization", //

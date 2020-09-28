@@ -111,7 +111,9 @@ class NumberFormatterApiTest : public IntlTestWithFieldPosition {
     MeasureUnit FAHRENHEIT;
     MeasureUnit SECOND;
     MeasureUnit POUND;
+    MeasureUnit POUND_FORCE;
     MeasureUnit SQUARE_MILE;
+    MeasureUnit SQUARE_INCH;
     MeasureUnit JOULE;
     MeasureUnit FURLONG;
     MeasureUnit KELVIN;

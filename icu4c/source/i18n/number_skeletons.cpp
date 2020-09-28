@@ -842,10 +842,6 @@ void GeneratorHelpers::generateSkeleton(const MacroProps& macros, UnicodeString&
         sb.append(u' ');
     }
     if (U_FAILURE(status)) { return; }
-    if (GeneratorHelpers::perUnit(macros, sb, status)) {
-        sb.append(u' ');
-    }
-    if (U_FAILURE(status)) { return; }
     if (GeneratorHelpers::usage(macros, sb, status)) {
         sb.append(u' ');
     }
@@ -1022,14 +1018,6 @@ void blueprint_helpers::parseMeasureUnitOption(const StringSegment& segment, Mac
 
     // throw new SkeletonSyntaxException("Unknown measure unit", segment);
     status = U_NUMBER_SKELETON_SYNTAX_ERROR;
-}
-
-void blueprint_helpers::generateMeasureUnitOption(const MeasureUnit& measureUnit, UnicodeString& sb,
-                                                  UErrorCode&) {
-    // Need to do char <-> UChar conversion...
-    sb.append(UnicodeString(measureUnit.getType(), -1, US_INV));
-    sb.append(u'-');
-    sb.append(UnicodeString(measureUnit.getSubtype(), -1, US_INV));
 }
 
 void blueprint_helpers::parseMeasurePerUnitOption(const StringSegment& segment, MacroProps& macros,
@@ -1526,14 +1514,12 @@ bool GeneratorHelpers::unit(const MacroProps& macros, UnicodeString& sb, UErrorC
     } else if (utils::unitIsPermille(macros.unit)) {
         sb.append(u"permille", -1);
         return true;
-    } else if (uprv_strcmp(macros.unit.getType(), "") != 0 &&      // unit is built-in,
-               (utils::unitIsBaseUnit(macros.perUnit) ||           // and (no perUnit given,
-                uprv_strcmp(macros.perUnit.getType(), "") != 0)) { //      or perUnit is also built-in)
-        sb.append(u"measure-unit/", -1);
-        blueprint_helpers::generateMeasureUnitOption(macros.unit, sb, status);
-        return true;
     } else {
         MeasureUnit unit = macros.unit;
+        if (utils::unitIsCurrency(macros.perUnit)) {
+            status = U_UNSUPPORTED_ERROR;
+            return false;
+        }
         if (!utils::unitIsBaseUnit(macros.perUnit)) {
             // Combine perUnit with unit
             MeasureUnitImpl temp;
@@ -1552,26 +1538,6 @@ bool GeneratorHelpers::unit(const MacroProps& macros, UnicodeString& sb, UErrorC
         }
         sb.append(u"unit/", -1);
         sb.append(unit.getIdentifier());
-        return true;
-    }
-}
-
-bool GeneratorHelpers::perUnit(const MacroProps& macros, UnicodeString& sb, UErrorCode& status) {
-    // Per-units are currently expected to be only MeasureUnits.
-    if (utils::unitIsBaseUnit(macros.perUnit)) {
-        // Default value: ok to ignore
-        return false;
-    } else if (utils::unitIsCurrency(macros.perUnit)) {
-        status = U_UNSUPPORTED_ERROR;
-        return false;
-    } else if (uprv_strcmp(macros.unit.getType(), "") == 0 ||
-               uprv_strcmp(macros.perUnit.getType(), "") == 0) {
-        // Not a built-in perUnit: GeneratorHelpers::unit() will have created a
-        // "unit/*" that incorporates macros.perUnit too.
-        return false;
-    } else {
-        sb.append(u"per-measure-unit/", -1);
-        blueprint_helpers::generateMeasureUnitOption(macros.perUnit, sb, status);
         return true;
     }
 }
