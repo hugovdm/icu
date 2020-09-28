@@ -219,7 +219,12 @@ public class LongNameHandler
             // TODO(ICU-20941): Unsanctioned unit. Not yet fully supported. Set an
             // error code. Once we support not-built-in units here, unitRef may be
             // anything, but if not built-in, perUnit has to be "none".
-            throw new UnsupportedOperationException("Unsanctioned units, not yet supported");
+            String unitString = unit.getIdentifier();
+            if (perUnit != null) {
+                unitString = unitString + "/" + perUnit.getIdentifier();
+            }
+            throw new UnsupportedOperationException("Unsanctioned units, not yet supported: " +
+                                                    unitString);
         }
         if (perUnit != null) {
             // Compound unit: first try to simplify (e.g., meters per second is its own unit).
