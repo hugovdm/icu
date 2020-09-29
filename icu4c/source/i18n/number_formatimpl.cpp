@@ -193,24 +193,12 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
         //     }
         // }
     } else if (isCldrUnit) {
-        // Simplify away perUnit when appropriate
-        MeasureUnit simplifiedUnit = unit;
-        MeasureUnitImpl temp;
-        const MeasureUnitImpl &perUnitImpl = MeasureUnitImpl::forMeasureUnit(perUnit, temp, status);
-        for (int32_t i = 0; i < perUnitImpl.units.length(); i++) {
-            const SingleUnitImpl *subUnit = perUnitImpl.units[i];
-            if (subUnit->dimensionality > 0) {
-                SingleUnitImpl newSub = *subUnit;
-                newSub.dimensionality *= -1;
-                simplifiedUnit = simplifiedUnit.product(newSub.build(status), status);
-            } else {
-                simplifiedUnit = simplifiedUnit.product(subUnit->build(status), status);
-            }
-        }
+        // Simplify away perUnit for:
+        // * compoundUnit-per-anotherUnit, e.g. meter-per-second per second
+        // * the reust is a built-in unit, e.g. pound-force-per-square-inch
+        MeasureUnit simplifiedUnit = unit.product(macros.perUnit.reciprocal(status), status);
         if (unit.getComplexity(status) == UMEASURE_UNIT_COMPOUND ||
             uprv_strcmp(simplifiedUnit.getType(), "") != 0) {
-            // * Compound-per-compound, e.g. meter-per-second per second
-            // * Built-in units, e.g. pound-force-per-square-inch
             unit = simplifiedUnit;
             perUnit = MeasureUnit();
         }

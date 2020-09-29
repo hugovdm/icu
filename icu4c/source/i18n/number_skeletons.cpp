@@ -1521,20 +1521,7 @@ bool GeneratorHelpers::unit(const MacroProps& macros, UnicodeString& sb, UErrorC
             return false;
         }
         if (!utils::unitIsBaseUnit(macros.perUnit)) {
-            // Combine perUnit with unit
-            MeasureUnitImpl temp;
-            const MeasureUnitImpl &perUnit =
-                MeasureUnitImpl::forMeasureUnit(macros.perUnit, temp, status);
-            for (int32_t i = 0; i < perUnit.units.length(); i++) {
-                const SingleUnitImpl *subUnit = perUnit.units[i];
-                if (subUnit->dimensionality > 0) {
-                    SingleUnitImpl newSub = *subUnit;
-                    newSub.dimensionality *= -1;
-                    unit = unit.product(newSub.build(status), status);
-                } else {
-                    unit = unit.product(subUnit->build(status), status);
-                }
-            }
+            unit = unit.product(macros.perUnit.reciprocal(status), status);
         }
         sb.append(u"unit/", -1);
         sb.append(unit.getIdentifier());
