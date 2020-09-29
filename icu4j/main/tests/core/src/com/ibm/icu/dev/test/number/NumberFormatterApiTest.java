@@ -749,7 +749,7 @@ public class NumberFormatterApiTest extends TestFmwk {
         assertFormatDescending(
                 "Meters Per Second Short (unit that simplifies) and perUnit method",
                 "measure-unit/length-meter per-measure-unit/duration-second",
-                "measure-unit/length-meter per-measure-unit/duration-second",
+                "unit/meter-per-second",
                 NumberFormatter.with().unit(MeasureUnit.METER).perUnit(MeasureUnit.SECOND),
                 ULocale.ENGLISH,
                 "87,650 m/s",
@@ -827,23 +827,48 @@ public class NumberFormatterApiTest extends TestFmwk {
         //         "0.008765 J/fur",
         //         "0 J/fur");
 
-        // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIRABLE BEHAVIOUR!
-        // When specifying built-in types, one can give both a unit and a perUnit.
-        // Resolving to a built-in unit does not always work.
-        //
-        // (Unit-testing philosophy: do we leave this enabled to demonstrate current
-        // behaviour, and changing behaviour in the future? Or comment it out to
-        // avoid asserting this is "correct"?)
+        assertFormatDescending(
+                "Pounds per Square Inch: composed",
+                "measure-unit/force-pound-force per-measure-unit/area-square-inch",
+                "unit/pound-force-per-square-inch",
+                NumberFormatter.with().unit(MeasureUnit.POUND_FORCE).perUnit(MeasureUnit.SQUARE_INCH),
+                ULocale.ENGLISH,
+                "87,650 psi",
+                "8,765 psi",
+                "876.5 psi",
+                "87.65 psi",
+                "8.765 psi",
+                "0.8765 psi",
+                "0.08765 psi",
+                "0.008765 psi",
+                "0 psi");
+
+        assertFormatDescending(
+                "Pounds per Square Inch: built-in",
+                "measure-unit/force-pound-force per-measure-unit/area-square-inch",
+                "unit/pound-force-per-square-inch",
+                NumberFormatter.with().unit(MeasureUnit.POUND_PER_SQUARE_INCH),
+                ULocale.ENGLISH,
+                "87,650 psi",
+                "8,765 psi",
+                "876.5 psi",
+                "87.65 psi",
+                "8.765 psi",
+                "0.8765 psi",
+                "0.08765 psi",
+                "0.008765 psi",
+                "0 psi");
+
         assertFormatSingle(
-                "DEMONSTRATING BAD BEHAVIOUR, TODO(icu-units#59)",
+                "m/s/s simplifies to m/s^2",
                 "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-                "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
+                "unit/meter-per-square-second",
                 NumberFormatter.with()
                         .unit(MeasureUnit.METER_PER_SECOND)
                         .perUnit(MeasureUnit.SECOND),
                 new ULocale("en-GB"),
                 2.4,
-                "2.4 m/s/s");
+                "2.4 m/s\u00B2");
 
         // Testing the rejection of invalid specifications
 
@@ -862,65 +887,62 @@ public class NumberFormatterApiTest extends TestFmwk {
             // Pass
         }
 
-        // .perUnit() may only be passed a built-in type, "square-second" is not a
-        // built-in type.
+        // .perUnit() may only be passed a built-in type, or something that
+        // combines to a built-in type together with .unit().
         nf = NumberFormatter.with()
-                .unit(MeasureUnit.METER)
+                .unit(MeasureUnit.FURLONG)
                 .perUnit(MeasureUnit.forIdentifier("square-second"))
                 .locale(new ULocale("en-GB"));
-
         try {
             nf.format(2.4d);
             fail("Expected failure, got: " + nf.format(2.4d) + ".");
         } catch (UnsupportedOperationException e) {
             // pass
         }
-
-        // TODO(icu-units#59): THIS UNIT TEST DEMONSTRATES UNDESIREABLE BEHAVIOUR!
-        // When specifying built-in types, one can give both a unit and a perUnit.
-        // Resolving to a built-in unit does not always work.
+        // As above, "square-second" is not a built-in type, however this time,
+        // meter-per-square-second is a built-in type.
         assertFormatSingle(
-                "DEMONSTRATING BAD BEHAVIOUR? TODO(icu-units#59)",
+                "meter per square-second works as a composed unit",
                 "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-                "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-                NumberFormatter.with().unit(MeasureUnit.METER_PER_SECOND).perUnit(MeasureUnit.SECOND),
+                "unit/meter-per-square-second",
+                NumberFormatter.with()
+                        .unit(MeasureUnit.METER)
+                        .perUnit(MeasureUnit.forIdentifier("square-second")),
                 new ULocale("en-GB"),
                 2.4,
-                // UGLY:
-                "2.4 m/s/s");
+                "2.4 m/s\u00B2");
     }
 
-
+    @Test
     public void unitSkeletons() {
         Object[][] cases = {
             {"old-form built-in compound unit",     //
              "measure-unit/speed-meter-per-second", //
-             "measure-unit/speed-meter-per-second"},
+             "unit/meter-per-second"},
 
-            {"old-form compound construction, subtle difference to built-in",
-             "measure-unit/length-meter per-measure-unit/duration-second",
-             "measure-unit/length-meter per-measure-unit/duration-second"},
+            {"old-form compound construction, converts to built-in",       //
+             "measure-unit/length-meter per-measure-unit/duration-second", //
+             "unit/meter-per-second"},
 
-            {"old-form compound construction which does not simplify to a built-in",
-             "measure-unit/energy-joule per-measure-unit/length-meter",
-             "measure-unit/energy-joule per-measure-unit/length-meter"},
+            {"old-form compound construction which does not simplify to a built-in", //
+             "measure-unit/energy-joule per-measure-unit/length-meter",              //
+             "unit/joule-per-meter"},
 
-            // TODO(icu-units#59):
-            {"old-form compound-compound ugliness which should be fixed?",
-             "measure-unit/speed-meter-per-second per-measure-unit/duration-second",
-             "measure-unit/speed-meter-per-second per-measure-unit/duration-second"},
+            {"old-form compound-compound ugliness resolves neatly",                  //
+             "measure-unit/speed-meter-per-second per-measure-unit/duration-second", //
+             "unit/meter-per-square-second"},
 
             {"short-form built-in units stick with the built-in", //
              "unit/meter-per-second",                             //
-             "measure-unit/speed-meter-per-second"},
+             "unit/meter-per-second"},
 
-            {"short-form compound units get split", //
+            {"short-form compound units stay as is", //
              "unit/square-meter-per-square-meter",  //
-             "measure-unit/area-square-meter per-measure-unit/area-square-meter"},
+             "unit/square-meter-per-square-meter"},
 
-            {"short-form compound units get split", //
+            {"short-form compound units stay as is", //
              "unit/joule-per-furlong",              //
-             "measure-unit/energy-joule per-measure-unit/length-furlong"},
+             "unit/joule-per-furlong"},
 
             {"short-form that doesn't consist of built-in units", //
              "unit/hectometer-per-second",                        //
@@ -930,10 +952,10 @@ public class NumberFormatterApiTest extends TestFmwk {
              "unit/meter-per-hectosecond",                        //
              "unit/meter-per-hectosecond"},
 
-        //     // TODO: binary prefixes not supported yet!
-        //     {"Round-trip example from icu-units#35", //
-        //      "unit/kibijoule-per-furlong",           //
-        //      "unit/kibijoule-per-furlong"},
+            // // TODO: binary prefixes not supported yet!
+            // {"Round-trip example from icu-units#35", //
+            //  "unit/kibijoule-per-furlong",           //
+            //  "unit/kibijoule-per-furlong"},
         };
         for (Object[] cas : cases) {
             String msg = (String)cas[0];

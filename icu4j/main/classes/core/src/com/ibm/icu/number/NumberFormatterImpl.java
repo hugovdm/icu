@@ -213,6 +213,19 @@ class NumberFormatterImpl {
         boolean isMixedUnit = isCldrUnit && macros.unit.getType() == null &&
                               macros.unit.getComplexity() == MeasureUnit.Complexity.MIXED;
 
+        MeasureUnit unit = macros.unit;
+        MeasureUnit perUnit = macros.perUnit;
+        if (isCldrUnit && !unitIsBaseUnit(perUnit)) {
+            // Simplify away perUnit if unit is already compound itself, or if the
+            // result of simplification is a built-in unit:
+            MeasureUnit simplifiedUnit = unit.product(perUnit.reciprocal());
+            if (unit.getComplexity() == MeasureUnit.Complexity.COMPOUND ||
+                simplifiedUnit.getType() != null) {
+                unit = simplifiedUnit;
+                perUnit = null;
+            }
+        }
+
         PluralRules rules = macros.rules;
 
         // Select the numbering system.
@@ -272,11 +285,11 @@ class NumberFormatterImpl {
                 throw new IllegalIcuArgumentException(
                         "We only support \"usage\" when the input unit is specified, and is a CLDR Unit.");
             }
-            chain = usagePrefsHandler = new UsagePrefsHandler(macros.loc, macros.unit, macros.usage, chain);
+            chain = usagePrefsHandler = new UsagePrefsHandler(macros.loc, unit, macros.usage, chain);
         } else if (isMixedUnit) {
             // TODO(icu-units#97): The input unit should be the largest unit, not the first unit, in the identifier.
-            MeasureUnit inputUnit = macros.unit.splitToSingleUnits().get(0);
-            chain = new UnitConversionHandler(inputUnit, macros.unit, chain);
+            MeasureUnit inputUnit = unit.splitToSingleUnits().get(0);
+            chain = new UnitConversionHandler(inputUnit, unit, chain);
         }
 
         // Multiplier
@@ -395,14 +408,14 @@ class NumberFormatterImpl {
             } else if (isMixedUnit) {
                 chain = MixedUnitLongNameHandler.forMeasureUnit(
                         macros.loc,
-                        macros.unit,
+                        unit,
                         unitWidth,
                         pluralRules,
                         chain);
             } else {
                 chain = LongNameHandler.forMeasureUnit(macros.loc,
-                        macros.unit,
-                        macros.perUnit,
+                        unit,
+                        perUnit,
                         unitWidth,
                         pluralRules,
                         chain);
@@ -424,7 +437,7 @@ class NumberFormatterImpl {
                 // Lazily create PluralRules
                 rules = PluralRules.forLocale(macros.loc);
             }
-            CompactType compactType = (macros.unit instanceof Currency
+            CompactType compactType = (unit instanceof Currency
                     && macros.unitWidth != UnitWidth.FULL_NAME) ? CompactType.CURRENCY
                             : CompactType.DECIMAL;
             chain = ((CompactNotation) macros.notation).withLocaleData(macros.loc,

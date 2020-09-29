@@ -72,7 +72,9 @@ public class MeasureUnitImpl {
         MeasureUnitImpl result = new MeasureUnitImpl();
         result.complexity = this.complexity;
         result.identifier = this.identifier;
-        result.singleUnits = (ArrayList<SingleUnitImpl>) this.singleUnits.clone();
+        for (SingleUnitImpl single : this.singleUnits) {
+            result.singleUnits.add(single.clone());
+        }
         return result;
     }
 

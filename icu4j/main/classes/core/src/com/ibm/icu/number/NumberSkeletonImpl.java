@@ -906,9 +906,6 @@ class NumberSkeletonImpl {
         if (macros.unit != null && GeneratorHelpers.unit(macros, sb)) {
             sb.append(' ');
         }
-        if (macros.perUnit != null && GeneratorHelpers.perUnit(macros, sb)) {
-            sb.append(' ');
-        }
         if (macros.usage != null && GeneratorHelpers.usage(macros, sb)) {
             sb.append(' ');
         }
@@ -1028,6 +1025,7 @@ class NumberSkeletonImpl {
             sb.append(currency.getCurrencyCode());
         }
 
+        // "measure-unit/" is deprecated in favour of "unit/".
         private static void parseMeasureUnitOption(StringSegment segment, MacroProps macros) {
             // NOTE: The category (type) of the unit is guaranteed to be a valid subtag (alphanumeric)
             // http://unicode.org/reports/tr35/#Validity_Data
@@ -1050,12 +1048,7 @@ class NumberSkeletonImpl {
             throw new SkeletonSyntaxException("Unknown measure unit", segment);
         }
 
-        private static void generateMeasureUnitOption(MeasureUnit unit, StringBuilder sb) {
-            sb.append(unit.getType());
-            sb.append("-");
-            sb.append(unit.getSubtype());
-        }
-
+        // "per-measure-unit/" is deprecated in favour of "unit/".
         private static void parseMeasurePerUnitOption(StringSegment segment, MacroProps macros) {
             // A little bit of a hack: save the current unit (numerator), call the main measure unit
             // parsing code, put back the numerator unit, and put the new unit into per-unit.
@@ -1501,35 +1494,17 @@ class NumberSkeletonImpl {
             } else if (macros.unit == MeasureUnit.PERMILLE) {
                 sb.append("permille");
                 return true;
-            } else if (macros.unit.getType() != null &&      // unit is built-in
-                       (macros.perUnit == null ||            // and (no perUnit given,
-                        macros.perUnit.getType() != null)) { //      or perUnit is also built-in)
-                sb.append("measure-unit/");
-                BlueprintHelpers.generateMeasureUnitOption(macros.unit, sb);
-                return true;
             } else {
                 MeasureUnit unit = macros.unit;
                 if (macros.perUnit != null) {
+                    if (macros.perUnit instanceof Currency) {
+                        throw new UnsupportedOperationException(
+                            "Cannot generate number skeleton with per-unit that is not a standard measure unit");
+                    }
                     unit = unit.product(macros.perUnit.reciprocal());
                 }
                 sb.append("unit/");
                 sb.append(unit.getIdentifier());
-                return true;
-            }
-        }
-
-        private static boolean perUnit(MacroProps macros, StringBuilder sb) {
-            // Per-units are currently expected to be only MeasureUnits.
-            if (macros.perUnit instanceof Currency) {
-                throw new UnsupportedOperationException(
-                        "Cannot generate number skeleton with per-unit that is not a standard measure unit");
-            } else if (macros.unit.getType() == null || macros.perUnit.getType() == null) {
-                // Not a built-in perUnit: GeneratorHelpers.unit() will have
-                // created a "unit/*" that incorporates macros.perUnit too.
-                return false;
-            } else {
-                sb.append("per-measure-unit/");
-                BlueprintHelpers.generateMeasureUnitOption(macros.perUnit, sb);
                 return true;
             }
         }
