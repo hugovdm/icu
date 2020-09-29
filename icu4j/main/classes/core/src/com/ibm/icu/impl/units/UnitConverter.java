@@ -1,17 +1,15 @@
 // © 2020 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
-
-
 package com.ibm.icu.impl.units;
 
-import com.ibm.icu.util.MeasureUnit;
+import static java.math.MathContext.DECIMAL128;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
-import static java.math.MathContext.DECIMAL128;
+import com.ibm.icu.util.MeasureUnit;
 
 public class UnitConverter {
     private BigDecimal conversionRate;
@@ -86,6 +84,10 @@ public class UnitConverter {
 
     public BigDecimal convert(BigDecimal inputValue) {
         return inputValue.multiply(this.conversionRate).add(offset);
+    }
+
+    public BigDecimal convertInverse(BigDecimal inputValue) {
+        return inputValue.subtract(offset).divide(this.conversionRate, DECIMAL128);
     }
 
     public enum Convertibility {
@@ -203,9 +205,9 @@ public class UnitConverter {
                 return result;
             }
 
-            BigDecimal siApplied = BigDecimal.valueOf(Math.pow(10.0, Math.abs(siPrefix.getSiPrefixPower())));
+            BigDecimal siApplied = BigDecimal.valueOf(Math.pow(10.0, Math.abs(siPrefix.getPower())));
 
-            if (siPrefix.getSiPrefixPower() < 0) {
+            if (siPrefix.getPower() < 0) {
                 result.factorDen = this.factorDen.multiply(siApplied);
                 return result;
             }
@@ -307,5 +309,10 @@ public class UnitConverter {
                 this.factorNum = this.factorNum.multiply(decimalEntity);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "UnitConverter [conversionRate=" + conversionRate + ", offset=" + offset + "]";
     }
 }

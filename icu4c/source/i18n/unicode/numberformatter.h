@@ -99,6 +99,13 @@ class MultiplierParseHandler;
 }
 }
 
+namespace units {
+
+// Forward declarations:
+class UnitsRouter;
+
+} // namespace units
+
 namespace number {  // icu::number
 
 // Forward declarations:
@@ -158,7 +165,6 @@ struct UFormattedNumberImpl;
 class MutablePatternModifier;
 class ImmutablePatternModifier;
 struct DecimalFormatWarehouse;
-class UsagePrefsHandler;
 
 /**
  * Used for NumberRangeFormatter and implemented in numrange_fluent.cpp.
@@ -764,7 +770,7 @@ class U_I18N_API Precision : public UMemory {
     friend class impl::GeneratorHelpers;
 
     // To allow access to isBogus and the default (bogus) constructor:
-    friend class impl::UsagePrefsHandler;
+    friend class units::UnitsRouter;
 };
 
 /**
@@ -2618,7 +2624,6 @@ class U_I18N_API FormattedNumber : public UMemory, public FormattedValue {
     /** @copydoc FormattedValue::nextPosition() */
     UBool nextPosition(ConstrainedFieldPosition& cfpos, UErrorCode& status) const U_OVERRIDE;
 
-#ifndef U_HIDE_DRAFT_API
     /**
      * Export the formatted number as a "numeric string" conforming to the
      * syntax defined in the Decimal Arithmetic Specification, available at
@@ -2635,11 +2640,10 @@ class U_I18N_API FormattedNumber : public UMemory, public FormattedValue {
      *         for example, std::string.
      * @param status Set if an error occurs.
      * @return A StringClass containing the numeric string.
-     * @draft ICU 65
+     * @stable ICU 65
      */
     template<typename StringClass>
     inline StringClass toDecimalNumber(UErrorCode& status) const;
-#endif // U_HIDE_DRAFT_API
 
 #ifndef U_HIDE_DRAFT_API
 	/**
