@@ -905,7 +905,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             NumberFormatter::with().unit(METER_PER_SECOND).perUnit(SECOND),
             Locale("en-GB"),
             2.4,
-            "2.4 m/s\u00B2");
+            u"2.4 m/s\u00B2");
 
     // Testing the rejection of invalid specifications
 
@@ -944,7 +944,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             NumberFormatter::with().unit(METER).perUnit(SQUARE_SECOND),
             Locale("en-GB"),
             2.4,
-            "2.4 m/s\u00B2");
+            u"2.4 m/s\u00B2");
 }
 
 void NumberFormatterApiTest::unitSkeletons() {
