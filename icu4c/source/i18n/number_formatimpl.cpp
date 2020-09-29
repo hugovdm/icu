@@ -164,35 +164,7 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
 
     MeasureUnit unit = macros.unit;
     MeasureUnit perUnit = macros.perUnit;
-    if (isCldrUnit && utils::unitIsBaseUnit(perUnit)) {
-        // This code triggers a SIGSEGV in code further down, probably in
-        // "outputUnit.units[0]->build(status)" (around line 310). FIXME.
-        // #0 0x7fe59fc9b275 in icu_68::SingleUnitImpl::getSimpleUnitID() const /home/hugovdm/git/icu/icu4c/source/i18n/measunit_extra.cpp
-        // #1 0x7fe59fca57ca in icu_68::(anonymous namespace)::serializeSingle(icu_68::SingleUnitImpl const&, bool, icu_68::CharString&, UErrorCode&) /home/hugovdm/git/icu/icu4c/source/i18n/measunit_extra.cpp:676:30
-        // #2 0x7fe59fc9cb79 in icu_68::(anonymous namespace)::serialize(icu_68::MeasureUnitImpl&, UErrorCode&) /home/hugovdm/git/icu/icu4c/source/i18n/measunit_extra.cpp:706:5
-        // #3 0x7fe59fc9b1b5 in icu_68::MeasureUnitImpl::build(UErrorCode&) && /home/hugovdm/git/icu/icu4c/source/i18n/measunit_extra.cpp:850:5
-        // #4 0x7fe59fc9afd6 in icu_68::SingleUnitImpl::build(UErrorCode&) const /home/hugovdm/git/icu/icu4c/source/i18n/measunit_extra.cpp:784:28
-        // #5 0x7fe59fd164ea in icu_68::number::impl::NumberFormatterImpl::macrosToMicroGenerator(icu_68::number::impl::MacroProps const&, bool, UErrorCode&) /home/hugovdm/git/icu/icu4c/source/i18n/number_formatimpl.cpp:301:60
-
-        // // Split up unit when it isn't a built-in, similar to what is done by
-        // // blueprint_helpers::parseIdentifierUnitOption(). This gives the
-        // // current code a chance to format it as "built-in-unit" "per"
-        // // "built-in-unit".
-        // MeasureUnitImpl fullUnit = MeasureUnitImpl::forMeasureUnitMaybeCopy(unit, status);
-        // unit = MeasureUnit();
-        // if (fullUnit.complexity == UMEASURE_UNIT_COMPOUND) {
-        //     // TODO(ICU-20941): Clean this up.
-        //     for (int32_t i = 0; i < fullUnit.units.length(); i++) {
-        //         SingleUnitImpl *subUnit = fullUnit.units[i];
-        //         if (subUnit->dimensionality > 0) {
-        //             unit = unit.product(subUnit->build(status), status);
-        //         } else {
-        //             subUnit->dimensionality *= -1;
-        //             perUnit = perUnit.product(subUnit->build(status), status);
-        //         }
-        //     }
-        // }
-    } else if (isCldrUnit) {
+    if (isCldrUnit && !utils::unitIsBaseUnit(perUnit)) {
         // Simplify away perUnit for:
         // * compoundUnit-per-anotherUnit, e.g. meter-per-second per second
         // * the reust is a built-in unit, e.g. pound-force-per-square-inch
