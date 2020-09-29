@@ -792,7 +792,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
     assertFormatDescending(
             u"Meters Per Second Short (unit that simplifies) and perUnit method",
             u"measure-unit/length-meter per-measure-unit/duration-second",
-            u"measure-unit/length-meter per-measure-unit/duration-second",
+            u"unit/meter-per-second",
             NumberFormatter::with().unit(METER).perUnit(SECOND),
             Locale::getEnglish(),
             u"87,650 m/s",
@@ -853,6 +853,23 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             u"0.008765 J/fur",
             u"0 J/fur");
 
+    // TODO(ICU-20941): Support constructions such as this one.
+    // assertFormatDescending(
+    //         u"Joules Per Furlong Short with unit identifier via API",
+    //         u"measure-unit/energy-joule per-measure-unit/length-furlong",
+    //         u"unit/joule-per-furlong",
+    //         NumberFormatter::with().unit(MeasureUnit::forIdentifier("joule-per-furlong", status)),
+    //         Locale::getEnglish(),
+    //         u"87,650 J/fur",
+    //         u"8,765 J/fur",
+    //         u"876.5 J/fur",
+    //         u"87.65 J/fur",
+    //         u"8.765 J/fur",
+    //         u"0.8765 J/fur",
+    //         u"0.08765 J/fur",
+    //         u"0.008765 J/fur",
+    //         u"0 J/fur");
+
     assertFormatDescending(
             u"Pounds per Square Inch: composed",
             u"measure-unit/force-pound-force per-measure-unit/area-square-inch",
@@ -884,23 +901,6 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             u"0.08765 psi",
             u"0.008765 psi",
             u"0 psi");
-
-    // TODO(ICU-20941): Support constructions such as this one.
-    // assertFormatDescending(
-    //         u"Joules Per Furlong Short with unit identifier via API",
-    //         u"measure-unit/energy-joule per-measure-unit/length-furlong",
-    //         u"unit/joule-per-furlong",
-    //         NumberFormatter::with().unit(MeasureUnit::forIdentifier("joule-per-furlong", status)),
-    //         Locale::getEnglish(),
-    //         u"87,650 J/fur",
-    //         u"8,765 J/fur",
-    //         u"876.5 J/fur",
-    //         u"87.65 J/fur",
-    //         u"8.765 J/fur",
-    //         u"0.8765 J/fur",
-    //         u"0.08765 J/fur",
-    //         u"0.008765 J/fur",
-    //         u"0 J/fur");
 
     assertFormatSingle(
             u"m/s/s simplifies to m/s^2",
@@ -943,7 +943,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
     // meter-per-square-second is a built-in type.
     assertFormatSingle(
             u"meter per square-second works as a composed unit",
-            u"unit/meter-per-square-second",
+            u"measure-unit/speed-meter-per-second per-measure-unit/duration-second",
             u"unit/meter-per-square-second",
             NumberFormatter::with().unit(METER).perUnit(SQUARE_SECOND),
             Locale("en-GB"),

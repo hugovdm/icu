@@ -165,10 +165,9 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
     MeasureUnit unit = macros.unit;
     MeasureUnit perUnit = macros.perUnit;
     if (isCldrUnit && !utils::unitIsBaseUnit(perUnit)) {
-        // Simplify away perUnit for:
-        // * compoundUnit-per-anotherUnit, e.g. meter-per-second per second
-        // * the reust is a built-in unit, e.g. pound-force-per-square-inch
-        MeasureUnit simplifiedUnit = unit.product(macros.perUnit.reciprocal(status), status);
+        // Simplify away perUnit if unit is already compound itself, or if the
+        // result of simplification is a built-in unit:
+        MeasureUnit simplifiedUnit = unit.product(perUnit.reciprocal(status), status);
         if (unit.getComplexity(status) == UMEASURE_UNIT_COMPOUND ||
             uprv_strcmp(simplifiedUnit.getType(), "") != 0) {
             unit = simplifiedUnit;
