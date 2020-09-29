@@ -771,8 +771,8 @@ void NumberFormatterApiTest::unitMeasure() {
 
     assertFormatSingle(
             u"Testing  \"1 foot 12 inches\"",
-            nullptr,
-            u"unit/foot-and-inch",
+            u"unit/foot-and-inch @### unit-width-full-name",
+            u"unit/foot-and-inch @### unit-width-full-name",
             NumberFormatter::with()
                 .unit(MeasureUnit::forIdentifier("foot-and-inch", status))
                 .precision(Precision::maxSignificantDigits(4))

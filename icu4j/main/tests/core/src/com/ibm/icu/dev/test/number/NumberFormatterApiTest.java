@@ -729,8 +729,8 @@ public class NumberFormatterApiTest extends TestFmwk {
 
         assertFormatSingle(
                 "Testing \"1 foot 12 inches\"",
-                null,
-                "unit/foot-and-inch",
+                "unit/foot-and-inch @### unit-width-full-name",
+                "unit/foot-and-inch @### unit-width-full-name",
                 NumberFormatter.with()
                         .unit(MeasureUnit.forIdentifier("foot-and-inch"))
                         .precision(Precision.maxSignificantDigits(4))
