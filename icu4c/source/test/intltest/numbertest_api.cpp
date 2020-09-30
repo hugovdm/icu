@@ -792,7 +792,7 @@ void NumberFormatterApiTest::unitMeasure() {
 
     assertFormatSingle(
             u"Negative numbers: time",
-            nullptr, // submitting after TODO(icu-units#35) is fixed: fill in skeleton!
+            u"unit/hour-and-minute-and-second",
             u"unit/hour-and-minute-and-second",
             NumberFormatter::with().unit(MeasureUnit::forIdentifier("hour-and-minute-and-second", status)),
             Locale("de-DE"),
@@ -928,8 +928,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
     assertFormatSingle(
             u"Negative numbers: acceleration",
             u"measure-unit/acceleration-meter-per-square-second",
-            // TODO: when other PRs are merged, try: u"unit/meter-per-second-second" instead:
-            u"measure-unit/acceleration-meter-per-square-second",
+            u"unit/meter-per-second-second",
             NumberFormatter::with().unit(MeasureUnit::forIdentifier("meter-per-pow2-second", status)),
             Locale("af-ZA"),
             -9.81,

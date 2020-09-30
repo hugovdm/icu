@@ -750,7 +750,7 @@ public class NumberFormatterApiTest extends TestFmwk {
 
         assertFormatSingle(
                 "Negative numbers: time",
-                null, // submitting after TODO(icu-units#35) is fixed: fill in skeleton!
+                "unit/hour-and-minute-and-second",
                 "unit/hour-and-minute-and-second",
                 NumberFormatter.with().unit(MeasureUnit.forIdentifier("hour-and-minute-and-second")),
                 new ULocale("de-DE"),
@@ -887,8 +887,7 @@ public class NumberFormatterApiTest extends TestFmwk {
         assertFormatSingle(
                 "Negative numbers: acceleration",
                 "measure-unit/acceleration-meter-per-square-second",
-                // TODO: when other PRs are merged, try: u"unit/meter-per-second-second" instead:
-                "measure-unit/acceleration-meter-per-square-second",
+                "unit/meter-per-second-second",
                 NumberFormatter.with().unit(MeasureUnit.forIdentifier("meter-per-pow2-second")),
                 new ULocale("af-ZA"),
                 -9.81,
