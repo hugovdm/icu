@@ -15,6 +15,7 @@
 #include "unicode/measure.h"
 #include "units_data.h"
 #include "units_router.h"
+#include <cmath>
 
 U_NAMESPACE_BEGIN
 namespace units {
