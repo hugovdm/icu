@@ -96,7 +96,7 @@ RouteResult UnitsRouter::route(double quantity, icu::number::impl::RoundingImpl 
     const ConverterPreference *converterPreference = nullptr;
     for (int32_t i = 0, n = converterPreferences_.length(); i < n; i++) {
         converterPreference = converterPreferences_[i];
-        if (converterPreference->converter.greaterThanOrEqual(quantity * (1 + DBL_EPSILON),
+        if (converterPreference->converter.greaterThanOrEqual(std::abs(quantity) * (1 + DBL_EPSILON),
                                                               converterPreference->limit)) {
             break;
         }

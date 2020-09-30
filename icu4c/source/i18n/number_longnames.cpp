@@ -483,6 +483,8 @@ const Modifier *MixedUnitLongNameHandler::getMixedUnitModifier(DecimalQuantity &
         return &micros.helpers.emptyWeakModifier;
     }
 
+    // TODO: drop negative sign from all but the first item? After checking if
+    // any locales (RTL?) have different needs.
     for (int32_t i = 0; i < micros.mixedMeasuresCount; i++) {
         DecimalQuantity fdec;
         fdec.setToLong(micros.mixedMeasures[i]);

@@ -166,6 +166,8 @@ public class MixedUnitLongNameHandler
 
         List<String> outputMeasuresList = new ArrayList<>();
 
+        // TODO: drop negative sign from all but the first item? After checking
+        // if any locales (RTL?) might have different needs.
         for (int i = 0; i < micros.mixedMeasures.size(); i++) {
             DecimalQuantity fdec = new DecimalQuantity_DualStorageBCD(micros.mixedMeasures.get(i).getNumber());
             StandardPlural pluralForm = fdec.getStandardPlural(rules);
