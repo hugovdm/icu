@@ -162,17 +162,6 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
     bool isMixedUnit = isCldrUnit && (uprv_strcmp(macros.unit.getType(), "") == 0) &&
                        macros.unit.getComplexity(status) == UMEASURE_UNIT_MIXED;
 
-    MeasureUnit unit = macros.unit;
-    MeasureUnit perUnit = macros.perUnit;
-    if (isCldrUnit && !utils::unitIsBaseUnit(perUnit)) {
-        // Simplify away perUnit if the result is a built-in unit:
-        MeasureUnit simplifiedUnit = unit.product(perUnit.reciprocal(status), status);
-        if (uprv_strcmp(simplifiedUnit.getType(), "") != 0) {
-            unit = simplifiedUnit;
-            perUnit = MeasureUnit();
-        }
-    }
-
     // Select the numbering system.
     LocalPointer<const NumberingSystem> nsLocal;
     const NumberingSystem* ns;
@@ -257,14 +246,14 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
             return nullptr;
         }
         auto usagePrefsHandler =
-            new UsagePrefsHandler(macros.locale, unit, macros.usage.fUsage, chain, status);
+            new UsagePrefsHandler(macros.locale, macros.unit, macros.usage.fUsage, chain, status);
         fUsagePrefsHandler.adoptInsteadAndCheckErrorCode(usagePrefsHandler, status);
         chain = fUsagePrefsHandler.getAlias();
     } else if (isMixedUnit) {
         MeasureUnitImpl temp;
-        const MeasureUnitImpl &outputUnit = MeasureUnitImpl::forMeasureUnit(unit, temp, status);
+        const MeasureUnitImpl &outputUnit = MeasureUnitImpl::forMeasureUnit(macros.unit, temp, status);
         auto unitConversionHandler =
-            new UnitConversionHandler(outputUnit.units[0]->build(status), unit, chain, status);
+            new UnitConversionHandler(outputUnit.units[0]->build(status), macros.unit, chain, status);
         fUnitConversionHandler.adoptInsteadAndCheckErrorCode(unitConversionHandler, status);
         chain = fUnitConversionHandler.getAlias();
     }
@@ -395,12 +384,13 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
             fMixedUnitLongNameHandler.adoptInsteadAndCheckErrorCode(new MixedUnitLongNameHandler(),
                                                                     status);
             MixedUnitLongNameHandler::forMeasureUnit(
-                macros.locale, unit, unitWidth, resolvePluralRules(macros.rules, macros.locale, status),
-                chain, fMixedUnitLongNameHandler.getAlias(), status);
+                macros.locale, macros.unit, unitWidth,
+                resolvePluralRules(macros.rules, macros.locale, status), chain,
+                fMixedUnitLongNameHandler.getAlias(), status);
             chain = fMixedUnitLongNameHandler.getAlias();
         } else {
             fLongNameHandler.adoptInsteadAndCheckErrorCode(new LongNameHandler(), status);
-            LongNameHandler::forMeasureUnit(macros.locale, unit, perUnit, unitWidth,
+            LongNameHandler::forMeasureUnit(macros.locale, macros.unit, macros.perUnit, unitWidth,
                                             resolvePluralRules(macros.rules, macros.locale, status),
                                             chain, fLongNameHandler.getAlias(), status);
             chain = fLongNameHandler.getAlias();
