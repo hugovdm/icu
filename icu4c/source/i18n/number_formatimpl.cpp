@@ -165,11 +165,9 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
     MeasureUnit unit = macros.unit;
     MeasureUnit perUnit = macros.perUnit;
     if (isCldrUnit && !utils::unitIsBaseUnit(perUnit)) {
-        // Simplify away perUnit if unit is already compound itself, or if the
-        // result of simplification is a built-in unit:
+        // Simplify away perUnit if the result is a built-in unit:
         MeasureUnit simplifiedUnit = unit.product(perUnit.reciprocal(status), status);
-        if (unit.getComplexity(status) == UMEASURE_UNIT_COMPOUND ||
-            uprv_strcmp(simplifiedUnit.getType(), "") != 0) {
+        if (uprv_strcmp(simplifiedUnit.getType(), "") != 0) {
             unit = simplifiedUnit;
             perUnit = MeasureUnit();
         }

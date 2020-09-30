@@ -216,11 +216,9 @@ class NumberFormatterImpl {
         MeasureUnit unit = macros.unit;
         MeasureUnit perUnit = macros.perUnit;
         if (isCldrUnit && !unitIsBaseUnit(perUnit)) {
-            // Simplify away perUnit if unit is already compound itself, or if the
-            // result of simplification is a built-in unit:
+            // Simplify away perUnit if the result is a built-in unit:
             MeasureUnit simplifiedUnit = unit.product(perUnit.reciprocal());
-            if (unit.getComplexity() == MeasureUnit.Complexity.COMPOUND ||
-                simplifiedUnit.getType() != null) {
+            if (simplifiedUnit.getType() != null) {
                 unit = simplifiedUnit;
                 perUnit = null;
             }
