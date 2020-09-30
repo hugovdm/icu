@@ -743,7 +743,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                 NumberFormatter.with().unit(MeasureUnit.forIdentifier("hour-and-minute-and-second")),
                 new ULocale("de-DE"),
                 -1.24,
-                "-1 Std., -14 Min. und -24 Sek.");
+                "-1 Std., 14 Min. und 24 Sek.");
     }
 
     @Test
@@ -1126,7 +1126,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                 NumberFormatter.with().unit(MeasureUnit.SECOND).usage("media"),
                 new ULocale("nl-NL"),
                 -77.7,
-                "-1 min, -18 sec");
+                "-1 min, 18 sec");
 
         assertFormatSingle(
                 "Rounding Mode propagates: rounding down",

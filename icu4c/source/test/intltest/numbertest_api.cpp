@@ -781,7 +781,7 @@ void NumberFormatterApiTest::unitMeasure() {
             NumberFormatter::with().unit(MeasureUnit::forIdentifier("hour-and-minute-and-second", status)),
             Locale("de-DE"),
             -1.24,
-            u"-1 Std., -14 Min. und -24 Sek.");
+            u"-1 Std., 14 Min. und 24 Sek.");
 }
 
 void NumberFormatterApiTest::unitCompoundMeasure() {
@@ -1169,7 +1169,7 @@ void NumberFormatterApiTest::unitUsage() {
             NumberFormatter::with().unit(SECOND).usage("media"),
             Locale("nl-NL"),
             -77.7,
-            u"-1 min, -18 sec");
+            u"-1 min, 18 sec");
 
     assertFormatSingle(
             u"Rounding Mode propagates: rounding down",
