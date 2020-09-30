@@ -229,6 +229,7 @@ void LongNameHandler::forMeasureUnit(const Locale &loc, const MeasureUnit &unitR
 
     MeasureUnit unit = unitRef;
     if (uprv_strcmp(perUnit.getType(), "none") != 0) {
+        // Compound unit: first try to simplify (e.g., meters per second is its own unit).
         MeasureUnit simplified = unit.product(perUnit.reciprocal(status), status);
         if (uprv_strcmp(simplified.getType(), "") != 0) {
             unit = simplified;
