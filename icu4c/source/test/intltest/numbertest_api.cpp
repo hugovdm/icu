@@ -889,7 +889,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             NumberFormatter::with().unit(MeasureUnit::forIdentifier("meter-per-pow2-second", status)),
             Locale("af-ZA"),
             -9.81,
-            "-9,81 m/s\u00B2");
+            u"-9,81 m/s\u00B2");
 
     // Testing the rejection of invalid specifications
 
