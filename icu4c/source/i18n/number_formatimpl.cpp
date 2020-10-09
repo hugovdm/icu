@@ -389,8 +389,12 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
                 fMixedUnitLongNameHandler.getAlias(), status);
             chain = fMixedUnitLongNameHandler.getAlias();
         } else {
+            MeasureUnit unit = macros.unit;
+            if (uprv_strcmp(macros.perUnit.getType(), "none") != 0) {
+                unit = unit.product(macros.perUnit.reciprocal(status), status);
+            }
             fLongNameHandler.adoptInsteadAndCheckErrorCode(new LongNameHandler(), status);
-            LongNameHandler::forMeasureUnit(macros.locale, macros.unit, macros.perUnit, unitWidth,
+            LongNameHandler::forMeasureUnit(macros.locale, unit, unitWidth,
                                             resolvePluralRules(macros.rules, macros.locale, status),
                                             chain, fLongNameHandler.getAlias(), status);
             chain = fLongNameHandler.getAlias();
