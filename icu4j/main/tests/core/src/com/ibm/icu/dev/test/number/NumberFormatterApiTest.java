@@ -960,11 +960,11 @@ public class NumberFormatterApiTest extends TestFmwk {
              "unit/meter-per-second"},
 
             {"short-form compound units stay as is", //
-             "unit/square-meter-per-square-meter",  //
+             "unit/square-meter-per-square-meter",   //
              "unit/square-meter-per-square-meter"},
 
             {"short-form compound units stay as is", //
-             "unit/joule-per-furlong",              //
+             "unit/joule-per-furlong",               //
              "unit/joule-per-furlong"},
 
             {"short-form that doesn't consist of built-in units", //
@@ -974,6 +974,22 @@ public class NumberFormatterApiTest extends TestFmwk {
             {"short-form that doesn't consist of built-in units", //
              "unit/meter-per-hectosecond",                        //
              "unit/meter-per-hectosecond"},
+
+            {"percent compound skeletons handled correctly", //
+             "unit/percent-per-meter",                       //
+             "unit/percent-per-meter"},
+
+            {"permille compound skeletons handled correctly",                //
+             "measure-unit/concentr-permille per-measure-unit/length-meter", //
+             "unit/permille-per-meter"},
+
+            {"percent simple unit is not actually considered a unit", //
+             "unit/percent",                                          //
+             "percent"},
+
+            {"permille simple unit is not actually considered a unit", //
+             "measure-unit/concentr-permille",                         //
+             "permille"},
 
             // // TODO: binary prefixes not supported yet!
             // {"Round-trip example from icu-units#35", //

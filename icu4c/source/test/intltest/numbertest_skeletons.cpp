@@ -473,16 +473,18 @@ void NumberSkeletonTest::perUnitToSkeleton() {
                 }
                 // Ensure both subtype are in the toSkeleton.
                 UnicodeString msg;
-                msg.append(toSkeleton).append(" should contain '")
+                msg.append(toSkeleton)
+                    .append(" should contain '")
                     .append(UnicodeString(cas1.subtype))
-                    .append("' when construct from ")
+                    .append("' when constructed from ")
                     .append(skeleton);
                 assertTrue(msg, toSkeleton.indexOf(cas1.subtype) >= 0);
 
                 msg.remove();
-                msg.append(toSkeleton).append(" should contain '")
+                msg.append(toSkeleton)
+                    .append(" should contain '")
                     .append(UnicodeString(cas2.subtype))
-                    .append("' when construct from ")
+                    .append("' when constructed from ")
                     .append(skeleton);
                 assertTrue(msg, toSkeleton.indexOf(cas2.subtype) >= 0);
             }
