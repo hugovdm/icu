@@ -1016,6 +1016,22 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"unit/meter-per-hectosecond",                       //
          u"unit/meter-per-hectosecond"},
 
+        {"percent compound skeletons handled correctly", //
+         u"unit/percent-per-meter",                      //
+         u"unit/percent-per-meter"},
+
+        {"permille compound skeletons handled correctly",                 //
+         u"measure-unit/concentr-permille per-measure-unit/length-meter", //
+         u"unit/permille-per-meter"},
+
+        {"percent simple unit is not actually considered a unit", //
+         u"unit/percent",                                         //
+         u"percent"},
+
+        {"permille simple unit is not actually considered a unit", //
+         u"measure-unit/concentr-permille",                        //
+         u"permille"},
+
         // // TODO: binary prefixes not supported yet!
         // {"Round-trip example from icu-units#35", //
         //  u"unit/kibijoule-per-furlong",          //
