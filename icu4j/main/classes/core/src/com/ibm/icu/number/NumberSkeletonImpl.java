@@ -1484,25 +1484,25 @@ class NumberSkeletonImpl {
         }
 
         private static boolean unit(MacroProps macros, StringBuilder sb) {
-            if (macros.unit instanceof Currency) {
+            MeasureUnit unit = macros.unit;
+            if (macros.perUnit != null) {
+                if (macros.unit instanceof Currency || macros.perUnit instanceof Currency) {
+                    throw new UnsupportedOperationException(
+                        "Cannot generate number skeleton with currency unit and per-unit");
+                }
+                unit = unit.product(macros.perUnit.reciprocal());
+            }
+            if (unit instanceof Currency) {
                 sb.append("currency/");
-                BlueprintHelpers.generateCurrencyOption((Currency) macros.unit, sb);
+                BlueprintHelpers.generateCurrencyOption((Currency)unit, sb);
                 return true;
-            } else if (macros.unit == MeasureUnit.PERCENT) {
+            } else if (unit == MeasureUnit.PERCENT) {
                 sb.append("percent");
                 return true;
-            } else if (macros.unit == MeasureUnit.PERMILLE) {
+            } else if (unit == MeasureUnit.PERMILLE) {
                 sb.append("permille");
                 return true;
             } else {
-                MeasureUnit unit = macros.unit;
-                if (macros.perUnit != null) {
-                    if (macros.perUnit instanceof Currency) {
-                        throw new UnsupportedOperationException(
-                            "Cannot generate number skeleton with per-unit that is not a standard measure unit");
-                    }
-                    unit = unit.product(macros.perUnit.reciprocal());
-                }
                 sb.append("unit/");
                 sb.append(unit.getIdentifier());
                 return true;
