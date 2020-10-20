@@ -1496,10 +1496,10 @@ class NumberSkeletonImpl {
                 sb.append("currency/");
                 BlueprintHelpers.generateCurrencyOption((Currency)unit, sb);
                 return true;
-            } else if (unit == MeasureUnit.PERCENT) {
+            } else if (unit.equals(MeasureUnit.PERCENT)) {
                 sb.append("percent");
                 return true;
-            } else if (unit == MeasureUnit.PERMILLE) {
+            } else if (unit.equals(MeasureUnit.PERMILLE)) {
                 sb.append("permille");
                 return true;
             } else {
