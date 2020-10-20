@@ -974,6 +974,7 @@ void NumberFormatterApiTest::unitCompoundMeasure() {
             u"2.4 m/s\u00B2");
 }
 
+// TODO: merge these tests into numbertest_skeletons.cpp instead of here:
 void NumberFormatterApiTest::unitSkeletons() {
     const struct TestCase {
         const char *msg;
