@@ -1065,6 +1065,16 @@ void NumberFormatterApiTest::unitSkeletons() {
          u"measure-unit/meter per-measure-unit/hectosecond", //
          U_NUMBER_SKELETON_SYNTAX_ERROR,                     //
          U_ZERO_ERROR},
+
+        {"\"currency/EUR measure-unit/length-meter\" fails, conflicting skeleton.",
+         u"currency/EUR measure-unit/length-meter", //
+         U_NUMBER_SKELETON_SYNTAX_ERROR,            //
+         U_ZERO_ERROR},
+
+        {"\"currency/EUR per-measure-unit/meter\" is unsupported by toSkeleton.",
+         u"currency/EUR per-measure-unit/length-meter", //
+         U_ZERO_ERROR,                                  //
+         U_UNSUPPORTED_ERROR},
     };
     for (auto &cas : failCases) {
         IcuTestErrorCode status(*this, cas.msg);
@@ -1100,6 +1110,16 @@ void NumberFormatterApiTest::unitSkeletons() {
             .unit(METER)
             .perUnit(MeasureUnit::forIdentifier("hectosecond", status))
             .toSkeleton(status));
+
+    status.assertSuccess();
+    assertEquals(                                                //
+        ".unit(CURRENCY) produces a currency/CURRENCY skeleton", //
+        u"currency/GBP",                                         //
+        NumberFormatter::with().unit(GBP).toSkeleton(status));
+    status.assertSuccess();
+    // .unit(CURRENCY).perUnit(ANYTHING) is not supported.
+    NumberFormatter::with().unit(GBP).perUnit(METER).toSkeleton(status);
+    status.expectErrorAndReset(U_UNSUPPORTED_ERROR);
 }
 
 void NumberFormatterApiTest::unitUsage() {
