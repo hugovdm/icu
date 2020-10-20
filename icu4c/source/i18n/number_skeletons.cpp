@@ -732,6 +732,7 @@ skeleton::parseStem(const StringSegment& segment, const UCharsTrie& stemTrie, Se
 
         case STEM_CURRENCY:
             CHECK_NULL(seen, unit, status);
+            CHECK_NULL(seen, perUnit, status);
             return STATE_CURRENCY_UNIT;
 
         case STEM_INTEGER_WIDTH:

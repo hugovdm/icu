@@ -1071,10 +1071,15 @@ void NumberFormatterApiTest::unitSkeletons() {
          U_NUMBER_SKELETON_SYNTAX_ERROR,            //
          U_ZERO_ERROR},
 
-        {"\"currency/EUR per-measure-unit/meter\" is unsupported by toSkeleton.",
+        {"\"measure-unit/length-meter currency/EUR\" fails, conflicting skeleton.",
+         u"measure-unit/length-meter currency/EUR", //
+         U_NUMBER_SKELETON_SYNTAX_ERROR,            //
+         U_ZERO_ERROR},
+
+        {"\"currency/EUR per-measure-unit/meter\" fails, conflicting skeleton.",
          u"currency/EUR per-measure-unit/length-meter", //
-         U_ZERO_ERROR,                                  //
-         U_UNSUPPORTED_ERROR},
+         U_NUMBER_SKELETON_SYNTAX_ERROR,                //
+         U_ZERO_ERROR},
     };
     for (auto &cas : failCases) {
         IcuTestErrorCode status(*this, cas.msg);
