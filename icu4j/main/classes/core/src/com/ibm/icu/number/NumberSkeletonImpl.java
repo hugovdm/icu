@@ -620,6 +620,7 @@ class NumberSkeletonImpl {
                 case STATE_INCREMENT_PRECISION:
                 case STATE_MEASURE_UNIT:
                 case STATE_PER_MEASURE_UNIT:
+                case STATE_IDENTIFIER_UNIT:
                 case STATE_UNIT_USAGE:
                 case STATE_CURRENCY_UNIT:
                 case STATE_INTEGER_WIDTH:
@@ -661,7 +662,7 @@ class NumberSkeletonImpl {
             BlueprintHelpers.parseScientificStem(segment, macros);
             return ParseState.STATE_NULL;
         case '0':
-            checkNull(macros.notation, segment);
+            checkNull(macros.integerWidth, segment);
             BlueprintHelpers.parseIntegerStem(segment, macros);
             return ParseState.STATE_NULL;
         }
@@ -786,6 +787,11 @@ class NumberSkeletonImpl {
             return ParseState.STATE_MEASURE_UNIT;
 
         case STEM_PER_MEASURE_UNIT:
+            // In C++, STEM_CURRENCY's checks mark perUnit as "seen". Here we do
+            // the inverse: checking that macros.unit is not set to a currency.
+            if (macros.unit instanceof Currency) {
+                throw new SkeletonSyntaxException("Duplicated setting", segment);
+            }
             checkNull(macros.perUnit, segment);
             return ParseState.STATE_PER_MEASURE_UNIT;
 
@@ -800,6 +806,7 @@ class NumberSkeletonImpl {
 
         case STEM_CURRENCY:
             checkNull(macros.unit, segment);
+            checkNull(macros.perUnit, segment);
             return ParseState.STATE_CURRENCY_UNIT;
 
         case STEM_INTEGER_WIDTH:

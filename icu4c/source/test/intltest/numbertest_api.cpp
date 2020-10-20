@@ -1086,15 +1086,13 @@ void NumberFormatterApiTest::unitSkeletons() {
         IcuTestErrorCode status(*this, cas.msg);
         auto nf = NumberFormatter::forSkeleton(cas.inputSkeleton, status);
         if (status.expectErrorAndReset(cas.expectedForSkelStatus, cas.msg)) {
-                continue;
+            continue;
         }
         nf.toSkeleton(status);
         status.expectErrorAndReset(cas.expectedToSkelStatus, cas.msg);
     }
 
     IcuTestErrorCode status(*this, "unitSkeletons");
-    MeasureUnit METER_PER_SECOND = MeasureUnit::forIdentifier("meter-per-second", status);
-
     assertEquals(                                //
         ".unit(METER_PER_SECOND) normalization", //
         u"unit/meter-per-second",                //
