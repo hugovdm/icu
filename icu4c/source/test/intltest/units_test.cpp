@@ -48,10 +48,7 @@ class UnitsTest : public IntlTest {
     void testComplexUnitsConverter();
     void testComplexUnitConverterSorting();
     void testUnitPreferencesWithCLDRTests();
-    void testSiPrefixes();
-    void testMass();
-    void testTemperature();
-    void testArea();
+    void testConverter();
 };
 
 extern IntlTest *createUnitsTest() { return new UnitsTest(); }
@@ -67,10 +64,7 @@ void UnitsTest::runIndexedTest(int32_t index, UBool exec, const char *&name, cha
     TESTCASE_AUTO(testComplexUnitsConverter);
     TESTCASE_AUTO(testComplexUnitConverterSorting);
     TESTCASE_AUTO(testUnitPreferencesWithCLDRTests);
-    TESTCASE_AUTO(testSiPrefixes);
-    TESTCASE_AUTO(testMass);
-    TESTCASE_AUTO(testTemperature);
-    TESTCASE_AUTO(testArea);
+    TESTCASE_AUTO(testConverter);
     TESTCASE_AUTO_END;
 }
 
@@ -177,8 +171,8 @@ void UnitsTest::testExtractConvertibility() {
     }
 }
 
-void UnitsTest::testSiPrefixes() {
-    IcuTestErrorCode status(*this, "UnitsTest::testSiPrefixes");
+void UnitsTest::testConverter() {
+    IcuTestErrorCode status(*this, "UnitsTest::testConverter");
 
     // Test Cases
     struct TestCase {
@@ -187,6 +181,7 @@ void UnitsTest::testSiPrefixes() {
         const double inputValue;
         const double expectedValue;
     } testCases[]{
+        // SI Prefixes
         {"gram", "kilogram", 1.0, 0.001},            //
         {"milligram", "kilogram", 1.0, 0.000001},    //
         {"microgram", "kilogram", 1.0, 0.000000001}, //
@@ -195,46 +190,7 @@ void UnitsTest::testSiPrefixes() {
         {"gigabyte", "byte", 1.0, 1000000000},       //
         {"megawatt", "watt", 1.0, 1000000},          //
         {"megawatt", "kilowatt", 1.0, 1000},         //
-    };
-
-    for (const auto &testCase : testCases) {
-        MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
-        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
-                                        testCase.source)) {
-            continue;
-        }
-        MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
-        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
-                                        testCase.target)) {
-            continue;
-        }
-
-        ConversionRates conversionRates(status);
-        if (status.errIfFailureAndReset("conversionRates(status)")) {
-            continue;
-        }
-        UnitConverter converter(source, target, conversionRates, status);
-        if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", testCase.source,
-                                        testCase.target)) {
-            continue;
-        }
-
-        assertEqualsNear(UnicodeString("testSiPrefixes: ") + testCase.source + " to " + testCase.target,
-                         testCase.expectedValue, converter.convert(testCase.inputValue),
-                         0.0001 * testCase.expectedValue);
-    }
-}
-
-void UnitsTest::testMass() {
-    IcuTestErrorCode status(*this, "UnitsTest::testMass");
-
-    // Test Cases
-    struct TestCase {
-        const char *source;
-        const char *target;
-        const double inputValue;
-        const double expectedValue;
-    } testCases[]{
+        // Mass
         {"gram", "kilogram", 1.0, 0.001},      //
         {"pound", "kilogram", 1.0, 0.453592},  //
         {"pound", "kilogram", 2.0, 0.907185},  //
@@ -242,47 +198,8 @@ void UnitsTest::testMass() {
         {"ounce", "kilogram", 16.0, 0.453592}, //
         {"ton", "pound", 1.0, 2000},           //
         {"stone", "pound", 1.0, 14},           //
-        {"stone", "kilogram", 1.0, 6.35029}    //
-    };
-
-    for (const auto &testCase : testCases) {
-        MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
-        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
-                                        testCase.source)) {
-            continue;
-        }
-        MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
-        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
-                                        testCase.target)) {
-            continue;
-        }
-
-        ConversionRates conversionRates(status);
-        if (status.errIfFailureAndReset("conversionRates(status)")) {
-            continue;
-        }
-        UnitConverter converter(source, target, conversionRates, status);
-        if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", testCase.source,
-                                        testCase.target)) {
-            continue;
-        }
-
-        assertEqualsNear(UnicodeString("testMass: ") + testCase.source + " to " + testCase.target,
-                         testCase.expectedValue, converter.convert(testCase.inputValue),
-                         0.0001 * testCase.expectedValue);
-    }
-}
-
-// TODO: fold into common test.
-void UnitsTest::testTemperature() {
-    IcuTestErrorCode status(*this, "Units testTemperature");
-    // Test Cases
-    struct TestCase {
-        const char *source;
-        const char *target;
-        const double inputValue;
-        const double expectedValue;
-    } testCases[]{
+        {"stone", "kilogram", 1.0, 6.35029},   //
+        // Temperature
         {"celsius", "fahrenheit", 0.0, 32.0},     //
         {"celsius", "fahrenheit", 10.0, 50.0},    //
         {"celsius", "fahrenheit", 1000, 1832},    //
@@ -292,47 +209,8 @@ void UnitsTest::testTemperature() {
         {"kelvin", "fahrenheit", 0.0, -459.67},   //
         {"kelvin", "fahrenheit", 300, 80.33},     //
         {"kelvin", "celsius", 0.0, -273.15},      //
-        {"kelvin", "celsius", 300.0, 26.85}       //
-    };
-
-    for (const auto &testCase : testCases) {
-        MeasureUnitImpl source = MeasureUnitImpl::forIdentifier(testCase.source, status);
-        if (status.errIfFailureAndReset("source MeasureUnitImpl::forIdentifier(\"%s\", ...)",
-                                        testCase.source)) {
-            continue;
-        }
-        MeasureUnitImpl target = MeasureUnitImpl::forIdentifier(testCase.target, status);
-        if (status.errIfFailureAndReset("target MeasureUnitImpl::forIdentifier(\"%s\", ...)",
-                                        testCase.target)) {
-            continue;
-        }
-
-        ConversionRates conversionRates(status);
-        if (status.errIfFailureAndReset("conversionRates(status)")) {
-            continue;
-        }
-        UnitConverter converter(source, target, conversionRates, status);
-        if (status.errIfFailureAndReset("UnitConverter(<%s>, <%s>, ...)", testCase.source,
-                                        testCase.target)) {
-            continue;
-        }
-
-        assertEqualsNear(UnicodeString("testTemperature: ") + testCase.source + " to " + testCase.target,
-                         testCase.expectedValue, converter.convert(testCase.inputValue),
-                         0.0001 * uprv_fabs(testCase.expectedValue));
-    }
-}
-
-void UnitsTest::testArea() {
-    IcuTestErrorCode status(*this, "Units Area");
-
-    // Test Cases
-    struct TestCase {
-        const char *source;
-        const char *target;
-        const double inputValue;
-        const double expectedValue;
-    } testCases[]{
+        {"kelvin", "celsius", 300.0, 26.85},      //
+        // Area
         {"square-meter", "square-yard", 10.0, 11.9599},     //
         {"hectare", "square-yard", 1.0, 11959.9},           //
         {"square-mile", "square-foot", 0.0001, 2787.84},    //
@@ -368,9 +246,9 @@ void UnitsTest::testArea() {
             continue;
         }
 
-        assertEqualsNear(UnicodeString("testArea: ") + testCase.source + " to " + testCase.target,
+        assertEqualsNear(UnicodeString("testConverter: ") + testCase.source + " to " + testCase.target,
                          testCase.expectedValue, converter.convert(testCase.inputValue),
-                         0.0001 * testCase.expectedValue);
+                         0.0001 * uprv_fabs(testCase.expectedValue));
     }
 }
 

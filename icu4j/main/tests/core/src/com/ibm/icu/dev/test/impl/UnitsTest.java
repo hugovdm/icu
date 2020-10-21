@@ -187,7 +187,7 @@ public class UnitsTest {
         }
     }
 
-    // TODO: fold into common test.
+    // TODO(icu-units#92): add UnitsTest::testConverter(), to replace or extend this test.
     @Test
     public void testConverterForTemperature() {
         class TestData {
