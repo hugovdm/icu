@@ -44,7 +44,7 @@ class UnitsTest : public IntlTest {
 
     void testUnitConstantFreshness();
     void testExtractConvertibility();
-    void testConversionsWithCLDRTests();
+    void testConverterWithCLDRTests();
     void testComplexUnitsConverter();
     void testComplexUnitConverterSorting();
     void testUnitPreferencesWithCLDRTests();
@@ -60,7 +60,7 @@ void UnitsTest::runIndexedTest(int32_t index, UBool exec, const char *&name, cha
     TESTCASE_AUTO_BEGIN;
     TESTCASE_AUTO(testUnitConstantFreshness);
     TESTCASE_AUTO(testExtractConvertibility);
-    TESTCASE_AUTO(testConversionsWithCLDRTests);
+    TESTCASE_AUTO(testConverterWithCLDRTests);
     TESTCASE_AUTO(testComplexUnitsConverter);
     TESTCASE_AUTO(testComplexUnitConverterSorting);
     TESTCASE_AUTO(testUnitPreferencesWithCLDRTests);
@@ -374,12 +374,12 @@ void unitsTestDataLineFn(void *context, char *fields[][2], int32_t fieldCount, U
  * Runs data-driven unit tests for unit conversion. It looks for the test cases
  * in source/test/testdata/cldr/units/unitsTest.txt, which originates in CLDR.
  */
-void UnitsTest::testConversionsWithCLDRTests() {
+void UnitsTest::testConverterWithCLDRTests() {
     const char *filename = "unitsTest.txt";
     const int32_t kNumFields = 5;
     char *fields[kNumFields][2];
 
-    IcuTestErrorCode errorCode(*this, "UnitsTest::testConversionsWithCLDRTests");
+    IcuTestErrorCode errorCode(*this, "UnitsTest::testConverterWithCLDRTests");
     const char *sourceTestDataPath = getSourceTestData(errorCode);
     if (errorCode.errIfFailureAndReset("unable to find the source/test/testdata "
                                        "folder (getSourceTestData())")) {
