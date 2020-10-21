@@ -182,46 +182,46 @@ void UnitsTest::testConverter() {
         const double expectedValue;
     } testCases[]{
         // SI Prefixes
-        {"gram", "kilogram", 1.0, 0.001},            //
-        {"milligram", "kilogram", 1.0, 0.000001},    //
-        {"microgram", "kilogram", 1.0, 0.000000001}, //
-        {"megagram", "gram", 1.0, 1000000},          //
-        {"megagram", "kilogram", 1.0, 1000},         //
-        {"gigabyte", "byte", 1.0, 1000000000},       //
-        {"megawatt", "watt", 1.0, 1000000},          //
-        {"megawatt", "kilowatt", 1.0, 1000},         //
+        {"gram", "kilogram", 1.0, 0.001},
+        {"milligram", "kilogram", 1.0, 0.000001},
+        {"microgram", "kilogram", 1.0, 0.000000001},
+        {"megagram", "gram", 1.0, 1000000},
+        {"megagram", "kilogram", 1.0, 1000},
+        {"gigabyte", "byte", 1.0, 1000000000},
+        {"megawatt", "watt", 1.0, 1000000},
+        {"megawatt", "kilowatt", 1.0, 1000},
         // Mass
-        {"gram", "kilogram", 1.0, 0.001},      //
-        {"pound", "kilogram", 1.0, 0.453592},  //
-        {"pound", "kilogram", 2.0, 0.907185},  //
-        {"ounce", "pound", 16.0, 1.0},         //
-        {"ounce", "kilogram", 16.0, 0.453592}, //
-        {"ton", "pound", 1.0, 2000},           //
-        {"stone", "pound", 1.0, 14},           //
-        {"stone", "kilogram", 1.0, 6.35029},   //
+        {"gram", "kilogram", 1.0, 0.001},
+        {"pound", "kilogram", 1.0, 0.453592},
+        {"pound", "kilogram", 2.0, 0.907185},
+        {"ounce", "pound", 16.0, 1.0},
+        {"ounce", "kilogram", 16.0, 0.453592},
+        {"ton", "pound", 1.0, 2000},
+        {"stone", "pound", 1.0, 14},
+        {"stone", "kilogram", 1.0, 6.35029},
         // Temperature
-        {"celsius", "fahrenheit", 0.0, 32.0},     //
-        {"celsius", "fahrenheit", 10.0, 50.0},    //
-        {"celsius", "fahrenheit", 1000, 1832},    //
-        {"fahrenheit", "celsius", 32.0, 0.0},     //
-        {"fahrenheit", "celsius", 89.6, 32},      //
-        {"fahrenheit", "fahrenheit", 1000, 1000}, //
-        {"kelvin", "fahrenheit", 0.0, -459.67},   //
-        {"kelvin", "fahrenheit", 300, 80.33},     //
-        {"kelvin", "celsius", 0.0, -273.15},      //
-        {"kelvin", "celsius", 300.0, 26.85},      //
+        {"celsius", "fahrenheit", 0.0, 32.0},
+        {"celsius", "fahrenheit", 10.0, 50.0},
+        {"celsius", "fahrenheit", 1000, 1832},
+        {"fahrenheit", "celsius", 32.0, 0.0},
+        {"fahrenheit", "celsius", 89.6, 32},
+        {"fahrenheit", "fahrenheit", 1000, 1000},
+        {"kelvin", "fahrenheit", 0.0, -459.67},
+        {"kelvin", "fahrenheit", 300, 80.33},
+        {"kelvin", "celsius", 0.0, -273.15},
+        {"kelvin", "celsius", 300.0, 26.85},
         // Area
-        {"square-meter", "square-yard", 10.0, 11.9599},     //
-        {"hectare", "square-yard", 1.0, 11959.9},           //
-        {"square-mile", "square-foot", 0.0001, 2787.84},    //
-        {"hectare", "square-yard", 1.0, 11959.9},           //
-        {"hectare", "square-meter", 1.0, 10000},            //
-        {"hectare", "square-meter", 0.0, 0.0},              //
-        {"square-mile", "square-foot", 0.0001, 2787.84},    //
-        {"square-yard", "square-foot", 10, 90},             //
-        {"square-yard", "square-foot", 0, 0},               //
-        {"square-yard", "square-foot", 0.000001, 0.000009}, //
-        {"square-mile", "square-foot", 0.0, 0.0},           //
+        {"square-meter", "square-yard", 10.0, 11.9599},
+        {"hectare", "square-yard", 1.0, 11959.9},
+        {"square-mile", "square-foot", 0.0001, 2787.84},
+        {"hectare", "square-yard", 1.0, 11959.9},
+        {"hectare", "square-meter", 1.0, 10000},
+        {"hectare", "square-meter", 0.0, 0.0},
+        {"square-mile", "square-foot", 0.0001, 2787.84},
+        {"square-yard", "square-foot", 10, 90},
+        {"square-yard", "square-foot", 0, 0},
+        {"square-yard", "square-foot", 0.000001, 0.000009},
+        {"square-mile", "square-foot", 0.0, 0.0},
     };
 
     for (const auto &testCase : testCases) {
