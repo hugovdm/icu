@@ -139,7 +139,22 @@ struct U_I18N_API MeasureUnitImpl : public UMemory {
     MeasureUnitImpl(const MeasureUnitImpl &other, UErrorCode &status);
     MeasureUnitImpl(const SingleUnitImpl &singleUnit, UErrorCode &status);
 
-    MeasureUnitImpl &operator=(MeasureUnitImpl &&other) noexcept = default;
+    // MeasureUnitImpl &operator=(MeasureUnitImpl &&other) noexcept = default;
+
+    MeasureUnitImpl &operator=(MeasureUnitImpl &&other) noexcept {
+        this->complexity = other.complexity;
+        this->identifier = std::move(other.identifier);
+
+        // FIXME: desireable solution: move into operator=, to not need this
+        // (and hopefully work with the default operator=):
+        //
+        // We move the old instance to a local variable to ensure it gets
+        // destructed appropriately
+        MaybeStackVector<SingleUnitImpl> old(std::move(this->units));
+
+        this->units = std::move(other.units);
+        return *this;
+    }
 
     /** Extract the MeasureUnitImpl from a MeasureUnit. */
     static inline const MeasureUnitImpl* get(const MeasureUnit& measureUnit) {
@@ -158,7 +173,7 @@ struct U_I18N_API MeasureUnitImpl : public UMemory {
 
     /**
      * Extract the MeasureUnitImpl from a MeasureUnit, or parse if it is not present.
-     * 
+     *
      * @param measureUnit The source MeasureUnit.
      * @param memory A place to write the new MeasureUnitImpl if parsing is required.
      * @param status Set if an error occurs.
@@ -198,10 +213,10 @@ struct U_I18N_API MeasureUnitImpl : public UMemory {
 
     /**
      * Extracts the list of all the individual units inside the `MeasureUnitImpl`.
-     *      For example:    
+     *      For example:
      *          -   if the `MeasureUnitImpl` is `foot-per-hour`
-     *                  it will return a list of 1 {`foot-per-hour`} 
-     *          -   if the `MeasureUnitImpl` is `foot-and-inch` 
+     *                  it will return a list of 1 {`foot-per-hour`}
+     *          -   if the `MeasureUnitImpl` is `foot-and-inch`
      *                  it will return a list of 2 { `foot`, `inch`}
      */
     MaybeStackVector<MeasureUnitImpl> extractIndividualUnits(UErrorCode &status) const;

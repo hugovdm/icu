@@ -426,7 +426,9 @@ void UnitsTest::testComplexUnitsConverter() {
 
     // TODO(icu-units#100): reusing measures results in a leak.
     // A minimal nudge under 2.0.
-    MaybeStackVector<Measure> measures2 = converter.convert((2.0 - DBL_EPSILON), nullptr, status);
+    MaybeStackVector<Measure> measures2;
+    // MaybeStackVector<Measure> &measures2 = measures;
+    measures2 = converter.convert((2.0 - DBL_EPSILON), nullptr, status);
     assertEquals("measures length", 2, measures2.length());
     if (2 == measures2.length()) {
         assertEquals("1 - eps: measures[0] value", 2.0, measures2[0]->getNumber().getDouble(status));
@@ -446,12 +448,18 @@ void UnitsTest::testComplexUnitsConverter() {
     output = MeasureUnit::forIdentifier("light-year-and-meter", status);
     // TODO(icu-units#100): reusing tempInput and tempOutput results in a leak.
     MeasureUnitImpl tempInput3, tempOutput3;
+    // MeasureUnitImpl &tempInput3 = tempInput;
+    // MeasureUnitImpl &tempOutput3 = tempOutput;
     const MeasureUnitImpl &inputImpl3 = MeasureUnitImpl::forMeasureUnit(input, tempInput3, status);
     const MeasureUnitImpl &outputImpl3 = MeasureUnitImpl::forMeasureUnit(output, tempOutput3, status);
     // TODO(icu-units#100): reusing converter results in a leak.
+    // ComplexUnitsConverter &converter3 = converter;
+    // converter = ComplexUnitsConverter(inputImpl3, outputImpl3, rates, status);
     ComplexUnitsConverter converter3 = ComplexUnitsConverter(inputImpl3, outputImpl3, rates, status);
     // TODO(icu-units#100): reusing measures results in a leak.
-    MaybeStackVector<Measure> measures3 = converter3.convert((2.0 - DBL_EPSILON), nullptr, status);
+    MaybeStackVector<Measure> measures3;
+    // measures3 = converter3.convert((2.0 - DBL_EPSILON), nullptr, status);
+    measures3 = converter3.convert((2.0 - DBL_EPSILON), nullptr, status);
     assertEquals("measures length", 2, measures3.length());
     if (2 == measures3.length()) {
         assertEquals("light-year test: measures[0] value", 2.0, measures3[0]->getNumber().getDouble(status));
@@ -465,7 +473,8 @@ void UnitsTest::testComplexUnitsConverter() {
     // 1e-15 light years is 9.46073 meters (calculated using "bc" and the CLDR
     // conversion factor). With double-precision maths, we get 10.5. In this
     // case, we're off by almost 1 meter.
-    MaybeStackVector<Measure> measures4 = converter3.convert((1.0 + 1e-15), nullptr, status);
+    MaybeStackVector<Measure> measures4;
+    measures4 = converter3.convert((1.0 + 1e-15), nullptr, status);
     assertEquals("measures length", 2, measures4.length());
     if (2 == measures4.length()) {
         assertEquals("light-year test: measures[0] value", 1.0, measures4[0]->getNumber().getDouble(status));
@@ -479,7 +488,8 @@ void UnitsTest::testComplexUnitsConverter() {
 
     // 2e-16 light years is 1.892146 meters. We consider this in the noise, and
     // thus expect a 0. (This test fails when 2e-16 is increased to 4e-16.)
-    MaybeStackVector<Measure> measures5 = converter3.convert((1.0 + 2e-16), nullptr, status);
+    MaybeStackVector<Measure> measures5;
+    measures5 = converter3.convert((1.0 + 2e-16), nullptr, status);
     assertEquals("measures length", 2, measures5.length());
     if (2 == measures5.length()) {
         assertEquals("light-year test: measures[0] value", 1.0, measures5[0]->getNumber().getDouble(status));

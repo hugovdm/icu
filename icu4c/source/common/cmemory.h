@@ -101,7 +101,7 @@ uprv_calloc(size_t num, size_t size) U_MALLOC_ATTR U_ALLOC_SIZE_ATTR2(1,2);
   *    Clears any user heap functions from u_setMemoryFunctions()
   *    Does NOT deallocate any remaining allocated memory.
   */
-U_CFUNC UBool 
+U_CFUNC UBool
 cmemory_cleanup(void);
 
 /**
@@ -728,6 +728,9 @@ public:
         fCount = other.fCount;
         fPool = std::move(other.fPool);
         other.fCount = 0;
+        // FIXME: desireable solution:
+        // std::swap(this->fCount, other.fCount);
+        // std::swap(this->fPool, other.fPool);
         return *this;
     }
 
@@ -796,9 +799,6 @@ protected:
 template<typename T, int32_t stackCapacity = 8>
 class MaybeStackVector : protected MemoryPool<T, stackCapacity> {
 public:
-    using MemoryPool<T, stackCapacity>::MemoryPool;
-    using MemoryPool<T, stackCapacity>::operator=;
-
     template<typename... Args>
     T* emplaceBack(Args&&... args) {
         return this->create(args...);
