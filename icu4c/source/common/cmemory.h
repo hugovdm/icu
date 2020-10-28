@@ -101,7 +101,7 @@ uprv_calloc(size_t num, size_t size) U_MALLOC_ATTR U_ALLOC_SIZE_ATTR2(1,2);
   *    Clears any user heap functions from u_setMemoryFunctions()
   *    Does NOT deallocate any remaining allocated memory.
   */
-U_CFUNC UBool
+U_CFUNC UBool 
 cmemory_cleanup(void);
 
 /**
@@ -731,8 +731,8 @@ public:
         // simply overwrite: the destruction of `other` can then take care of
         // running MemoryPool::~MemoryPool() over the still-to-be-deallocated
         // instances.
-        std::swap(this->fCount, other.fCount);
-        std::swap(this->fPool, other.fPool);
+        std::swap(fCount, other.fCount);
+        std::swap(fPool, other.fPool);
         return *this;
     }
 
