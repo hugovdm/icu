@@ -725,6 +725,12 @@ public:
     }
 
     MemoryPool& operator=(MemoryPool&& other) U_NOEXCEPT {
+        // Since `this` may contain instances that need to be deleted, we can't
+        // just throw them away and replace them with `other`. The normal way of
+        // dealing with this in C++ is to swap `this` and `other`, rather than
+        // simply overwrite: the destruction of `other` can then take care of
+        // running MemoryPool::~MemoryPool() over the still-to-be-deallocated
+        // instances.
         std::swap(this->fCount, other.fCount);
         std::swap(this->fPool, other.fPool);
         return *this;
