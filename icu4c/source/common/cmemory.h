@@ -725,12 +725,8 @@ public:
     }
 
     MemoryPool& operator=(MemoryPool&& other) U_NOEXCEPT {
-        fCount = other.fCount;
-        fPool = std::move(other.fPool);
-        other.fCount = 0;
-        // FIXME: desireable solution:
-        // std::swap(this->fCount, other.fCount);
-        // std::swap(this->fPool, other.fPool);
+        std::swap(this->fCount, other.fCount);
+        std::swap(this->fPool, other.fPool);
         return *this;
     }
 

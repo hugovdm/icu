@@ -139,22 +139,7 @@ struct U_I18N_API MeasureUnitImpl : public UMemory {
     MeasureUnitImpl(const MeasureUnitImpl &other, UErrorCode &status);
     MeasureUnitImpl(const SingleUnitImpl &singleUnit, UErrorCode &status);
 
-    // MeasureUnitImpl &operator=(MeasureUnitImpl &&other) noexcept = default;
-
-    MeasureUnitImpl &operator=(MeasureUnitImpl &&other) noexcept {
-        this->complexity = other.complexity;
-        this->identifier = std::move(other.identifier);
-
-        // FIXME: desireable solution: move into operator=, to not need this
-        // (and hopefully work with the default operator=):
-        //
-        // We move the old instance to a local variable to ensure it gets
-        // destructed appropriately
-        MaybeStackVector<SingleUnitImpl> old(std::move(this->units));
-
-        this->units = std::move(other.units);
-        return *this;
-    }
+    MeasureUnitImpl &operator=(MeasureUnitImpl &&other) noexcept = default;
 
     /** Extract the MeasureUnitImpl from a MeasureUnit. */
     static inline const MeasureUnitImpl* get(const MeasureUnit& measureUnit) {
