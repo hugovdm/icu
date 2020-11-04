@@ -232,18 +232,19 @@ void LongNameHandler::forMeasureUnit(const Locale &loc, const MeasureUnit &unitR
         // "builtin-per-builtin".
         // TODO(ICU-20941): support more generic case than builtin-per-builtin.
         MeasureUnitImpl fullUnit = MeasureUnitImpl::forMeasureUnitMaybeCopy(unitRef, status);
-        MeasureUnit unit;
-        MeasureUnit perUnit;
+        MeasureUnitImpl unit;
+        MeasureUnitImpl perUnit;
         for (int32_t i = 0; i < fullUnit.units.length(); i++) {
             SingleUnitImpl *subUnit = fullUnit.units[i];
             if (subUnit->dimensionality > 0) {
-                unit = unit.product(subUnit->build(status), status);
+                unit.append(*subUnit, status);
             } else {
                 subUnit->dimensionality *= -1;
-                perUnit = perUnit.product(subUnit->build(status), status);
+                perUnit.append(*subUnit, status);
             }
         }
-        forCompoundUnit(loc, unit, perUnit, width, rules, parent, fillIn, status);
+        forCompoundUnit(loc, std::move(unit).build(status), std::move(perUnit).build(status), width,
+                        rules, parent, fillIn, status);
         return;
     }
 

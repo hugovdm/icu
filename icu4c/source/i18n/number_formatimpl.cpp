@@ -390,7 +390,7 @@ NumberFormatterImpl::macrosToMicroGenerator(const MacroProps& macros, bool safe,
             chain = fMixedUnitLongNameHandler.getAlias();
         } else {
             MeasureUnit unit = macros.unit;
-            if (uprv_strcmp(macros.perUnit.getType(), "none") != 0) {
+            if (!utils::unitIsBaseUnit(macros.perUnit)) {
                 unit = unit.product(macros.perUnit.reciprocal(status), status);
             }
             fLongNameHandler.adoptInsteadAndCheckErrorCode(new LongNameHandler(), status);
