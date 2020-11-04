@@ -128,9 +128,6 @@ public class UnitsTest {
                 if (i == testCase.expected.length - 1) {
                     accuracy = testCase.accuracy;
                 }
-                // assertTrue("input " + cas.value + ", output measure " + i + ": expected " +
-                //                cas.expected[i] + " got " + measure,
-                //            cas.expected[i].equals(measure));
                 assertTrue("input " + testCase.value + ", output measure " + i + ": expected " +
                                testCase.expected[i] + ", expected unit " +
                                testCase.expected[i].getUnit() + " got unit " + measure.getUnit(),
@@ -139,7 +136,7 @@ public class UnitsTest {
                                  testCase.expected[i] + ", expected number " +
                                  testCase.expected[i].getNumber() + " got number " + measure.getNumber(),
                              testCase.expected[i].getNumber().doubleValue(),
-                             measure.getNumber().doubleValue(), testCase.accuracy);
+                             measure.getNumber().doubleValue(), accuracy);
                 i++;
             }
         }
