@@ -3480,6 +3480,7 @@ public class MeasureUnitTest extends TestFmwk {
         }
 
         TestCase cases[] = {
+            // homogenize with C++
                 // Correctly normalized identifiers should not change
                 new TestCase("square-meter-per-square-meter", "square-meter-per-square-meter"),
                 new TestCase("kilogram-meter-per-square-meter-square-second",
@@ -3497,7 +3498,8 @@ public class MeasureUnitTest extends TestFmwk {
                 new TestCase(
                         "kilogram-per-meter-per-second", "kilogram-per-meter-second"),
 
-                // TODO(ICU-21284): Add more test cases once the proper ranking is available.
+                // TODO(ICU-21284): Add more test cases, is proper ranking available?
+                // Specification: https://www.unicode.org/reports/tr35/tr35-general.html#Unit_Identifiers
         };
 
 

@@ -3649,21 +3649,35 @@ void MeasureFormatTest::TestIdentifiers() {
         const char* normalized;
     } cases[] = {
         // Correctly normalized identifiers should not change
+        //
+        // The "dimensionless base unit", because C++ supports a
+        // stack-allocated, default-constructed MeasureUnit().
         {"", ""},
+        /* TODO(icu-units#106): this is spec compliant, but not supported by ICU:
+         * // long_unit_identifier
+         * {"length-meter", "meter"}, */
+        // core_unit_identifier
         {"square-meter-per-square-meter", "square-meter-per-square-meter"},
         {"kilogram-meter-per-square-meter-square-second",
          "kilogram-meter-per-square-meter-square-second"},
-        {"square-mile-and-square-foot", "square-mile-and-square-foot"},
-        {"square-foot-and-square-mile", "square-foot-and-square-mile"},
         {"per-cubic-centimeter", "per-cubic-centimeter"},
         {"per-kilometer", "per-kilometer"},
+        // mixed_unit_identifier
+        {"square-mile-and-square-foot", "square-mile-and-square-foot"},
+        {"square-foot-and-square-mile", "square-foot-and-square-mile"},
 
         // Normalization of power and per
         {"pow2-foot-and-pow2-mile", "square-foot-and-square-mile"},
         {"gram-square-gram-per-dekagram", "cubic-gram-per-dekagram"},
         {"kilogram-per-meter-per-second", "kilogram-per-meter-second"},
+        {"foot-per-second-per-second", "foot-per-square-second"},
 
-        // TODO(ICU-21284): Add more test cases once the proper ranking is available.
+        // Normalization examples from the UTS 35 spec
+        {"hour-kilowatt", "kilowatt-hour"},
+        {"meter-square-meter-per-second-second", "cubic-meter-per-square-second"},
+
+        // TODO(ICU-21284): Add more test cases, is proper ranking available?
+        // Specification: https://www.unicode.org/reports/tr35/tr35-general.html#Unit_Identifiers
     };
     for (const auto &cas : cases) {
         status.setScope(cas.id);
@@ -3713,6 +3727,15 @@ void MeasureFormatTest::TestInvalidIdentifiers() {
 
         // Compound units not supported in mixed units yet. TODO(CLDR-13700).
         "kilonewton-meter-and-newton-meter",
+
+        // TODO(icu-units#106): this is spec compliant, a long_unit_identifier,
+        // but not supported by ICU yet:
+        "length-meter",
+
+        // These privaute-use identifiers are spec-complient, but ICU only
+        // supports an explicit list of unit_components:
+        "x-square-beard-second",
+        "xxx-sheppey-and-x-smoot",
     };
 
     for (const auto& input : inputs) {
@@ -4259,4 +4282,3 @@ extern IntlTest *createMeasureFormatTest() {
 }
 
 #endif
-

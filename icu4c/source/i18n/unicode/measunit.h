@@ -265,6 +265,8 @@ class U_I18N_API MeasureUnit: public UObject {
      * MeasureUnit example = MeasureUnit::forIdentifier("furlong-per-nanosecond")
      * </pre>
      *
+     * Note: private use identifiers are not supported.
+     *
      * @param identifier The CLDR Unit Identifier
      * @param status Set if the identifier is invalid.
      * @draft ICU 67
