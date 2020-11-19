@@ -1,0 +1,507 @@
+Index: source/tools/genrb/reslist.c
+===================================================================
+--- source/tools/genrb/reslist.c	(revision 25919)
++++ source/tools/genrb/reslist.c	(working copy)
+@@ -27,6 +27,262 @@
+ 
+ static UBool gIncludeCopyright = FALSE;
+ 
++static void printCounters(const struct SRBRoot *bundle, const char *bundleName, uint32_t bundleSize) {
++    /* file,size,#strings,str.size,save,#4ascii,4ascii.save,incompressible */
++    printf("potential: %s,%lu,%ld,%ld,%ld,%ld,%ld,%ld\n",
++           bundleName, (long)bundleSize,
++           (long)bundle->fStringsCount, (long)bundle->fStringsSize,
++           (long)(bundle->fStringsSize - bundle->fPotentialSize),
++           (long)bundle->f4ASCIICount, (long)bundle->f4ASCIIReduction,
++           (long)bundle->fIncompressibleStrings);
++}
++
++/* does this string consist of at most 4 ASCII characters? */
++static UBool is4ASCII(const UChar *s, int32_t length) {
++    if (length > 4) {
++        return FALSE;  /* too long */
++    }
++    while (length > 0) {
++        if (*s > 0x7f) {
++            return FALSE;  /* not all ASCII */
++        }
++        ++s;
++        --length;
++    }
++    return TRUE;
++}
++
++/* not Han, not Hangul, not an unpaired surrogate? */
++static UBool isCompressible(UChar32 c) {
++    return
++        (c < LAST_WINDOW_LIMIT) &&
++        !(  (0x3400 <= c && c <= 0x9fff) ||
++            (0xac00 <= c && c <= 0xdfff) ||
++            (0x20000 <= c && c <= 0x3ffff));
++}
++
++/* 2-byte-encodable in CJK mode */
++static UBool is2ByteCJK(UChar32 c) {
++    return (0x3000 <= c && c <= 0x9fff) || (0xac00 <= c && c <= 0xd7ff);
++}
++
++static UBool isDirectASCII(UChar32 c) {
++    /* ASCII character with direct single-byte encoding */
++    if (c <= 0x7e) {
++        if (c >= 0x20 || (c == 9 || c == 0xa || c == 0xd)) {
++            return TRUE;
++        }
++    }
++    return FALSE;
++}
++
++static void
++addToStats(struct SRBRoot *bundle, const UChar *s, int32_t length) {
++    int32_t i, window;
++    UChar32 c;
++
++    if (is4ASCII(s, length)) {
++        return;
++    }
++    for (i = 0; i < length;) {
++        U16_NEXT(s, i, length, c);
++        /* don't count ASCII in its window */
++        if (isCompressible(c) && !isDirectASCII(c)) {
++            window = c >> 7;
++            ++bundle->fWindowCounts[window];
++        }
++    }
++}
++
++static void
++findTopWindows(struct SRBRoot *bundle) {
++    int32_t topWindowCounts[3] = { 0, 0, 0 };
++    int32_t *windowCounts = bundle->fWindowCounts;
++    int32_t *windows = bundle->fWindows;
++    int32_t window, windowCount;
++    int32_t i, j, k;
++
++    for (window = 0, i = 0; i < (LAST_WINDOW_LIMIT >> 7); window += 0x80, ++i) {
++        windowCount = windowCounts[i];
++        if (windowCount > topWindowCounts[2]) {
++            for (j = 2; j > 0 && windowCount > topWindowCounts[j - 1]; --j) {}
++            /* insert window at index j */
++            for (k = 2; k > j; --k) {
++                windows[k] = windows[k - 1];
++                topWindowCounts[k] = topWindowCounts[k - 1];
++            }
++            windows[j] = window;
++            topWindowCounts[j] = windowCount;
++        }
++    }
++    printf("top windows: %04lx,%ld,%04lx,%ld,%04lx,%ld\n",
++           windows[0], topWindowCounts[0],
++           windows[1], topWindowCounts[1],
++           windows[2], topWindowCounts[2]);
++}
++
++static int32_t
++encodeCJK(const struct SRBRoot *bundle, const UChar *s, int32_t length) {
++    int32_t i, numBytes = 0;
++    UChar32 c;
++
++    for (i = 0; i < length;) {
++        U16_NEXT(s, i, length, c);
++        if (is2ByteCJK(c)) {
++            numBytes += 2;
++        } else if (c == 9 || c == 0xa || (0x20 <= c && c <= 0x7e)) {
++            ++numBytes;
++        } else if (c <= 0xffff || (0x20000 <= c && c <= 0x2ffff)) {
++            numBytes += 3;
++        } else {
++            numBytes += 4;
++        }
++    }
++    return numBytes;
++}
++
++static int32_t
++getByteForSpecialChar(UChar32 c) {
++    if (c <= 0xbf) {
++        if (c <= 0x1f || 0xa0 <= c) {
++            return c;
++        }
++    } else if (c < 0x2000) {
++        return -1;
++    } else if (c <= 0x20bf) {
++        if (0x2000 <= c && c <= 0x205f) {
++            return c - (0x2000 - 0x20);
++        } else if (0x20a0 <= c) {
++            return c - (0x20a0 - 0x80);
++        }
++    } else if (0x3000 <= c && c <= 0x303f) {
++        return c - (0x3000 - 0xc0);
++    }
++    return -1;
++}
++
++static UChar32 gDirectChars[] = {
++    0x00A0, /* NO-BREAK SPACE */
++    0x0964, /* DEVANAGARI DANDA */
++    0x0965, /* DEVANAGARI DOUBLE DANDA */
++    0x200C, /* ZERO WIDTH NON-JOINER */
++    0x200D, /* ZERO WIDTH JOINER */
++    0x200E, /* LEFT-TO-RIGHT MARK */
++    0x200F, /* RIGHT-TO-LEFT MARK */
++    0x2060, /* WORD JOINER */
++    0x3000, /* IDEOGRAPHIC SPACE */
++    0x110000
++};
++
++static int32_t
++getByteForDirectChar(UChar32 c) {
++    int32_t byte;
++    for (byte = 0; c > gDirectChars[byte]; ++byte) {}
++    if (c == gDirectChars[byte]) {
++        return byte;
++    } else {
++        return -1;
++    }
++}
++
++static int32_t
++encodeSingleByteMode(const struct SRBRoot *bundle, int32_t window,
++                     const UChar *s, int32_t length) {
++    const int32_t *windows = bundle->fWindows;
++    int32_t i, numBytes = 0;
++    UChar32 c;
++
++    for (i = 0; i < length;) {
++        U16_NEXT(s, i, length, c);
++        if (isDirectASCII(c)) {
++            ++numBytes;
++        } else if (window <= c && c <= (window + 0x7f)) {
++            ++numBytes;
++        } else if (windows[0] <= c && c <= (windows[0] + 0x7f)) {
++            numBytes += 2;
++        } else if (windows[1] <= c && c <= (windows[1] + 0x7f)) {
++            numBytes += 2;
++        } else if (windows[2] <= c && c <= (windows[2] + 0x7f)) {
++            numBytes += 2;
++        } else if (getByteForSpecialChar(c) >= 0) {
++            numBytes += 2;
++        } else if (getByteForDirectChar(c) >= 0) {
++            ++numBytes;
++        } else {
++            numBytes += 3;
++        }
++    }
++    return numBytes;
++}
++
++static int32_t
++encodeLength(int32_t length) {
++    /* variable-length encoding of the length field */
++    if (length <= 63) {
++        return 1;
++    } else if (length <= 0x7f) {
++        return 2;
++    } else if (length <= 0x3fff) {
++        return 3;
++    } else if (length <= 0x1fffff) {
++        return 4;
++    } else if (length <= 0xfffffff) {
++        return 5;
++    } else {
++        return 6;
++    }
++}
++
++static int32_t getPotentialSize(const struct SRBRoot *bundle, const UChar *s, int32_t length) {
++    /* choose UTF-16 if that's the shortest */
++    int32_t fewestBytes = 4 + 2 * (length + 1), bestWindow = -1;
++    int32_t i;
++
++#if 1
++    /*
++     * Possible code optimizations:
++     * - pass fewestBytes into encoders so that they can stop
++     *   when they exceed it
++     * - get the set of used windows from the decoders so we can skip
++     *   trying the other windows if they are unused
++     * - have single-byte encoder check for is2ByteCJK() so we can skip
++     *   the CJK encoder if no such characters occur
++     * - have single-byte encoder detect when it uses exactly one byte
++     *   per code point, and stop here in that case
++     */
++    int32_t lengthBytes = encodeLength(length);
++    for (i = 0; i <= 3; ++i) {
++        int32_t numBytes = lengthBytes;
++        if (i <= 2) {
++            numBytes += encodeSingleByteMode(bundle, bundle->fWindows[i], s, length);
++        } else {
++            numBytes += encodeCJK(bundle, s, length);
++        }
++        if (numBytes < fewestBytes) {
++            fewestBytes = numBytes;
++            bestWindow = i;
++        }
++    }
++    return fewestBytes;
++#else
++    /* best-case estimate; could compute both this and the real size for direct comparison */
++    int32_t potentialSize = encodeLength(length);
++    UChar32 c;
++
++    for (i = 0; i < length;) {
++        U16_NEXT(s, i, length, c);
++        if (isCompressible(c)) {
++            ++potentialSize;
++        } else if (c <= 0xffff) {
++            potentialSize += 2;
++        } else {
++            potentialSize += 3;
++        }
++    }
++    return potentialSize;
++#endif
++}
++
+ /*
+  * res_none() returns the address of kNoResource,
+  * for use in non-error cases when no resource is to be added to the bundle.
+@@ -34,7 +290,7 @@
+  */
+ static struct SResource kNoResource = { RES_NONE };
+ 
+-uint32_t res_write(UNewDataMemory *mem, struct SResource *res,
++uint32_t res_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                    uint32_t usedOffset, UErrorCode *status);
+ 
+ static const UDataInfo dataInfo= {
+@@ -66,18 +322,40 @@
+ }
+ 
+ /* Writing Functions */
+-static uint32_t string_write(UNewDataMemory *mem, struct SResource *res,
++static uint32_t string_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                              uint32_t usedOffset, UErrorCode *status) {
+-    udata_write32(mem, res->u.fString.fLength);
+-    udata_writeUString(mem, res->u.fString.fChars, res->u.fString.fLength + 1);
+-    udata_writePadding(mem, calcPadding(res->fSize));
++    const UChar *s = res->u.fString.fChars;
++    int32_t length = res->u.fString.fLength;
++    int32_t normalSize;
++    uint8_t paddingSize = calcPadding(res->fSize);
++    udata_write32(mem, length);
++    udata_writeUString(mem, s, length + 1);
++    udata_writePadding(mem, paddingSize);
+ 
++    ++bundle->fStringsCount;
++    normalSize = 4 /* res. item */ + res->fSize + paddingSize;
++    bundle->fStringsSize += normalSize;
++    if (is4ASCII(s, length)) {
++        bundle->fPotentialSize += 4;  /* all in the resource item */
++        ++bundle->f4ASCIICount;
++        bundle->f4ASCIIReduction += normalSize - 4;
++    } else {
++        int32_t potentialSize = getPotentialSize(bundle, s, length);
++        potentialSize += 4 /* resource item */ + calcPadding(potentialSize);
++        if (potentialSize < normalSize) {
++            bundle->fPotentialSize += potentialSize;
++        } else {
++            bundle->fPotentialSize += normalSize;
++            ++bundle->fIncompressibleStrings;
++        }
++    }
++
+     return usedOffset;
+ }
+ 
+ /* Writing Functions */
+-static uint32_t alias_write(UNewDataMemory *mem, struct SResource *res,
+-                             uint32_t usedOffset, UErrorCode *status) {
++static uint32_t alias_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
++                            uint32_t usedOffset, UErrorCode *status) {
+     udata_write32(mem, res->u.fString.fLength);
+     udata_writeUString(mem, res->u.fString.fChars, res->u.fString.fLength + 1);
+     udata_writePadding(mem, calcPadding(res->fSize));
+@@ -85,7 +363,7 @@
+     return usedOffset;
+ }
+ 
+-static uint32_t array_write(UNewDataMemory *mem, struct SResource *res,
++static uint32_t array_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                             uint32_t usedOffset, UErrorCode *status) {
+     uint32_t *resources = NULL;
+     uint32_t  i         = 0;
+@@ -113,11 +391,11 @@
+             } else if (current->fType == URES_BINARY) {
+                 uint32_t uo = usedOffset;
+ 
+-                usedOffset    = res_write(mem, current, usedOffset, status);
++                usedOffset    = res_write(mem, bundle, current, usedOffset, status);
+                 resources[i]  = (current->fType << 28) | (usedOffset >> 2);
+                 usedOffset   += current->fSize + calcPadding(current->fSize) - (usedOffset - uo);
+             } else {
+-                usedOffset    = res_write(mem, current, usedOffset, status);
++                usedOffset    = res_write(mem, bundle, current, usedOffset, status);
+                 resources[i]  = (current->fType << 28) | (usedOffset >> 2);
+                 usedOffset   += current->fSize + calcPadding(current->fSize);
+             }
+@@ -139,7 +417,7 @@
+     return usedOffset;
+ }
+ 
+-static uint32_t intvector_write(UNewDataMemory *mem, struct SResource *res,
++static uint32_t intvector_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                                 uint32_t usedOffset, UErrorCode *status) {
+   uint32_t i = 0;
+     udata_write32(mem, res->u.fIntVector.fCount);
+@@ -150,7 +428,7 @@
+     return usedOffset;
+ }
+ 
+-static uint32_t bin_write(UNewDataMemory *mem, struct SResource *res,
++static uint32_t bin_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                           uint32_t usedOffset, UErrorCode *status) {
+     uint32_t pad       = 0;
+     uint32_t extrapad  = calcPadding(res->fSize);
+@@ -171,12 +449,12 @@
+     return usedOffset;
+ }
+ 
+-static uint32_t int_write(UNewDataMemory *mem, struct SResource *res,
++static uint32_t int_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                           uint32_t usedOffset, UErrorCode *status) {
+     return usedOffset;
+ }
+ 
+-static uint32_t table_write(UNewDataMemory *mem, struct SResource *res,
++static uint32_t table_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                             uint32_t usedOffset, UErrorCode *status) {
+     uint8_t   pad       = 0;
+     uint32_t  i         = 0;
+@@ -234,11 +512,11 @@
+             } else if (current->fType == URES_BINARY) {
+                 uint32_t uo = usedOffset;
+ 
+-                usedOffset    = res_write(mem, current, usedOffset, status);
++                usedOffset    = res_write(mem, bundle, current, usedOffset, status);
+                 resources[i]  = (current->fType << 28) | (usedOffset >> 2);
+                 usedOffset   += current->fSize + calcPadding(current->fSize) - (usedOffset - uo);
+             } else {
+-                usedOffset    = res_write(mem, current, usedOffset, status);
++                usedOffset    = res_write(mem, bundle, current, usedOffset, status);
+                 resources[i]  = (current->fType << 28) | (usedOffset >> 2);
+                 usedOffset   += current->fSize + calcPadding(current->fSize);
+             }
+@@ -276,7 +554,7 @@
+     return usedOffset;
+ }
+ 
+-uint32_t res_write(UNewDataMemory *mem, struct SResource *res,
++uint32_t res_write(UNewDataMemory *mem, struct SRBRoot *bundle, struct SResource *res,
+                    uint32_t usedOffset, UErrorCode *status) {
+     if (U_FAILURE(*status)) {
+         return 0;
+@@ -285,20 +563,20 @@
+     if (res != NULL) {
+         switch (res->fType) {
+         case URES_STRING:
+-            return string_write    (mem, res, usedOffset, status);
++            return string_write    (mem, bundle, res, usedOffset, status);
+         case URES_ALIAS:
+-            return alias_write    (mem, res, usedOffset, status);
++            return alias_write     (mem, bundle, res, usedOffset, status);
+         case URES_INT_VECTOR:
+-            return intvector_write (mem, res, usedOffset, status);
++            return intvector_write (mem, bundle, res, usedOffset, status);
+         case URES_BINARY:
+-            return bin_write       (mem, res, usedOffset, status);
++            return bin_write       (mem, bundle, res, usedOffset, status);
+         case URES_INT:
+-            return int_write       (mem, res, usedOffset, status);
++            return int_write       (mem, bundle, res, usedOffset, status);
+         case URES_ARRAY:
+-            return array_write     (mem, res, usedOffset, status);
++            return array_write     (mem, bundle, res, usedOffset, status);
+         case URES_TABLE:
+         case URES_TABLE32:
+-            return table_write     (mem, res, usedOffset, status);
++            return table_write     (mem, bundle, res, usedOffset, status);
+ 
+         default:
+             break;
+@@ -326,6 +604,8 @@
+         return;
+     }
+ 
++    findTopWindows(bundle);
++
+     if (writtenFilename) {
+        int32_t off = 0, len = 0;
+        if (outputDir) {
+@@ -427,7 +707,7 @@
+     udata_writePadding(mem, pad);
+ 
+     /* write all of the bundle contents: the root item and its children */
+-    usedOffset = res_write(mem, bundle->fRoot, usedOffset, status);
++    usedOffset = res_write(mem, bundle, bundle->fRoot, usedOffset, status);
+ 
+     size = udata_finish(mem, status);
+     if(top != size) {
+@@ -435,6 +715,8 @@
+                 (int)size, (int)top);
+         *status = U_INTERNAL_PROGRAM_ERROR;
+     }
++
++    printCounters(bundle, writtenFilename, size);
+ }
+ 
+ /* Opening Functions */
+@@ -549,6 +831,8 @@
+     uprv_memcpy(res->u.fString.fChars, value, sizeof(UChar) * (len + 1));
+     res->fSize = sizeof(int32_t) + sizeof(UChar) * (len+1);
+ 
++    addToStats(bundle, value, len);
++
+     return res;
+ }
+ 
+Index: source/tools/genrb/reslist.h
+===================================================================
+--- source/tools/genrb/reslist.h	(revision 25919)
++++ source/tools/genrb/reslist.h	(working copy)
+@@ -32,6 +32,9 @@
+ 
+ U_CDECL_BEGIN
+ 
++/* experimental compression */
++#define LAST_WINDOW_LIMIT 0x20000
++
+ /* Resource bundle root table */
+ struct SRBRoot {
+   char *fLocale;
+@@ -42,6 +45,13 @@
+   struct SResource *fRoot;
+   int32_t fMaxTableLength;
+   UBool noFallback; /* see URES_ATT_NO_FALLBACK */
++
++  /* experimental compression */
++  int32_t fStringsCount, fStringsSize;
++  int32_t fPotentialSize, f4ASCIICount, f4ASCIIReduction;
++  int32_t fIncompressibleStrings;
++  int32_t fWindowCounts[LAST_WINDOW_LIMIT>>7];
++  int32_t fWindows[3];
+ };
+ 
+ struct SRBRoot *bundle_open(const struct UString* comment, UErrorCode *status);
+Index: source/tools/genrb/genrb.c
+===================================================================
+--- source/tools/genrb/genrb.c	(revision 25919)
++++ source/tools/genrb/genrb.c	(working copy)
+@@ -254,7 +254,7 @@
+         }
+         uprv_strcat(theCurrentFileName, arg);
+ 
+-        if (isVerbose()) {
++        if (1||                  isVerbose()) {
+             printf("Processing file \"%s\"\n", theCurrentFileName);
+         }
+         processFile(arg, encoding, inputDir, outputDir, gPackageName, &status);
