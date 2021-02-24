@@ -299,7 +299,7 @@ public class LongNameHandler
                     }
                 }
             }
-            return forCompoundUnit(locale, unit, perUnit, width, unitDisplayCase, rules, parent);
+            return forArbitraryUnit(locale, unit, perUnit, width, unitDisplayCase, rules, parent);
         }
 
         String[] simpleFormats = new String[ARRAY_LENGTH];
@@ -378,14 +378,13 @@ public class LongNameHandler
         public final String value0, value1;
     }
 
-    private static LongNameHandler forCompoundUnit(
-            ULocale locale,
-            MeasureUnit unit,
-            MeasureUnit perUnit,
-            UnitWidth width,
-            String unitDisplayCase,
-            PluralRules rules,
-            MicroPropsGenerator parent) {
+    private static LongNameHandler forArbitraryUnit(ULocale locale,
+                                                    MeasureUnit unit,
+                                                    MeasureUnit perUnit,
+                                                    UnitWidth width,
+                                                    String unitDisplayCase,
+                                                    PluralRules rules,
+                                                    MicroPropsGenerator parent) {
         if (unit.getType() == null || perUnit.getType() == null) {
             // TODO(ICU-20941): Unsanctioned unit. Not yet fully supported. Set an
             // error code.
@@ -452,6 +451,18 @@ public class LongNameHandler
         return result;
     }
 
+    /**
+     * Roughly corresponds to patternTimes(...) in the spec:
+     * https://unicode.org/reports/tr35/tr35-general.html#compound-units
+     */
+    private static void processPatternTimes(MeasureUnitImpl productUnit,
+                                            ULocale loc,
+                                            UnitWidth width,
+                                            String caseVariant,
+                                            String[] outArray) {
+    }
+
+    /** Sets modifiers to use the patterns from simpleFormats. */
     private void simpleFormatsToModifiers(
             String[] simpleFormats,
             NumberFormat.Field field) {
@@ -467,6 +478,14 @@ public class LongNameHandler
         }
     }
 
+    /**
+     * Sets modifiers to a combination of `leadFormats` (one per plural form)
+     * and `trailFormat` appended to each.
+     *
+     * With a leadFormat of "{0}m" and a trailFormat of "{0}/s", it produces a
+     * pattern of "{0}m/s" by inserting each leadFormat pattern into
+     * trailFormat.
+     */
     private void multiSimpleFormatsToModifiers(
             String[] leadFormats,
             String trailFormat,
