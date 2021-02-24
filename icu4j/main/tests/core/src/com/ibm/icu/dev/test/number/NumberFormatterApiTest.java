@@ -2109,18 +2109,34 @@ public class NumberFormatterApiTest extends TestFmwk {
                 new UnitInflectionTestCase("meter", "de", "genitive", 1, "1 Meters"),
                 new UnitInflectionTestCase("meter", "de", null, 2, "2 Meter"),
                 new UnitInflectionTestCase("meter", "de", "dative", 2, "2 Metern"),
+                new UnitInflectionTestCase("mile", "de", null, 1, "1 Meile"),
+                new UnitInflectionTestCase("mile", "de", null, 2, "2 Meilen"),
                 new UnitInflectionTestCase("day", "de", null, 1, "1 Tag"),
                 new UnitInflectionTestCase("day", "de", "genitive", 1, "1 Tages"),
                 new UnitInflectionTestCase("day", "de", null, 2, "2 Tage"),
                 new UnitInflectionTestCase("day", "de", "dative", 2, "2 Tagen"),
-                // Day has a perUnitPattern
+                new UnitInflectionTestCase("decade", "de", null, 1, "1\u00A0Jahrzehnt"),
+                new UnitInflectionTestCase("decade", "de", null, 2, "2\u00A0Jahrzehnte"),
+
+                // Testing de "per" rules:
+                //   <deriveComponent feature="case" structure="per" value0="compound" value1="accusative"/>
+                //   <deriveComponent feature="plural" structure="per" value0="compound" value1="one"/>
+                // per-patterns use accusative, but since the accusative form
+                // matches the nominative form, we're not effectively testing value1
+                // in the "case & per" rule above.
+
+                // We have a perUnitPattern for "day" in de, so "per" rules are not
+                // applied for these:
                 new UnitInflectionTestCase("meter-per-day", "de", null, 1, "1 Meter pro Tag"),
                 new UnitInflectionTestCase("meter-per-day", "de", "genitive", 1, "1 Meters pro Tag"),
                 new UnitInflectionTestCase("meter-per-day", "de", null, 2, "2 Meter pro Tag"),
                 new UnitInflectionTestCase("meter-per-day", "de", "dative", 2, "2 Metern pro Tag"),
-                // testing code path that falls back to "root" but does not inflect:
+
+                // testing code path that falls back to "root" grammaticalFeatures
+                // but does not inflect:
                 new UnitInflectionTestCase("meter-per-day", "af", null, 1, "1 meter per dag"),
                 new UnitInflectionTestCase("meter-per-day", "af", "dative", 1, "1 meter per dag"),
+
                 // Decade does not have a perUnitPattern at this time (CLDR 39 / ICU
                 // 69), so we can test for the correct form of the per part:
                 // Fragile test cases: these cases will break when whitespace is more
@@ -2133,6 +2149,46 @@ public class NumberFormatterApiTest extends TestFmwk {
                                            "2\u00A0Parsec pro Jahrzehnt"),
                 new UnitInflectionTestCase("parsec-per-decade", "de", "dative", 2,
                                            "2 Parsec pro Jahrzehnt"),
+
+                // Testing de "times", "power" and "prefix" rules:
+                //
+                //   <deriveComponent feature="plural" structure="times" value0="one" value1="compound"/>
+                //   <deriveComponent feature="case" structure="times" value0="nominative" value1="compound"/>
+                //
+                //   <deriveComponent feature="plural" structure="prefix" value0="one" value1="compound"/>
+                //   <deriveComponent feature="case" structure="prefix" value0="nominative" value1="compound"/>
+                //
+                // Prefixes in German don't change with plural or case, so these
+                // tests can't test value0 of the following two rules:
+                //   <deriveComponent feature="plural" structure="power" value0="one" value1="compound"/>
+                //   <deriveComponent feature="case" structure="power" value0="nominative" value1="compound"/>
+
+                new UnitInflectionTestCase("square-decimeter-dekameter", "de", null, 1,
+                                           "1 Quadratdezimeter⋅Dekameter"),
+                new UnitInflectionTestCase("square-decimeter-dekameter", "de", "genitive", 1,
+                                           "1 Quadratdezimeter⋅Dekameters"),
+                new UnitInflectionTestCase("square-decimeter-dekameter", "de", null, 2,
+                                           "2 Quadratdezimeter⋅Dekameter"),
+                new UnitInflectionTestCase("square-decimeter-dekameter", "de", "dative", 2,
+                                           "2 Quadratdezimeter⋅Dekametern"),
+                // Feminine "Meile" better demonstrates singular-vs-plural form:
+                new UnitInflectionTestCase("cubic-mile-dekamile", "de", null, 1,
+                                           "1 Kubikmeile⋅Dekameile"),
+                new UnitInflectionTestCase("cubic-mile-dekamile", "de", null, 2,
+                                           "2 Kubikmeile⋅Dekameilen"),
+
+                // French handles plural "times" and "power" structures differently:
+                // plural form impacts all "numerator" units (denominator remains
+                // singular like German), and "pow2" prefixes have different forms
+                //   <deriveComponent feature="plural" structure="times" value0="compound"
+                //   value1="compound"/>
+                //   <deriveComponent feature="plural" structure="power" value0="compound"
+                //   value1="compound"/>
+                // TODO: this looks wrong, and will change if CLDR-14533 causes a change:
+                new UnitInflectionTestCase("square-decimeter-square-second", "fr", null, 1,
+                                           "1\u00A0décimètre carréseconde carrée"),
+                new UnitInflectionTestCase("square-decimeter-square-second", "fr", null, 2,
+                                           "2\u00A0décimètres carréssecondes carrées"),
             };
             for (UnitInflectionTestCase t : testCases) {
                 t.runTest(unf, skeleton);
@@ -2143,6 +2199,12 @@ public class NumberFormatterApiTest extends TestFmwk {
             unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
             skeleton = "unit-width-full-name";
             final UnitInflectionTestCase meterPerDayCases[] = {
+                new UnitInflectionTestCase("meter", "de", null, 1, "1 Meter"),
+                new UnitInflectionTestCase("meter", "de", "genitive", 1, "1 Meters"),
+                new UnitInflectionTestCase("meter", "de", "dative", 2, "2 Metern"),
+                new UnitInflectionTestCase("centimeter", "de", null, 1, "1 Zentimeter"),
+                new UnitInflectionTestCase("centimeter", "de", "genitive", 1, "1 Zentimeters"),
+                new UnitInflectionTestCase("centimeter", "de", "dative", 10, "10 Zentimetern"),
                 // TODO(CLDR-14502): check that these inflections are correct, and
                 // whether CLDR needs any rules for them (presumably CLDR spec
                 // should mention it, if it's a consistent rule):
@@ -2181,39 +2243,57 @@ public class NumberFormatterApiTest extends TestFmwk {
         }
 
         TestCase cases[] = {
-                new TestCase("de", "meter", "masculine"),
-                new TestCase("de", "minute", "feminine"),
-                new TestCase("de", "hour", "feminine"),
-                new TestCase("de", "day", "masculine"),
-                new TestCase("de", "year", "neuter"),
+            new TestCase("de", "meter", "masculine"),
+            new TestCase("de", "second", "feminine"),
+            new TestCase("de", "minute", "feminine"),
+            new TestCase("de", "hour", "feminine"),
+            new TestCase("de", "day", "masculine"),
+            new TestCase("de", "year", "neuter"),
+            new TestCase("fr", "meter", "masculine"),
+            new TestCase("fr", "second", "feminine"),
                 new TestCase("fr", "minute", "feminine"),
-                new TestCase("fr", "hour", "feminine"),
-                new TestCase("fr", "day", "masculine"),
-                // grammaticalFeatures deriveCompound "per" rule:
-                new TestCase("de", "meter-per-hour", "masculine"),
-                new TestCase("af", "meter-per-hour", null),
-                // TODO(ICU-21494): determine whether list genders behave as follows,
-                // and implement proper getListGender support (covering more than just
-                // two genders):
-                // // gender rule for lists of people: de "neutral", fr "maleTaints"
-                // new TestCase("de", "day-and-hour-and-minute", "neuter"),
-                // new TestCase("de", "hour-and-minute", "feminine"),
-                // new TestCase("fr", "day-and-hour-and-minute", "masculine"),
-                // new TestCase("fr", "hour-and-minute", "feminine"),
+            new TestCase("fr", "hour", "feminine"),
+            new TestCase("fr", "day", "masculine"),
+            // grammaticalFeatures deriveCompound "per" rule takes the gender of the
+            // numerator unit:
+            new TestCase("de", "meter-per-hour", "masculine"),
+            new TestCase("fr", "meter-per-hour", "masculine"),
+            new TestCase("af", "meter-per-hour", null), // ungendered language
+            // French "times" takes gender from first value, German takes the
+            // second. Prefix and power does not have impact on gender for these
+            // languages:
+            new TestCase("de", "square-decimeter-square-second", "feminine"),
+            new TestCase("fr", "square-decimeter-square-second", "masculine"),
+            // TODO(ICU-21494): determine whether list genders behave as follows,
+            // and implement proper getListGender support (covering more than just
+            // two genders):
+            // // gender rule for lists of people: de "neutral", fr "maleTaints"
+            // new TestCase("de", "day-and-hour-and-minute", "neuter"),
+            // new TestCase("de", "hour-and-minute", "feminine"),
+            // new TestCase("fr", "day-and-hour-and-minute", "masculine"),
+            // new TestCase("fr", "hour-and-minute", "feminine"),
         };
 
         LocalizedNumberFormatter formatter;
         FormattedNumber fn;
         for (TestCase t : cases) {
             // TODO(icu-units#140): make this work for more than just UnitWidth.FULL_NAME
+        //     formatter = NumberFormatter.with()
+        //                     .unit(MeasureUnit.forIdentifier(t.unitIdentifier))
+        //                     .locale(new ULocale(t.locale));
+        //     fn = formatter.format(1.1);
+        //     assertEquals("Testing gender with default width, unit: " + t.unitIdentifier +
+        //                      ", locale: " + t.locale,
+        //                  t.expectedGender, fn.getGender());
+
             formatter = NumberFormatter.with()
-                    .unit(MeasureUnit.forIdentifier(t.unitIdentifier))
-                    .unitWidth(UnitWidth.FULL_NAME)
-                    .locale(new ULocale(t.locale));
+                            .unit(MeasureUnit.forIdentifier(t.unitIdentifier))
+                            .unitWidth(UnitWidth.FULL_NAME)
+                            .locale(new ULocale(t.locale));
             fn = formatter.format(1.1);
-            assertEquals("Testing gender, unit: " + t.unitIdentifier +
-                            ", locale: " + t.locale,
-                    t.expectedGender, fn.getGender());
+            assertEquals("Testing gender with UnitWidth.FULL_NAME, unit: " + t.unitIdentifier +
+                             ", locale: " + t.locale,
+                         t.expectedGender, fn.getGender());
         }
 
         // Make sure getGender does not return garbage for genderless languages

@@ -2222,7 +2222,7 @@ void NumberFormatterApiTest::unitInflections() {
         // Testing inflection of mixed units:
         unf = NumberFormatter::with().unitWidth(UNUM_UNIT_WIDTH_FULL_NAME);
         skeleton = u"unit-width-full-name";
-        const UnitInflectionTestCase meterPerDayCases[] = {
+        const UnitInflectionTestCase testCases[] = {
             {"meter", "de", nullptr, 1, u"1 Meter"},
             {"meter", "de", "genitive", 1, u"1 Meters"},
             {"meter", "de", "dative", 2, u"2 Metern"},
@@ -2238,7 +2238,7 @@ void NumberFormatterApiTest::unitInflections() {
             {"meter-and-centimeter", "de", "dative", 1.1, u"1 Meter, 10 Zentimetern"},
             {"meter-and-centimeter", "de", "dative", 2.1, u"2 Metern, 10 Zentimetern"},
         };
-        runUnitInflectionsTestCases(unf, skeleton, meterPerDayCases, UPRV_LENGTHOF(meterPerDayCases),
+        runUnitInflectionsTestCases(unf, skeleton, testCases, UPRV_LENGTHOF(testCases),
                                     status);
     }
     // TODO: add a usage case that selects between preferences with different
