@@ -2066,6 +2066,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                 skel = "unit/" + unitIdentifier + " " + skeleton;
             } else {
                 unf = unf.unit(mu).unitDisplayCase(this.unitDisplayCase);
+                // No skeleton support for unitDisplayCase yet.
                 skel = null;
             }
             assertFormatSingle("\"" + skeleton + "\", locale=\"" + this.locale + "\", case=\"" +
@@ -2093,47 +2094,26 @@ public class NumberFormatterApiTest extends TestFmwk {
                 new UnitInflectionTestCase("percent", "ru", null, 1, "1 процент"),           // one
                 new UnitInflectionTestCase("percent", "ru", "genitive", 1, "1 процента"),    // one
             };
-
             for (UnitInflectionTestCase t : percentCases) {
                 t.runTest(unf, skeleton);
             }
         }
         {
-            // Testing "de" rules:
-            // <deriveComponent feature="case" structure="per" value0="compound" value1="accusative"/>
-            // <deriveComponent feature="plural" structure="per" value0="compound" value1="one"/>
-            //
-            // per-patterns use accusative, but happen to match nominative, so we're
-            // not testing value1 in the first rule above.
-
+            // General testing of inflection rules
             unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
             skeleton = "unit-width-full-name";
-            final UnitInflectionTestCase meterCases[] = {
+            final UnitInflectionTestCase testCases[] = {
+                // Check up on the basic values that the compound patterns below
+                // are derived from:
                 new UnitInflectionTestCase("meter", "de", null, 1, "1 Meter"),
                 new UnitInflectionTestCase("meter", "de", "genitive", 1, "1 Meters"),
                 new UnitInflectionTestCase("meter", "de", null, 2, "2 Meter"),
                 new UnitInflectionTestCase("meter", "de", "dative", 2, "2 Metern"),
-            };
-            for (UnitInflectionTestCase t : meterCases) {
-                t.runTest(unf, skeleton);
-            }
-
-            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit-width-full-name";
-            final UnitInflectionTestCase dayCases[] = {
                 new UnitInflectionTestCase("day", "de", null, 1, "1 Tag"),
                 new UnitInflectionTestCase("day", "de", "genitive", 1, "1 Tages"),
                 new UnitInflectionTestCase("day", "de", null, 2, "2 Tage"),
                 new UnitInflectionTestCase("day", "de", "dative", 2, "2 Tagen"),
-            };
-            for (UnitInflectionTestCase t : dayCases) {
-                t.runTest(unf, skeleton);
-            }
-
-            // Day has a perUnitPattern
-            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit-width-full-name";
-            final UnitInflectionTestCase meterPerDayCases[] = {
+                // Day has a perUnitPattern
                 new UnitInflectionTestCase("meter-per-day", "de", null, 1, "1 Meter pro Tag"),
                 new UnitInflectionTestCase("meter-per-day", "de", "genitive", 1, "1 Meters pro Tag"),
                 new UnitInflectionTestCase("meter-per-day", "de", null, 2, "2 Meter pro Tag"),
@@ -2141,18 +2121,10 @@ public class NumberFormatterApiTest extends TestFmwk {
                 // testing code path that falls back to "root" but does not inflect:
                 new UnitInflectionTestCase("meter-per-day", "af", null, 1, "1 meter per dag"),
                 new UnitInflectionTestCase("meter-per-day", "af", "dative", 1, "1 meter per dag"),
-            };
-            for (UnitInflectionTestCase t : meterPerDayCases) {
-                t.runTest(unf, skeleton);
-            }
-
-            // Decade does not have a perUnitPattern at this time (CLDR 39 / ICU
-            // 69), so we can test for the correct form of the per part:
-            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit-width-full-name";
-            // Fragile test cases: these cases will break when whitespace is more
-            // consistently applied.
-            final UnitInflectionTestCase parsecPerDecadeCases[] = {
+                // Decade does not have a perUnitPattern at this time (CLDR 39 / ICU
+                // 69), so we can test for the correct form of the per part:
+                // Fragile test cases: these cases will break when whitespace is more
+                // consistently applied.
                 new UnitInflectionTestCase("parsec-per-decade", "de", null, 1,
                                            "1\u00A0Parsec pro Jahrzehnt"),
                 new UnitInflectionTestCase("parsec-per-decade", "de", "genitive", 1,
@@ -2162,7 +2134,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                 new UnitInflectionTestCase("parsec-per-decade", "de", "dative", 2,
                                            "2 Parsec pro Jahrzehnt"),
             };
-            for (UnitInflectionTestCase t : parsecPerDecadeCases) {
+            for (UnitInflectionTestCase t : testCases) {
                 t.runTest(unf, skeleton);
             }
         }

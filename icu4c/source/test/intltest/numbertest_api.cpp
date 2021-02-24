@@ -2144,7 +2144,7 @@ void NumberFormatterApiTest::unitInflections() {
         // General testing of inflection rules
         unf = NumberFormatter::with().unitWidth(UNUM_UNIT_WIDTH_FULL_NAME);
         skeleton = u"unit-width-full-name";
-        const UnitInflectionTestCase meterCases[] = {
+        const UnitInflectionTestCase testCases[] = {
             // Check up on the basic values that the compound patterns below are
             // derived from:
             {"meter", "de", nullptr, 1, u"1 Meter"},
@@ -2216,7 +2216,7 @@ void NumberFormatterApiTest::unitInflections() {
             {"square-decimeter-square-second", "fr", nullptr, 1, u"1\u00A0décimètre carré-seconde carrée"},
             {"square-decimeter-square-second", "fr", nullptr, 2, u"2\u00A0décimètres carrés-secondes carrées"},
         };
-        runUnitInflectionsTestCases(unf, skeleton, meterCases, UPRV_LENGTHOF(meterCases), status);
+        runUnitInflectionsTestCases(unf, skeleton, testCases, UPRV_LENGTHOF(testCases), status);
     }
     {
         // Testing inflection of mixed units:
