@@ -2103,22 +2103,19 @@ void NumberFormatterApiTest::runUnitInflectionsTestCases(UnlocalizedNumberFormat
         };
         UnicodeString skelString = UnicodeString("unit/") + t.unitIdentifier + u" " + skeleton;
         const UChar *skel;
-        const UChar *cSkel;
         if (t.unitDisplayCase == nullptr || t.unitDisplayCase[0] == 0) {
             unf = unf.unit(mu).unitDisplayCase("");
             skel = skelString.getTerminatedBuffer();
-            cSkel = skelString.getTerminatedBuffer();
         } else {
             unf = unf.unit(mu).unitDisplayCase(t.unitDisplayCase);
             // No skeleton support for unitDisplayCase yet.
             skel = nullptr;
-            cSkel = nullptr;
         }
         assertFormatSingle((UnicodeString("Unit: \"") + t.unitIdentifier + ("\", \"") + skeleton +
                             u"\", locale=\"" + t.locale + u"\", case=\"" +
                             (t.unitDisplayCase ? t.unitDisplayCase : "") + u"\", value=" + t.value)
                                .getTerminatedBuffer(),
-                           skel, cSkel, unf, Locale(t.locale), t.value, t.expected);
+                           skel, skel, unf, Locale(t.locale), t.value, t.expected);
         status.assertSuccess();
     }
 }

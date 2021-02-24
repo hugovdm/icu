@@ -536,22 +536,21 @@ public class NumberFormatterApiTest extends TestFmwk {
                 "0.0088 meters",
                 "0 meters");
 
-        // // TODO(ICU-20941): Support formatting for not-built-in units
-        // assertFormatDescending(
-        //         "Hectometers",
-        //         "measure-unit/length-hectometer",
-        //         "unit/hectometer",
-        //         NumberFormatter.with().unit(MeasureUnit.forIdentifier("hectometer")),
-        //         ULocale.ENGLISH,
-        //         "87,650 hm",
-        //         "8,765 ham",
-        //         "876.5 hm",
-        //         "87.65 hm",
-        //         "8.765 hm",
-        //         "0.8765 hm",
-        //         "0.08765 hm",
-        //         "0.008765 hm",
-        //         "0 hm");
+        assertFormatDescending(
+                "Hectometers",
+                "measure-unit/length-hectometer",
+                "unit/hectometer",
+                NumberFormatter.with().unit(MeasureUnit.forIdentifier("hectometer")),
+                ULocale.ENGLISH,
+                "87,650 hm",
+                "8,765 ham",
+                "876.5 hm",
+                "87.65 hm",
+                "8.765 hm",
+                "0.8765 hm",
+                "0.08765 hm",
+                "0.008765 hm",
+                "0 hm");
 
         assertFormatSingleMeasure(
                 "Meters with Measure Input",
@@ -673,16 +672,15 @@ public class NumberFormatterApiTest extends TestFmwk {
                 5,
                 "5 a\u00F1os");
 
-        // TODO(ICU-20941): arbitrary unit formatting
-        // assertFormatSingle(
-        //         "Hubble Constant",
-        //         "unit/kilometer-per-megaparsec-second",
-        //         "unit/kilometer-per-megaparsec-second",
-        //         NumberFormatter.with()
-        //                 .unit(MeasureUnit.forIdentifier("kilometer-per-megaparsec-second")),
-        //         new ULocale("en"),
-        //         74, // Approximate 2019-03-18 measurement
-        //         "74 km/s.Mpc");
+        assertFormatSingle(
+                "Hubble Constant",
+                "unit/kilometer-per-megaparsec-second",
+                "unit/kilometer-per-megaparsec-second",
+                NumberFormatter.with()
+                        .unit(MeasureUnit.forIdentifier("kilometer-per-megaparsec-second")),
+                new ULocale("en"),
+                74, // Approximate 2019-03-18 measurement
+                "74 km/s.Mpc");
 
         assertFormatSingle(
                 "Mixed unit",
@@ -1022,7 +1020,8 @@ public class NumberFormatterApiTest extends TestFmwk {
 
         try {
             nf.format(2.4d);
-            fail("Expected failure, got: " + nf.format(2.4d) + ".");
+            fail("Expected failure for unit/furlong-pascal per-unit/length-meter, got: " +
+                 nf.format(2.4d) + ".");
         } catch (UnsupportedOperationException e) {
             // Pass
         }
@@ -1051,6 +1050,124 @@ public class NumberFormatterApiTest extends TestFmwk {
                 new ULocale("en-GB"),
                 2.4,
                 "2.4 m/s\u00B2");
+    }
+
+    @Test
+    public void unitArbitraryMeasureUnits() {
+        // TODO: fix after data bug is resolved? See CLDR-14510.
+        //     assertFormatSingle(
+        //             "Binary unit prefix: kibibyte",
+        //             "unit/kibibyte",
+        //             "unit/kibibyte",
+        //             NumberFormatter.with().unit(MeasureUnit.forIdentifier("kibibyte")),
+        //             new ULocale("en-GB"),
+        //             2.4,
+        //             "2.4 KiB");
+
+        assertFormatSingle("Binary unit prefix: kibibyte full-name",
+                           "unit/kibibyte unit-width-full-name", "unit/kibibyte unit-width-full-name",
+                           NumberFormatter.with()
+                               .unit(MeasureUnit.forIdentifier("kibibyte"))
+                               .unitWidth(UnitWidth.FULL_NAME),
+                           new ULocale("en-GB"), 2.4, "2.4 kibibytes");
+
+        assertFormatSingle("Binary unit prefix: kibibyte full-name",
+                           "unit/kibibyte unit-width-full-name", "unit/kibibyte unit-width-full-name",
+                           NumberFormatter.with()
+                               .unit(MeasureUnit.forIdentifier("kibibyte"))
+                               .unitWidth(UnitWidth.FULL_NAME),
+                           new ULocale("de"), 2.4, "2,4 Kibibyte");
+
+        assertFormatSingle("Binary prefix for non-digital units: kibimeter", "unit/kibimeter",
+                           "unit/kibimeter",
+                           NumberFormatter.with().unit(MeasureUnit.forIdentifier("kibimeter")),
+                           new ULocale("en-GB"), 2.4, "2.4 Kim");
+
+        assertFormatSingle("SI prefix falling back to root: microohm", "unit/microohm", "unit/microohm",
+                           NumberFormatter.with().unit(MeasureUnit.forIdentifier("microohm")),
+                           new ULocale("de-CH"), 2.4, "2.4 μΩ");
+
+        assertFormatSingle("de-CH fallback to de: microohm unit-width-full-name",
+                           "unit/microohm unit-width-full-name", "unit/microohm unit-width-full-name",
+                           NumberFormatter.with()
+                               .unit(MeasureUnit.forIdentifier("microohm"))
+                               .unitWidth(UnitWidth.FULL_NAME),
+                           new ULocale("de-CH"), 2.4, "2.4\u00A0Mikroohm");
+
+        assertFormatSingle("No prefixes, 'times' pattern: joule-furlong", "unit/joule-furlong",
+                           "unit/joule-furlong",
+                           NumberFormatter.with().unit(MeasureUnit.forIdentifier("joule-furlong")),
+                           new ULocale("en"), 2.4, "2.4 J⋅fur");
+
+        assertFormatSingle("No numeratorUnitString: per-second", "unit/per-second", "unit/per-second",
+                           NumberFormatter.with().unit(MeasureUnit.forIdentifier("per-second")),
+                           new ULocale("de-CH"), 2.4, "2.4/s");
+
+        assertFormatSingle("No numeratorUnitString: per-second unit-width-full-name",
+                           "unit/per-second unit-width-full-name",
+                           "unit/per-second unit-width-full-name",
+                           NumberFormatter.with()
+                               .unit(MeasureUnit.forIdentifier("per-second"))
+                               .unitWidth(UnitWidth.FULL_NAME),
+                           new ULocale("de-CH"), 2.4, "2.4 pro Sekunde");
+
+        assertFormatSingle(
+            "Prefix in the denominator: nanogram-per-picobarrel", "unit/nanogram-per-picobarrel",
+            "unit/nanogram-per-picobarrel",
+            NumberFormatter.with().unit(MeasureUnit.forIdentifier("nanogram-per-picobarrel")),
+            new ULocale("en-ZA"), 2.4, "2,4 ng/pbbl");
+
+        assertFormatSingle("Prefix in the denominator: nanogram-per-picobarrel unit-width-full-name",
+                           "unit/nanogram-per-picobarrel unit-width-full-name",
+                           "unit/nanogram-per-picobarrel unit-width-full-name",
+                           NumberFormatter.with()
+                               .unit(MeasureUnit.forIdentifier("nanogram-per-picobarrel"))
+                               .unitWidth(UnitWidth.FULL_NAME),
+                           new ULocale("en-ZA"), 2.4, "2,4 nanograms per picobarrel");
+
+        // Valid MeasureUnit, but unformattable, because we only have patterns for
+        // pow2 and pow3 at this time:
+        LocalizedNumberFormatter lnf = NumberFormatter.with()
+                                           .unit(MeasureUnit.forIdentifier("pow4-mile"))
+                                           .unitWidth(UnitWidth.FULL_NAME)
+                                           .locale(new ULocale("en-ZA"));
+        try {
+            lnf.format(1);
+            fail("Expected failure for pow4-mile, got: " + lnf.format(1) + ".");
+        } catch (UnsupportedOperationException e) { // FIXME: U_RESOURCE_TYPE_MISMATCH
+            // pass
+        }
+
+        assertFormatSingle(
+            "kibijoule-foot-per-cubic-gigafurlong-square-second unit-width-full-name",
+            "unit/kibijoule-foot-per-cubic-gigafurlong-square-second unit-width-full-name",
+            "unit/kibijoule-foot-per-cubic-gigafurlong-square-second unit-width-full-name",
+            NumberFormatter.with()
+                .unit(MeasureUnit.forIdentifier("kibijoule-foot-per-cubic-gigafurlong-square-second"))
+                .unitWidth(UnitWidth.FULL_NAME),
+            new ULocale("en-ZA"), 2.4, "2,4 kibijoule-feet per cubic gigafurlong-square second");
+
+        assertFormatSingle(
+            "kibijoule-foot-per-cubic-gigafurlong-square-second unit-width-full-name",
+            "unit/kibijoule-foot-per-cubic-gigafurlong-square-second unit-width-full-name",
+            "unit/kibijoule-foot-per-cubic-gigafurlong-square-second unit-width-full-name",
+            NumberFormatter.with()
+                .unit(MeasureUnit.forIdentifier("kibijoule-foot-per-cubic-gigafurlong-square-second"))
+                .unitWidth(UnitWidth.FULL_NAME),
+            new ULocale("de-CH"), 2.4, "2.4\u00A0Kibijoule⋅Fuss pro Kubikgigafurlong⋅Quadratsekunde");
+
+        // TODO(ICU-21504): We want to be able to format this, but "100-kilometer"
+        // is not yet supported when it's not part of liter-per-100-kilometer:
+        lnf = NumberFormatter.with()
+                  .unit(MeasureUnit.forIdentifier("kilowatt-hour-per-100-kilometer"))
+                  .unitWidth(UnitWidth.FULL_NAME)
+                  .locale(new ULocale("en-ZA"));
+        try {
+            lnf.format(1);
+            fail("Expected failure for kilowatt-hour-per-100-kilometer, got: " + lnf.format(1) + ".");
+        } catch (UnsupportedOperationException e) {
+            // pass
+        }
     }
 
     // TODO: merge these tests into NumberSkeletonTest.java instead of here:
@@ -1923,45 +2040,38 @@ public class NumberFormatterApiTest extends TestFmwk {
     }
 
     public static class UnitInflectionTestCase {
+        public final String unitIdentifier;
         public final String locale;
         public final String unitDisplayCase;
         public final double value;
         public final String expected;
 
-        UnitInflectionTestCase(String locale, String unitDisplayCase, double value, String expected) {
+        UnitInflectionTestCase(String unitIdentifier,
+                               String locale,
+                               String unitDisplayCase,
+                               double value,
+                               String expected) {
+            this.unitIdentifier = unitIdentifier;
             this.locale = locale;
             this.unitDisplayCase = unitDisplayCase;
             this.value = value;
             this.expected = expected;
         }
 
-        public static void runUnitInflectionsTestCases(UnlocalizedNumberFormatter unf,
-                                                       String skeleton,
-                                                       String conciseSkeleton,
-                                                       UnitInflectionTestCase cases[]) {
-            for (UnitInflectionTestCase t : cases) {
-                String skel;
-                String cSkel;
-                if (t.unitDisplayCase == null || t.unitDisplayCase.isEmpty()) {
-                    unf = unf.unitDisplayCase("");
-                    skel = skeleton;
-                    cSkel = conciseSkeleton;
-                } else {
-                    unf = unf.unitDisplayCase(t.unitDisplayCase);
-                    skel = null;
-                    cSkel = null;
-                }
-
-                assertFormatSingle(
-                        "\"" + skeleton + "\", locale=\"" + t.locale + "\", case=\"" +
-                                (t.unitDisplayCase != null ? t.unitDisplayCase : "")
-                                + "\", value=" + t.value,
-                        skel,
-                        cSkel,
-                        unf, new ULocale(t.locale),
-                        t.value,
-                        t.expected);
+        public void runTest(UnlocalizedNumberFormatter unf, String skeleton) {
+            MeasureUnit mu = MeasureUnit.forIdentifier(unitIdentifier);
+            String skel;
+            if (this.unitDisplayCase == null || this.unitDisplayCase.isEmpty()) {
+                unf = unf.unit(mu).unitDisplayCase("");
+                skel = "unit/" + unitIdentifier + " " + skeleton;
+            } else {
+                unf = unf.unit(mu).unitDisplayCase(this.unitDisplayCase);
+                skel = null;
             }
+            assertFormatSingle("\"" + skeleton + "\", locale=\"" + this.locale + "\", case=\"" +
+                                   (this.unitDisplayCase != null ? this.unitDisplayCase : "") +
+                                   "\", value=" + this.value,
+                               skel, skel, unf, new ULocale(this.locale), this.value, this.expected);
         }
     }
 
@@ -1969,26 +2079,23 @@ public class NumberFormatterApiTest extends TestFmwk {
     public void unitInflections() {
         UnlocalizedNumberFormatter unf;
         String skeleton;
-        String conciseSkeleton;
 
         {
             // Simple inflected form test - test case based on the example in CLDR's
             // grammaticalFeatures.xml
-            unf = NumberFormatter.with().unit(NoUnit.PERCENT).unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "percent unit-width-full-name";
-            conciseSkeleton = "% unit-width-full-name";
+            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
+            skeleton = "unit-width-full-name";
             final UnitInflectionTestCase percentCases[] = {
-                    new UnitInflectionTestCase("ru", null, 10, "10 процентов"),    // many
-                    new UnitInflectionTestCase("ru", "genitive", 10, "10 процентов"), // many
-                    new UnitInflectionTestCase("ru", null, 33, "33 процента"),     // few
-                    new UnitInflectionTestCase("ru", "genitive", 33, "33 процентов"), // few
-                    new UnitInflectionTestCase("ru", null, 1, "1 процент"),        // one
-                    new UnitInflectionTestCase("ru", "genitive", 1, "1 процента"),    // one
+                new UnitInflectionTestCase("percent", "ru", null, 10, "10 процентов"),       // many
+                new UnitInflectionTestCase("percent", "ru", "genitive", 10, "10 процентов"), // many
+                new UnitInflectionTestCase("percent", "ru", null, 33, "33 процента"),        // few
+                new UnitInflectionTestCase("percent", "ru", "genitive", 33, "33 процентов"), // few
+                new UnitInflectionTestCase("percent", "ru", null, 1, "1 процент"),           // one
+                new UnitInflectionTestCase("percent", "ru", "genitive", 1, "1 процента"),    // one
             };
 
-            for (UnitInflectionTestCase testCase :
-                    percentCases) {
-                UnitInflectionTestCase.runUnitInflectionsTestCases(unf, skeleton, conciseSkeleton, percentCases);
+            for (UnitInflectionTestCase t : percentCases) {
+                t.runTest(unf, skeleton);
             }
         }
         {
@@ -1999,85 +2106,92 @@ public class NumberFormatterApiTest extends TestFmwk {
             // per-patterns use accusative, but happen to match nominative, so we're
             // not testing value1 in the first rule above.
 
-            unf = NumberFormatter.with().unit(MeasureUnit.METER).unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit/meter unit-width-full-name";
-            conciseSkeleton = "unit/meter unit-width-full-name";
+            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
+            skeleton = "unit-width-full-name";
             final UnitInflectionTestCase meterCases[] = {
-                    new UnitInflectionTestCase("de", null, 1, "1 Meter"),
-                    new UnitInflectionTestCase("de", "genitive", 1, "1 Meters"),
-                    new UnitInflectionTestCase("de", null, 2, "2 Meter"),
-                    new UnitInflectionTestCase("de", "dative", 2, "2 Metern"),
+                new UnitInflectionTestCase("meter", "de", null, 1, "1 Meter"),
+                new UnitInflectionTestCase("meter", "de", "genitive", 1, "1 Meters"),
+                new UnitInflectionTestCase("meter", "de", null, 2, "2 Meter"),
+                new UnitInflectionTestCase("meter", "de", "dative", 2, "2 Metern"),
             };
-            UnitInflectionTestCase.runUnitInflectionsTestCases(unf, skeleton, conciseSkeleton, meterCases);
+            for (UnitInflectionTestCase t : meterCases) {
+                t.runTest(unf, skeleton);
+            }
 
-            unf = NumberFormatter.with().unit(MeasureUnit.DAY).unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit/day unit-width-full-name";
-            conciseSkeleton = "unit/day unit-width-full-name";
+            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
+            skeleton = "unit-width-full-name";
             final UnitInflectionTestCase dayCases[] = {
-                    new UnitInflectionTestCase("de", null, 1, "1 Tag"),
-                    new UnitInflectionTestCase("de", "genitive", 1, "1 Tages"),
-                    new UnitInflectionTestCase("de", null, 2, "2 Tage"),
-                    new UnitInflectionTestCase("de", "dative", 2, "2 Tagen"),
+                new UnitInflectionTestCase("day", "de", null, 1, "1 Tag"),
+                new UnitInflectionTestCase("day", "de", "genitive", 1, "1 Tages"),
+                new UnitInflectionTestCase("day", "de", null, 2, "2 Tage"),
+                new UnitInflectionTestCase("day", "de", "dative", 2, "2 Tagen"),
             };
-            UnitInflectionTestCase.runUnitInflectionsTestCases(unf, skeleton, conciseSkeleton, dayCases);
+            for (UnitInflectionTestCase t : dayCases) {
+                t.runTest(unf, skeleton);
+            }
 
             // Day has a perUnitPattern
-            unf = NumberFormatter.with()
-                    .unit(MeasureUnit.forIdentifier("meter-per-day"))
-                    .unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit/meter-per-day unit-width-full-name";
-            conciseSkeleton = "unit/meter-per-day unit-width-full-name";
+            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
+            skeleton = "unit-width-full-name";
             final UnitInflectionTestCase meterPerDayCases[] = {
-                    new UnitInflectionTestCase("de", null, 1, "1 Meter pro Tag"),
-                    new UnitInflectionTestCase("de", "genitive", 1, "1 Meters pro Tag"),
-                    new UnitInflectionTestCase("de", null, 2, "2 Meter pro Tag"),
-                    new UnitInflectionTestCase("de", "dative", 2, "2 Metern pro Tag"),
-                    // testing code path that falls back to "root" but does not inflect:
-                    new UnitInflectionTestCase("af", null, 1, "1 meter per dag"),
-                    new UnitInflectionTestCase("af", "dative", 1, "1 meter per dag"),
+                new UnitInflectionTestCase("meter-per-day", "de", null, 1, "1 Meter pro Tag"),
+                new UnitInflectionTestCase("meter-per-day", "de", "genitive", 1, "1 Meters pro Tag"),
+                new UnitInflectionTestCase("meter-per-day", "de", null, 2, "2 Meter pro Tag"),
+                new UnitInflectionTestCase("meter-per-day", "de", "dative", 2, "2 Metern pro Tag"),
+                // testing code path that falls back to "root" but does not inflect:
+                new UnitInflectionTestCase("meter-per-day", "af", null, 1, "1 meter per dag"),
+                new UnitInflectionTestCase("meter-per-day", "af", "dative", 1, "1 meter per dag"),
             };
-            UnitInflectionTestCase.runUnitInflectionsTestCases(unf, skeleton, conciseSkeleton, meterPerDayCases);
+            for (UnitInflectionTestCase t : meterPerDayCases) {
+                t.runTest(unf, skeleton);
+            }
 
             // Decade does not have a perUnitPattern at this time (CLDR 39 / ICU
             // 69), so we can test for the correct form of the per part:
-            unf = NumberFormatter.with()
-                    .unit(MeasureUnit.forIdentifier("parsec-per-decade"))
-                    .unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit/parsec-per-decade unit-width-full-name";
-            conciseSkeleton = "unit/parsec-per-decade unit-width-full-name";
+            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
+            skeleton = "unit-width-full-name";
             // Fragile test cases: these cases will break when whitespace is more
             // consistently applied.
             final UnitInflectionTestCase parsecPerDecadeCases[] = {
-                    new UnitInflectionTestCase("de", null, 1, "1\u00A0Parsec pro Jahrzehnt"),
-                    new UnitInflectionTestCase("de", "genitive", 1, "1 Parsec pro Jahrzehnt"),
-                    new UnitInflectionTestCase("de", null, 2, "2\u00A0Parsec pro Jahrzehnt"),
-                    new UnitInflectionTestCase("de", "dative", 2, "2 Parsec pro Jahrzehnt"),
+                new UnitInflectionTestCase("parsec-per-decade", "de", null, 1,
+                                           "1\u00A0Parsec pro Jahrzehnt"),
+                new UnitInflectionTestCase("parsec-per-decade", "de", "genitive", 1,
+                                           "1 Parsec pro Jahrzehnt"),
+                new UnitInflectionTestCase("parsec-per-decade", "de", null, 2,
+                                           "2\u00A0Parsec pro Jahrzehnt"),
+                new UnitInflectionTestCase("parsec-per-decade", "de", "dative", 2,
+                                           "2 Parsec pro Jahrzehnt"),
             };
-            UnitInflectionTestCase.runUnitInflectionsTestCases(unf, skeleton, conciseSkeleton, parsecPerDecadeCases);
+            for (UnitInflectionTestCase t : parsecPerDecadeCases) {
+                t.runTest(unf, skeleton);
+            }
         }
         {
             // Testing inflection of mixed units:
-            unf = NumberFormatter.with()
-                    .unit(MeasureUnit.forIdentifier("meter-and-centimeter"))
-                    .unitWidth(UnitWidth.FULL_NAME);
-            skeleton = "unit/meter-and-centimeter unit-width-full-name";
-            conciseSkeleton = "unit/meter-and-centimeter unit-width-full-name";
+            unf = NumberFormatter.with().unitWidth(UnitWidth.FULL_NAME);
+            skeleton = "unit-width-full-name";
             final UnitInflectionTestCase meterPerDayCases[] = {
-                    // TODO(CLDR-14502): check that these inflections are correct, and
-                    // whether CLDR needs any rules for them (presumably CLDR spec
-                    // should mention it, if it's a consistent rule):
-                    new UnitInflectionTestCase("de", null, 1.01, "1 Meter, 1 Zentimeter"),
-                    new UnitInflectionTestCase("de", "genitive", 1.01, "1 Meters, 1 Zentimeters"),
-                    new UnitInflectionTestCase("de", "genitive", 1.1, "1 Meters, 10 Zentimeter"),
-                    new UnitInflectionTestCase("de", "dative", 1.1, "1 Meter, 10 Zentimetern"),
-                    new UnitInflectionTestCase("de", "dative", 2.1, "2 Metern, 10 Zentimetern"),
+                // TODO(CLDR-14502): check that these inflections are correct, and
+                // whether CLDR needs any rules for them (presumably CLDR spec
+                // should mention it, if it's a consistent rule):
+                new UnitInflectionTestCase("meter-and-centimeter", "de", null, 1.01,
+                                           "1 Meter, 1 Zentimeter"),
+                new UnitInflectionTestCase("meter-and-centimeter", "de", "genitive", 1.01,
+                                           "1 Meters, 1 Zentimeters"),
+                new UnitInflectionTestCase("meter-and-centimeter", "de", "genitive", 1.1,
+                                           "1 Meters, 10 Zentimeter"),
+                new UnitInflectionTestCase("meter-and-centimeter", "de", "dative", 1.1,
+                                           "1 Meter, 10 Zentimetern"),
+                new UnitInflectionTestCase("meter-and-centimeter", "de", "dative", 2.1,
+                                           "2 Metern, 10 Zentimetern"),
             };
-            UnitInflectionTestCase.runUnitInflectionsTestCases(unf, skeleton, conciseSkeleton, meterPerDayCases);
+            for (UnitInflectionTestCase t : meterPerDayCases) {
+                t.runTest(unf, skeleton);
+            }
         }
         // TODO: add a usage case that selects between preferences with different
         // genders (e.g. year, month, day, hour).
         // TODO: look at "↑↑↑" cases: check that inheritance is done right.
-
     }
 
     @Test

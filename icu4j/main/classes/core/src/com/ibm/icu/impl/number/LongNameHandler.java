@@ -389,9 +389,8 @@ public class LongNameHandler
         if (unit.getType() == null || perUnit.getType() == null) {
             // TODO(ICU-20941): Unsanctioned unit. Not yet fully supported. Set an
             // error code.
-            throw new UnsupportedOperationException(
-                "Unsanctioned units, not yet supported: " + unit.getIdentifier() + "/" +
-                perUnit.getIdentifier());
+            throw new UnsupportedOperationException("Unsanctioned units, not yet supported: " + unit +
+                                                    "/" + perUnit);
         }
 
          DerivedComponents derivedPerCases = new DerivedComponents(locale, "case", "per", unitDisplayCase);
