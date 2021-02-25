@@ -342,40 +342,45 @@ public class LongNameHandler
                                  String feature,
                                  String structure,
                                  String compoundValue) {
-            ICUResourceBundle derivationsBundle =
-                    (ICUResourceBundle) UResourceBundle
-                            .getBundleInstance(ICUData.ICU_BASE_NAME, "grammaticalFeatures");
-            derivationsBundle = (ICUResourceBundle) derivationsBundle.get("grammaticalData");
-            derivationsBundle = (ICUResourceBundle) derivationsBundle.get("derivations");
-
-            ICUResourceBundle stackBundle;
             try {
-                // TODO: use standard normal locale resolution algorithms rather than just grabbing language:
-                stackBundle = (ICUResourceBundle) derivationsBundle.get(locale.getLanguage());
-            } catch (MissingResourceException e) {
-                stackBundle = (ICUResourceBundle) derivationsBundle.get("root");
-            }
+                ICUResourceBundle derivationsBundle =
+                    (ICUResourceBundle)UResourceBundle.getBundleInstance(ICUData.ICU_BASE_NAME,
+                                                                         "grammaticalFeatures");
+                derivationsBundle = (ICUResourceBundle)derivationsBundle.get("grammaticalData");
+                derivationsBundle = (ICUResourceBundle)derivationsBundle.get("derivations");
 
-            stackBundle = (ICUResourceBundle) stackBundle.get("component");
-            stackBundle = (ICUResourceBundle) stackBundle.get(feature);
-            stackBundle = (ICUResourceBundle) stackBundle.get(structure);
+                ICUResourceBundle stackBundle;
+                try {
+                    // TODO: use standard normal locale resolution algorithms rather than just grabbing
+                    // language:
+                    stackBundle = (ICUResourceBundle)derivationsBundle.get(locale.getLanguage());
+                } catch (MissingResourceException e) {
+                    stackBundle = (ICUResourceBundle)derivationsBundle.get("root");
+                }
 
-            String value = stackBundle.getString(0);
-            if (value.compareTo("compound") == 0) {
-                this.value0 = compoundValue;
-            } else {
-                this.value0 = value;
-            }
+                stackBundle = (ICUResourceBundle)stackBundle.get("component");
+                stackBundle = (ICUResourceBundle)stackBundle.get(feature);
+                stackBundle = (ICUResourceBundle)stackBundle.get(structure);
 
-            value = stackBundle.getString(1);
-            if (value.compareTo("compound") == 0) {
-                this.value1 = compoundValue;
-            } else {
-                this.value1 = value;
+                String value = stackBundle.getString(0);
+                if (value.compareTo("compound") == 0) {
+                    this.value0 = compoundValue;
+                } else {
+                    this.value0 = value;
+                }
+
+                value = stackBundle.getString(1);
+                if (value.compareTo("compound") == 0) {
+                    this.value1 = compoundValue;
+                } else {
+                    this.value1 = value;
+                }
+            } catch (Exception e) {
+                // Fall back to uninflected.
             }
         }
 
-        public final String value0, value1;
+        public String value0 = "", value1 = "";
     }
 
     private static LongNameHandler forArbitraryUnit(ULocale locale,
