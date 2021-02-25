@@ -174,7 +174,7 @@ public class LongNameHandler
         }
     }
 
-    private static String getPerUnitFormat(ULocale locale, UnitWidth width) {
+    private static String getCompoundValue(String compoundKey, ULocale locale, UnitWidth width) {
         ICUResourceBundle resource;
         resource = (ICUResourceBundle) UResourceBundle.getBundleInstance(ICUData.ICU_UNIT_BASE_NAME,
                 locale);
@@ -185,15 +185,108 @@ public class LongNameHandler
         } else if (width == UnitWidth.SHORT) {
             key.append("Short");
         }
-        key.append("/compound/per");
+        key.append("/compound/");
+        key.append(compoundKey);
         try {
             return resource.getStringWithFallback(key.toString());
         } catch (MissingResourceException e) {
+            // FIXME(review): catch all exceptions? Might other issues happen?
             throw new IllegalArgumentException(
                     "Could not find x-per-y format for " + locale + ", width " + width);
+            // FIXME(review): how does Java's fallback process differ from
+            // ICU4C's? In ICU4C we have code for explicitly falling back to
+            // unitsShort.
         }
     }
 
+    /**
+     * Loads and applies deriveComponent rules from CLDR's
+     * grammaticalFeatures.xml.
+     * <p>
+     * Consider a deriveComponent rule that looks like this:
+     * <pre>
+     *   &lt;deriveComponent feature="case" structure="per" value0="compound" value1="nominative"/&gt;
+     * </pre>
+     * Instantiating an instance as follows:
+     * <pre>
+     *   DerivedComponents d(loc, "case", "per");
+     * </pre>
+     * <p>
+     * Applying the rule in the XML element above, <code>d.value0("foo")</code>
+     * will be "foo", and <code>d.value1("foo")</code> will be "nominative".
+     * <p>
+     * In case of any kind of failure, value0() and value1() will simply return
+     * "".
+     */
+    private static class DerivedComponents {
+        /**
+         * Constructor.
+         */
+        DerivedComponents(ULocale locale, String feature, String structure) {
+            try {
+                ICUResourceBundle derivationsBundle =
+                    (ICUResourceBundle)UResourceBundle.getBundleInstance(ICUData.ICU_BASE_NAME,
+                                                                         "grammaticalFeatures");
+                derivationsBundle = (ICUResourceBundle)derivationsBundle.get("grammaticalData");
+                derivationsBundle = (ICUResourceBundle)derivationsBundle.get("derivations");
+
+                ICUResourceBundle stackBundle;
+                try {
+                    // TODO: use standard normal locale resolution algorithms rather than just grabbing
+                    // language:
+                    stackBundle = (ICUResourceBundle)derivationsBundle.get(locale.getLanguage());
+                } catch (MissingResourceException e) {
+                    stackBundle = (ICUResourceBundle)derivationsBundle.get("root");
+                }
+
+                stackBundle = (ICUResourceBundle)stackBundle.get("component");
+                stackBundle = (ICUResourceBundle)stackBundle.get(feature);
+                stackBundle = (ICUResourceBundle)stackBundle.get(structure);
+
+                String value = stackBundle.getString(0);
+                if (value.compareTo("compound") == 0) {
+                    this.value0 = null;
+                } else {
+                    this.value0 = value;
+                }
+
+                value = stackBundle.getString(1);
+                if (value.compareTo("compound") == 0) {
+                    this.value1 = null;
+                } else {
+                    this.value1 = value;
+                }
+            } catch (Exception e) {
+                // Fall back to uninflected.
+            }
+        }
+
+        // FIXME(review): is "getValue0" more idiomatic?
+        String value0(String compoundValue) {
+            return (this.value0 != null) ? this.value0 : compoundValue;
+        }
+
+        // FIXME(review): is "getValue1" more idiomatic?
+        String value1(String compoundValue) {
+            return (this.value1 != null) ? this.value1 : compoundValue;
+        }
+
+        private String value0 = "", value1 = "";
+    }
+
+    // TODO(icu-units#28): test somehow? Associate with an ICU ticket for adding
+    // testsuite support for testing with synthetic data?
+    /**
+     * Loads and returns the value in rules that look like these:
+     *
+     * <deriveCompound feature="gender" structure="per" value="0"/>
+     * <deriveCompound feature="gender" structure="times" value="1"/>
+     *
+     * Currently a fake example, but spec compliant:
+     * <deriveCompound feature="gender" structure="power" value="feminine"/>
+     *
+     * NOTE: If U_FAILURE(status), returns an empty string.
+     */
     private static String getDeriveCompoundRule(ULocale locale, String feature, String structure) {
         ICUResourceBundle derivationsBundle =
                 (ICUResourceBundle) UResourceBundle
@@ -316,81 +409,6 @@ public class LongNameHandler
         return result;
     }
 
-    /**
-     * Loads and applies deriveComponent rules from CLDR's
-     * grammaticalFeatures.xml.
-     * <p>
-     * Consider a deriveComponent rule that looks like this:
-     * <pre>
-     *   &lt;deriveComponent feature="case" structure="per" value0="compound" value1="nominative"/&gt;
-     * </pre>
-     * Instantiating an instance as follows:
-     * <pre>
-     *   DerivedComponents d(loc, "case", "per");
-     * </pre>
-     * <p>
-     * Applying the rule in the XML element above, <code>d.value0("foo")</code>
-     * will be "foo", and <code>d.value1("foo")</code> will be "nominative".
-     * <p>
-     * In case of any kind of failure, value0() and value1() will simply return
-     * "".
-     */
-    private static class DerivedComponents {
-        /**
-         * Constructor.
-         */
-        DerivedComponents(ULocale locale, String feature, String structure) {
-            try {
-                ICUResourceBundle derivationsBundle =
-                    (ICUResourceBundle)UResourceBundle.getBundleInstance(ICUData.ICU_BASE_NAME,
-                                                                         "grammaticalFeatures");
-                derivationsBundle = (ICUResourceBundle)derivationsBundle.get("grammaticalData");
-                derivationsBundle = (ICUResourceBundle)derivationsBundle.get("derivations");
-
-                ICUResourceBundle stackBundle;
-                try {
-                    // TODO: use standard normal locale resolution algorithms rather than just grabbing
-                    // language:
-                    stackBundle = (ICUResourceBundle)derivationsBundle.get(locale.getLanguage());
-                } catch (MissingResourceException e) {
-                    stackBundle = (ICUResourceBundle)derivationsBundle.get("root");
-                }
-
-                stackBundle = (ICUResourceBundle)stackBundle.get("component");
-                stackBundle = (ICUResourceBundle)stackBundle.get(feature);
-                stackBundle = (ICUResourceBundle)stackBundle.get(structure);
-
-                String value = stackBundle.getString(0);
-                if (value.compareTo("compound") == 0) {
-                    this.value0 = null;
-                } else {
-                    this.value0 = value;
-                }
-
-                value = stackBundle.getString(1);
-                if (value.compareTo("compound") == 0) {
-                    this.value1 = null;
-                } else {
-                    this.value1 = value;
-                }
-            } catch (Exception e) {
-                // Fall back to uninflected.
-            }
-        }
-
-        // FIXME(review): is "getValue0" more idiomatic?
-        String value0(String compoundValue) {
-            return (this.value0 != null) ? this.value0 : compoundValue;
-        }
-
-        // FIXME(review): is "getValue1" more idiomatic?
-        String value1(String compoundValue) {
-            return (this.value1 != null) ? this.value1 : compoundValue;
-        }
-
-        private String value0 = "", value1 = "";
-    }
-
     private static LongNameHandler forArbitraryUnit(ULocale locale,
                                                     MeasureUnit unit,
                                                     MeasureUnit perUnit,
@@ -421,7 +439,7 @@ public class LongNameHandler
         if (secondaryData[PER_INDEX] != null) {
             perUnitFormat = secondaryData[PER_INDEX];
         } else {
-            String rawPerUnitFormat = getPerUnitFormat(locale, width);
+            String rawPerUnitFormat = getCompoundValue("per", locale, width);
             // rawPerUnitFormat is something like "{0}/{1}"; we need to substitute in the secondary unit.
             // TODO: Lots of thrashing. Improve?
             StringBuilder sb = new StringBuilder();
