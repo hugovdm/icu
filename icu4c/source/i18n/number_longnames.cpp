@@ -777,11 +777,6 @@ void LongNameHandler::forMeasureUnit(const Locale &loc,
     //
     // 1. If the unitId is empty or invalid, fail
     // 2. Put the unitId into normalized order
-    //
-    // We just need to check if it is a MeasureUnit this constructor handles:
-    // this constructor does not handle mixed units
-    U_ASSERT(uprv_strcmp(unitRef.getType(), "") != 0 ||
-             unitRef.getComplexity(status) != UMEASURE_UNIT_MIXED);
     U_ASSERT(fillIn != nullptr);
 
     if (uprv_strcmp(unitRef.getType(), "") != 0) {
@@ -812,6 +807,9 @@ void LongNameHandler::forMeasureUnit(const Locale &loc,
         // fillIn->parent = parent;
         // return;
     } else {
+        // Check if it is a MeasureUnit this constructor handles: this
+        // constructor does not handle mixed units
+        U_ASSERT(unitRef.getComplexity(status) != UMEASURE_UNIT_MIXED);
         forArbitraryUnit(loc, unitRef, width, unitDisplayCase, fillIn, status);
         fillIn->rules = rules;
         fillIn->parent = parent;

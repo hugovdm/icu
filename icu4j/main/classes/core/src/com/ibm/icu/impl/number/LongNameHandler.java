@@ -368,54 +368,59 @@ public class LongNameHandler
             String unitDisplayCase,
             PluralRules rules,
             MicroPropsGenerator parent) {
-        if (unit.getType() == null) {
-            // Not a built-in unit. Split it up, since we can already format
-            // "builtin-per-builtin".
-            // TODO(ICU-20941): support more generic case than builtin-per-builtin.
-            MeasureUnitImpl fullUnit = unit.getCopyOfMeasureUnitImpl();
-            unit = null;
-            MeasureUnit perUnit = null;
-            for (SingleUnitImpl subUnit : fullUnit.getSingleUnits()) {
-                if (subUnit.getDimensionality() > 0) {
-                    if (unit == null) {
-                        unit = subUnit.build();
-                    } else {
-                        unit = unit.product(subUnit.build());
-                    }
-                } else {
-                    // It's okay to mutate fullUnit, we made a temporary copy:
-                    subUnit.setDimensionality(subUnit.getDimensionality() * -1);
-                    if (perUnit == null) {
-                        perUnit = subUnit.build();
-                    } else {
-                        perUnit = perUnit.product(subUnit.build());
-                    }
-                }
+        // From https://unicode.org/reports/tr35/tr35-general.html#compound-units -
+        // Points 1 and 2 are mostly handled by MeasureUnit:
+        //
+        // 1. If the unitId is empty or invalid, fail
+        // 2. Put the unitId into normalized order
+        if (unit.getType() != null) {
+            String[] simpleFormats = new String[ARRAY_LENGTH];
+            getMeasureData(locale, unit, width, unitDisplayCase, simpleFormats);
+            // TODO(ICU4J): Reduce the number of object creations here?
+            Map<StandardPlural, SimpleModifier> modifiers = new EnumMap<>(StandardPlural.class);
+            LongNameHandler result = new LongNameHandler(modifiers, rules, parent);
+            result.simpleFormatsToModifiers(simpleFormats, NumberFormat.Field.MEASURE_UNIT);
+            if (simpleFormats[GENDER_INDEX] != null) {
+                result.gender = simpleFormats[GENDER_INDEX];
             }
-            return forArbitraryUnit(locale, unit, perUnit, width, unitDisplayCase, rules, parent);
+            return result;
+        } else {
+            assert unit.getComplexity() != Complexity.MIXED
+                : "Mixed units not supported by LongNameHandler: use MixedUnitLongNameHandler";
+            return forArbitraryUnit(locale, unit, width, unitDisplayCase, rules, parent);
         }
-
-        String[] simpleFormats = new String[ARRAY_LENGTH];
-        getMeasureData(locale, unit, width, unitDisplayCase, simpleFormats);
-        // TODO(ICU4J): Reduce the number of object creations here?
-        Map<StandardPlural, SimpleModifier> modifiers = new EnumMap<>(
-                StandardPlural.class);
-        LongNameHandler result = new LongNameHandler(modifiers, rules, parent);
-        result.simpleFormatsToModifiers(simpleFormats, NumberFormat.Field.MEASURE_UNIT);
-        if (simpleFormats[GENDER_INDEX] != null) {
-            result.gender = simpleFormats[GENDER_INDEX];
-        }
-
-        return result;
     }
 
     private static LongNameHandler forArbitraryUnit(ULocale locale,
                                                     MeasureUnit unit,
-                                                    MeasureUnit perUnit,
                                                     UnitWidth width,
                                                     String unitDisplayCase,
                                                     PluralRules rules,
                                                     MicroPropsGenerator parent) {
+        // Not a built-in unit. Split it up, since we can already format
+        // "builtin-per-builtin".
+        // TODO(ICU-20941): support more generic case than builtin-per-builtin.
+        MeasureUnitImpl fullUnit = unit.getCopyOfMeasureUnitImpl();
+        unit = null;
+        MeasureUnit perUnit = null;
+        for (SingleUnitImpl subUnit : fullUnit.getSingleUnits()) {
+            if (subUnit.getDimensionality() > 0) {
+                if (unit == null) {
+                    unit = subUnit.build();
+                } else {
+                    unit = unit.product(subUnit.build());
+                }
+            } else {
+                // It's okay to mutate fullUnit, we made a temporary copy:
+                subUnit.setDimensionality(subUnit.getDimensionality() * -1);
+                if (perUnit == null) {
+                    perUnit = subUnit.build();
+                } else {
+                    perUnit = perUnit.product(subUnit.build());
+                }
+            }
+        }
+
         if (unit.getType() == null || perUnit.getType() == null) {
             // TODO(ICU-20941): Unsanctioned unit. Not yet fully supported. Set an
             // error code.
