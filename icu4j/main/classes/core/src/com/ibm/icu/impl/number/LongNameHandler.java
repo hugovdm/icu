@@ -317,31 +317,29 @@ public class LongNameHandler
     }
 
     /**
-     * Loads and applies deriveComponent rules from CLDR's grammaticalFeatures.xml.
-     * <pre>
-     * Consider a deriveComponent rule that looks like this:
-     * </pre>
-     * <deriveComponent feature="case" structure="per" value0="compound" value1="nominative"/>
+     * Loads and applies deriveComponent rules from CLDR's
+     * grammaticalFeatures.xml.
      * <p>
+     * Consider a deriveComponent rule that looks like this:
+     * <pre>
+     *   &lt;deriveComponent feature="case" structure="per" value0="compound" value1="nominative"/&gt;
+     * </pre>
      * Instantiating an instance as follows:
      * <pre>
-     * DerivedComponents d(loc, "case", "per", "foo");
+     *   DerivedComponents d(loc, "case", "per");
      * </pre>
      * <p>
-     * Applying the rule in the XML element above, <code>d.value0()</code> will be "foo", and
-     * <code>d.value1()</code> will be "nominative".
+     * Applying the rule in the XML element above, <code>d.value0("foo")</code>
+     * will be "foo", and <code>d.value1("foo")</code> will be "nominative".
      * <p>
-     * <p>
-     * In case of any kind of failure, value0() and value1() will simply return "".
+     * In case of any kind of failure, value0() and value1() will simply return
+     * "".
      */
     private static class DerivedComponents {
         /**
          * Constructor.
          */
-        public DerivedComponents(ULocale locale,
-                                 String feature,
-                                 String structure,
-                                 String compoundValue) {
+        DerivedComponents(ULocale locale, String feature, String structure) {
             try {
                 ICUResourceBundle derivationsBundle =
                     (ICUResourceBundle)UResourceBundle.getBundleInstance(ICUData.ICU_BASE_NAME,
@@ -364,14 +362,14 @@ public class LongNameHandler
 
                 String value = stackBundle.getString(0);
                 if (value.compareTo("compound") == 0) {
-                    this.value0 = compoundValue;
+                    this.value0 = null;
                 } else {
                     this.value0 = value;
                 }
 
                 value = stackBundle.getString(1);
                 if (value.compareTo("compound") == 0) {
-                    this.value1 = compoundValue;
+                    this.value1 = null;
                 } else {
                     this.value1 = value;
                 }
@@ -380,7 +378,17 @@ public class LongNameHandler
             }
         }
 
-        public String value0 = "", value1 = "";
+        // FIXME(review): is "getValue0" more idiomatic?
+        String value0(String compoundValue) {
+            return (this.value0 != null) ? this.value0 : compoundValue;
+        }
+
+        // FIXME(review): is "getValue1" more idiomatic?
+        String value1(String compoundValue) {
+            return (this.value1 != null) ? this.value1 : compoundValue;
+        }
+
+        private String value0 = "", value1 = "";
     }
 
     private static LongNameHandler forArbitraryUnit(ULocale locale,
@@ -397,13 +405,12 @@ public class LongNameHandler
                                                     "/" + perUnit);
         }
 
-         DerivedComponents derivedPerCases = new DerivedComponents(locale, "case", "per", unitDisplayCase);
-
+        DerivedComponents derivedPerCases = new DerivedComponents(locale, "case", "per");
 
         String[] primaryData = new String[ARRAY_LENGTH];
-        getMeasureData(locale, unit, width, derivedPerCases.value0, primaryData);
+        getMeasureData(locale, unit, width, derivedPerCases.value0(unitDisplayCase), primaryData);
         String[] secondaryData = new String[ARRAY_LENGTH];
-        getMeasureData(locale, perUnit, width, derivedPerCases.value1, secondaryData);
+        getMeasureData(locale, perUnit, width, derivedPerCases.value1(unitDisplayCase), secondaryData);
 
         // TODO(icu-units#139): implement these rules:
         //    - <deriveComponent feature="plural" structure="per" ...>
