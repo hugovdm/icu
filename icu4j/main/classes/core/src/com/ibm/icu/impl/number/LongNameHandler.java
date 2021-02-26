@@ -2,6 +2,7 @@
 // License & terms of use: http://www.unicode.org/copyright.html
 package com.ibm.icu.impl.number;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -15,6 +16,7 @@ import com.ibm.icu.impl.UResource;
 import com.ibm.icu.impl.number.Modifier.Signum;
 import com.ibm.icu.impl.units.MeasureUnitImpl;
 import com.ibm.icu.impl.units.SingleUnitImpl;
+import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.number.NumberFormatter.UnitWidth;
 import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.text.PluralRules;
@@ -22,6 +24,7 @@ import com.ibm.icu.util.Currency;
 import com.ibm.icu.util.ICUException;
 import com.ibm.icu.util.MeasureUnit;
 import com.ibm.icu.util.MeasureUnit.Complexity;
+import com.ibm.icu.util.MeasureUnit.MeasurePrefix;
 import com.ibm.icu.util.ULocale;
 import com.ibm.icu.util.UResourceBundle;
 
@@ -95,7 +98,7 @@ public class LongNameHandler
         int len = pattern.length();
         if (pattern.startsWith("{0}")) {
             result.placeholderPosition = PlaceholderPosition.BEGINNING;
-            if (len > 3 && Character.isSpace(pattern.charAt(3))) {
+            if (len > 3 && Character.isSpaceChar(pattern.charAt(3))) {
                 result.joinerChar = pattern.charAt(3);
                 result.coreUnit = pattern.substring(4);
                 // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
@@ -666,7 +669,7 @@ public class LongNameHandler
         }
     }
 
-    private static LongNameHandler forArbitraryUnit(ULocale locale,
+    private static LongNameHandler forArbitraryUnit(ULocale loc,
                                                     MeasureUnit unit,
                                                     UnitWidth width,
                                                     String unitDisplayCase,
@@ -680,6 +683,8 @@ public class LongNameHandler
         MeasureUnitImpl fullUnit = unit.getCopyOfMeasureUnitImpl();
         unit = null;
         MeasureUnit perUnit = null;
+        // TODO(icu-units#28): lots of inefficiency in the handling of
+        // MeasureUnit/MeasureUnitImpl:
         for (SingleUnitImpl subUnit : fullUnit.getSingleUnits()) {
             if (subUnit.getDimensionality() > 0) {
                 if (unit == null) {
@@ -697,23 +702,28 @@ public class LongNameHandler
                 }
             }
         }
+        MeasureUnitImpl unitImpl = unit.getCopyOfMeasureUnitImpl();
+        MeasureUnitImpl perUnitImpl = perUnit != null ? perUnit.getCopyOfMeasureUnitImpl() : null;
 
         // TODO(icu-units#28): check placeholder logic, see if it needs to be
         // present here instead of only in processPatternTimes:
         //
         // 5. Set both globalPlaceholder and globalPlaceholderPosition to be empty
 
-        DerivedComponents derivedPerCases(loc, "case", "per");
+        DerivedComponents derivedPerCases = new DerivedComponents(loc, "case", "per");
 
         // 6. numeratorUnitString
-        UnicodeString numeratorUnitData[ARRAY_LENGTH];
-        processPatternTimes(std::move(unit), loc, width, derivedPerCases.value0(unitDisplayCase),
-                            numeratorUnitData, status);
+        String[] numeratorUnitData = new String[ARRAY_LENGTH];
+        processPatternTimes(unitImpl, loc, width, derivedPerCases.value0(unitDisplayCase),
+                            numeratorUnitData);
+        assert numeratorUnitData[StandardPlural.OTHER.ordinal()] != null;
 
         // 7. denominatorUnitString
-        UnicodeString denominatorUnitData[ARRAY_LENGTH];
-        processPatternTimes(std::move(perUnit), loc, width, derivedPerCases.value1(unitDisplayCase),
-                            denominatorUnitData, status);
+        String[] denominatorUnitData = new String[ARRAY_LENGTH];
+        processPatternTimes(perUnitImpl, loc, width, derivedPerCases.value1(unitDisplayCase),
+                            denominatorUnitData);
+        assert denominatorUnitData[StandardPlural.OTHER.ordinal()] !=
+            null : "denominatorUnitData: " + denominatorUnitData;
 
         // TODO(icu-units#139):
         // - implement DerivedComponents for "plural/times" and "plural/power":
@@ -729,53 +739,49 @@ public class LongNameHandler
         //
         // This may have impact on multiSimpleFormatsToModifiers(...) below too?
         // These rules are currently (ICU 69) all the same and hard-coded below.
-        UnicodeString perUnitPattern;
-        if (!denominatorUnitData[PER_INDEX].isBogus()) {
+        String perUnitPattern = null;
+        if (denominatorUnitData[PER_INDEX] != null) {
             // If we have no denominator, we obtain the empty string:
             perUnitPattern = denominatorUnitData[PER_INDEX];
         } else {
+            StringBuilder sb = new StringBuilder();
+
             // 8. Set perPattern to be getValue([per], locale, length)
-            UnicodeString rawPerUnitFormat = getCompoundValue("per", loc, width, status);
+            String rawPerUnitFormat = getCompoundValue("per", loc, width);
             // rawPerUnitFormat is something like "{0} per {1}"; we need to substitute in the secondary
             // unit.
-            SimpleFormatter perPatternFormatter(rawPerUnitFormat, 2, 2, status);
-            if (U_FAILURE(status)) {
-                return;
-            }
+            String perPatternFormatter =
+                SimpleFormatterImpl.compileToStringMinMaxArguments(rawPerUnitFormat, sb, 2, 2);
             // Plural and placeholder handling for 7. denominatorUnitString:
             // TODO(icu-units#139): hardcoded:
             // <deriveComponent feature="plural" structure="per" value0="compound" value1="one"/>
-            UnicodeString denominatorFormat =
-                getWithPlural(denominatorUnitData, StandardPlural::Form::ONE, status);
+            String rawDenominatorFormat = getWithPlural(denominatorUnitData, StandardPlural.ONE);
             // Some "one" pattern may not contain "{0}". For example in "ar" or "ne" locale.
-            SimpleFormatter denominatorFormatter(denominatorFormat, 0, 1, status);
-            if (U_FAILURE(status)) {
-                return;
-            }
-            UnicodeString denominatorPattern = denominatorFormatter.getTextWithNoArguments();
-            int32_t trimmedLen = denominatorPattern.length();
-            const UChar *trimmed = trimSpaceChars(denominatorPattern.getBuffer(), trimmedLen);
-            UnicodeString denominatorString(false, trimmed, trimmedLen);
+            String denominatorFormatter =
+                SimpleFormatterImpl.compileToStringMinMaxArguments(rawDenominatorFormat, sb, 0, 1);
+            // FIXME(review): Trim should be insufficient, check that tests catch it!
+            String denominatorString =
+                SimpleFormatterImpl.getTextWithNoArguments(denominatorFormatter).trim();
+            // FIXME(review):
+            denominatorString = denominatorString.replaceAll("(^\\h*)|(\\h*$)", ""); // Trim all spaces.
+
             // 9. If the denominatorString is empty, set result to
             //    [numeratorString], otherwise set result to format(perPattern,
             //    numeratorString, denominatorString)
             //
             // TODO(icu-units#28): Why does UnicodeString need to be explicit in the
             // following line?
-            perPatternFormatter.format(UnicodeString(u"{0}"), denominatorString, perUnitPattern, status);
-            if (U_FAILURE(status)) {
-                return;
-            }
+            perUnitPattern =
+                SimpleFormatterImpl.formatCompiledPattern(perPatternFormatter, "{0}", denominatorString);
         }
+        Map<StandardPlural, SimpleModifier> modifiers = new EnumMap<>(
+                StandardPlural.class);
+        LongNameHandler result = new LongNameHandler(modifiers, rules, parent);
         if (perUnitPattern.length() == 0) {
-            fillIn
-                -> simpleFormatsToModifiers(numeratorUnitData,
-                                            {UFIELD_CATEGORY_NUMBER, UNUM_MEASURE_UNIT_FIELD}, status);
+            result.simpleFormatsToModifiers(numeratorUnitData, NumberFormat.Field.MEASURE_UNIT);
         } else {
-            fillIn
-                -> multiSimpleFormatsToModifiers(numeratorUnitData, perUnitPattern,
-                                                 {UFIELD_CATEGORY_NUMBER, UNUM_MEASURE_UNIT_FIELD},
-                                                 status);
+            result.multiSimpleFormatsToModifiers(numeratorUnitData, perUnitPattern,
+                                                 NumberFormat.Field.MEASURE_UNIT);
         }
 
         // Gender
@@ -786,70 +792,7 @@ public class LongNameHandler
         // gender/per deriveCompound rules don't say:
         // <deriveCompound feature="gender" structure="per" value="0"/> <!-- gender(gram-per-meter) ←
         // gender(gram) -->
-        fillIn
-            -> gender = getGenderString(
-                   getDerivedGender(loc, "per", numeratorUnitData, denominatorUnitData, status), status);
-
-
-        //
-        // PREVIOUS JAVA IMPLEMENTATION:
-        //
-
-        DerivedComponents derivedPerCases = new DerivedComponents(locale, "case", "per");
-
-        String[] primaryData = new String[ARRAY_LENGTH];
-        getMeasureData(locale, unit, width, derivedPerCases.value0(unitDisplayCase), primaryData);
-        String[] secondaryData = new String[ARRAY_LENGTH];
-        getMeasureData(locale, perUnit, width, derivedPerCases.value1(unitDisplayCase), secondaryData);
-
-        // TODO(icu-units#139): implement these rules:
-        //    - <deriveComponent feature="plural" structure="per" ...>
-        //    - This has impact on multiSimpleFormatsToModifiers(...) below too.
-        //
-        // These rules are currently (ICU 69) all the same and hard-coded below.
-        String perUnitFormat;
-        if (secondaryData[PER_INDEX] != null) {
-            perUnitFormat = secondaryData[PER_INDEX];
-        } else {
-            String rawPerUnitFormat = getCompoundValue("per", locale, width);
-            // rawPerUnitFormat is something like "{0}/{1}"; we need to substitute in the secondary unit.
-            // TODO: Lots of thrashing. Improve?
-            StringBuilder sb = new StringBuilder();
-            String compiled = SimpleFormatterImpl
-                    .compileToStringMinMaxArguments(rawPerUnitFormat, sb, 2, 2);
-            String secondaryFormat = getWithPlural(secondaryData, StandardPlural.ONE);
-
-            // Some "one" pattern may not contain "{0}". For example in "ar" or "ne" locale.
-            String secondaryCompiled = SimpleFormatterImpl
-                    .compileToStringMinMaxArguments(secondaryFormat, sb, 0, 1);
-            String secondaryFormatString = SimpleFormatterImpl.getTextWithNoArguments(secondaryCompiled);
-
-            // TODO(icu-units#28): do not use regular expression
-            String secondaryString = secondaryFormatString.replaceAll("(^\\h*)|(\\h*$)",""); // Trim all spaces.
-
-            perUnitFormat = SimpleFormatterImpl.formatCompiledPattern(compiled, "{0}", secondaryString);
-        }
-        Map<StandardPlural, SimpleModifier> modifiers = new EnumMap<>(
-                StandardPlural.class);
-        LongNameHandler result = new LongNameHandler(modifiers, rules, parent);
-        result.multiSimpleFormatsToModifiers(primaryData, perUnitFormat, NumberFormat.Field.MEASURE_UNIT);
-
-        // Gender
-        String val = getDeriveCompoundRule(locale, "gender", "per");
-
-        assert (val != null && val.length() == 1);
-        switch (val.charAt(0)) {
-        case '0':
-            result.gender = primaryData[GENDER_INDEX];
-            break;
-        case '1':
-            result.gender = secondaryData[GENDER_INDEX];
-            break;
-        default:
-            // Data error. Assert-fail in debug mode, else return no gender.
-            assert false;
-        }
-
+        result.gender = getDerivedGender(loc, "per", numeratorUnitData, denominatorUnitData);
         return result;
     }
 
@@ -862,37 +805,36 @@ public class LongNameHandler
                                             UnitWidth width,
                                             String caseVariant,
                                             String[] outArray) {
-        if (U_FAILURE(status)) {
+        if (productUnit == null) {
+            outArray[StandardPlural.OTHER.ordinal()] = "";
+            outArray[PER_INDEX] = "";
             return;
         }
-        if (productUnit.complexity == UMEASURE_UNIT_MIXED) {
+        if (productUnit.getComplexity() == Complexity.MIXED) {
             // These are handled by MixedUnitLongNameHandler
-            status = U_UNSUPPORTED_ERROR;
-            return;
+            throw new UnsupportedOperationException("Mixed units not supported by LongNameHandler");
         }
 
-#if U_DEBUG
-        for (int32_t pluralIndex = 0; pluralIndex < ARRAY_LENGTH; pluralIndex++) {
-            U_ASSERT(outArray[pluralIndex].length() == 0);
-            U_ASSERT(!outArray[pluralIndex].isBogus());
-        }
-#endif
+        // FIXME(review): do we need this precaution?
+// #if U_DEBUG
+//         for (int32_t pluralIndex = 0; pluralIndex < ARRAY_LENGTH; pluralIndex++) {
+//             U_ASSERT(outArray[pluralIndex].length() == 0);
+//             U_ASSERT(!outArray[pluralIndex].isBogus());
+//         }
+// #endif
 
-        if (productUnit.identifier.isEmpty()) {
+        if (productUnit.getIdentifier() == null) {
             // TODO(icu-units#28): consider when serialize should be called.
             // identifier might also be empty for MeasureUnit().
-            productUnit.serialize(status);
+            productUnit.serialize();
         }
-        if (U_FAILURE(status)) {
-            return;
-        }
-        if (productUnit.identifier.length() == 0) {
+        if (productUnit.getIdentifier().length() == 0) {
             // MeasureUnit(): no units: return empty strings.
             return;
         }
 
-        MeasureUnit builtinUnit;
-        if (MeasureUnit::findBySubType(productUnit.identifier.toStringPiece(), &builtinUnit)) {
+        MeasureUnit builtinUnit = MeasureUnit.findBySubType(productUnit.getIdentifier());
+        if (builtinUnit != null) {
             // TODO(icu-units#145): spec doesn't cover builtin-per-builtin, it
             // breaks them all down. Do we want to drop this?
             // - findBySubType isn't super efficient, if we skip it and go to basic
@@ -900,21 +842,17 @@ public class LongNameHandler
             // - Check all the existing unit tests that fail without this: is it due
             //   to incorrect fallback via getMeasureData?
             // - Do those unit tests cover this code path representatively?
-            if (builtinUnit != MeasureUnit()) {
-                getMeasureData(loc, builtinUnit, width, caseVariant, outArray, status);
-            }
+            getMeasureData(loc, builtinUnit, width, caseVariant, outArray);
             return;
         }
 
         // 2. Set timesPattern to be getValue(times, locale, length)
-        UnicodeString timesPattern = getCompoundValue("times", loc, width, status);
-        SimpleFormatter timesPatternFormatter(timesPattern, 2, 2, status);
-        if (U_FAILURE(status)) {
-            return;
-        }
+        String timesPattern = getCompoundValue("times", loc, width);
+        StringBuilder sb = new StringBuilder();
+        String timesPatternFormatter = SimpleFormatterImpl.compileToStringMinMaxArguments(timesPattern, sb, 2, 2);
 
-        PlaceholderPosition globalPlaceholder[ARRAY_LENGTH];
-        UChar globalJoinerChar = 0;
+        PlaceholderPosition[] globalPlaceholder = new PlaceholderPosition[ARRAY_LENGTH];
+        char globalJoinerChar = 0;
         // Numbered list items are from the algorithms at
         // https://unicode.org/reports/tr35/tr35-general.html#compound-units:
         //
@@ -922,31 +860,32 @@ public class LongNameHandler
         // - Set both globalPlaceholder and globalPlaceholderPosition to be empty
         //
         // 3. Set result to be empty
-        for (int32_t pluralIndex = 0; pluralIndex < ARRAY_LENGTH; pluralIndex++) {
+        for (StandardPlural plural : StandardPlural.values()) {
+            int pluralIndex = plural.ordinal();
             // Initial state: empty string pattern, via all falling back to OTHER:
-            if (pluralIndex == StandardPlural::Form::OTHER) {
-                outArray[pluralIndex].remove();
+            if (plural == StandardPlural.OTHER) {
+                outArray[pluralIndex] = "";
             } else {
-                outArray[pluralIndex].setToBogus();
+                outArray[pluralIndex] = null;
             }
-            globalPlaceholder[pluralIndex] = PH_EMPTY;
+            globalPlaceholder[pluralIndex] = null;
         }
 
-        // Empty string represents "compound" (propagate the plural form).
-        const char *pluralCategory = "";
-        DerivedComponents derivedTimesPlurals(loc, "plural", "times");
-        DerivedComponents derivedTimesCases(loc, "case", "times");
-        DerivedComponents derivedPowerCases(loc, "case", "power");
+        // null (FIXME?) represents "compound" (propagate the plural form).
+        String pluralCategory = null;
+        DerivedComponents derivedTimesPlurals = new DerivedComponents(loc, "plural", "times");
+        DerivedComponents derivedTimesCases = new DerivedComponents(loc, "case", "times");
+        DerivedComponents derivedPowerCases = new DerivedComponents(loc, "case", "power");
 
         // 4. For each single_unit in product_unit
-        for (int32_t singleUnitIndex = 0; singleUnitIndex < productUnit.singleUnits.length();
-             singleUnitIndex++) {
-            SingleUnitImpl *singleUnit = productUnit.singleUnits[singleUnitIndex];
-            const char *singlePluralCategory;
-            const char *singleCaseVariant;
+        ArrayList<SingleUnitImpl> singleUnits = productUnit.getSingleUnits();
+        for (int singleUnitIndex = 0; singleUnitIndex < singleUnits.size(); singleUnitIndex++) {
+            SingleUnitImpl singleUnit = singleUnits.get(singleUnitIndex);
+            String singlePluralCategory;
+            String singleCaseVariant;
             // TODO(icu-units#28): ensure we have unit tests that change/fail if we
             // assign incorrect case variants here:
-            if (singleUnitIndex < productUnit.singleUnits.length() - 1) {
+            if (singleUnitIndex < singleUnits.size() - 1) {
                 // 4.1. If hasMultiple
                 singlePluralCategory = derivedTimesPlurals.value0(pluralCategory);
                 singleCaseVariant = derivedTimesCases.value0(caseVariant);
@@ -958,39 +897,41 @@ public class LongNameHandler
             }
 
             // 4.2. Get the gender of that single_unit
-            MeasureUnit builtinUnit;
-            if (!MeasureUnit::findBySubType(singleUnit -> getSimpleUnitID(), &builtinUnit)) {
+            builtinUnit = MeasureUnit.findBySubType(singleUnit.getSimpleUnitID());
+            if (builtinUnit == null) {
                 // Ideally all simple units should be known, but they're not:
                 // 100-kilometer is internally treated as a simple unit, but it is
                 // not a built-in unit and does not have formatting data in CLDR 39.
                 //
                 // TODO(icu-units#28): test (desirable) invariants in unit tests.
-                status = U_UNSUPPORTED_ERROR;
-                return;
+                throw new UnsupportedOperationException("Unsupported sinlgeUnit: " +
+                                                        singleUnit.getSimpleUnitID());
             }
-            const char *gender = getGenderForBuiltin(loc, builtinUnit, status);
+            String gender = getGenderForBuiltin(loc, builtinUnit);
 
             // 4.3. If singleUnit starts with a dimensionality_prefix, such as 'square-'
-            U_ASSERT(singleUnit -> dimensionality > 0);
-            int32_t dimensionality = singleUnit -> dimensionality;
-            UnicodeString dimensionalityPrefixPatterns[ARRAY_LENGTH];
+            assert singleUnit.getDimensionality() > 0;
+            int dimensionality = singleUnit.getDimensionality();
+            String[] dimensionalityPrefixPatterns = new String[ARRAY_LENGTH];
             if (dimensionality != 1) {
                 // 4.3.1. set dimensionalityPrefixPattern to be
                 //   getValue(that dimensionality_prefix, locale, length, singlePluralCategory,
                 //   singleCaseVariant, gender), such as "{0} kwadratowym"
-                CharString dimensionalityKey("compound/power", status);
-                dimensionalityKey.appendNumber(dimensionality, status);
-                getInflectedMeasureData(dimensionalityKey.toStringPiece(), loc, width, gender,
-                                        singleCaseVariant, dimensionalityPrefixPatterns, status);
-                if (U_FAILURE(status)) {
+                StringBuilder dimensionalityKey = new StringBuilder("compound/power");
+                dimensionalityKey.append(dimensionality);
+                try {
+                    getInflectedMeasureData(dimensionalityKey.toString(), loc, width, gender,
+                                            singleCaseVariant, dimensionalityPrefixPatterns);
+                } catch (UnsupportedClassVersionError e) {
                     // At the time of writing, only power2 and power3 are supported.
                     // Attempting to format other powers results in a
                     // U_RESOURCE_TYPE_MISMATCH. We convert the error if we
                     // understand it:
-                    if (status == U_RESOURCE_TYPE_MISMATCH && dimensionality > 3) {
-                        status = U_UNSUPPORTED_ERROR;
+                    if (dimensionality > 3) {
+                        throw new UnsupportedOperationException("FIXME");
+                    } else {
+                        throw e;
                     }
-                    return;
                 }
 
                 // TODO(icu-units#139):
@@ -999,22 +940,22 @@ public class LongNameHandler
                 // 4.3.3. set singleCaseVariant to be power0(singleCaseVariant)
                 singleCaseVariant = derivedPowerCases.value0(singleCaseVariant);
                 // 4.3.4. remove the dimensionality_prefix from singleUnit
-                singleUnit -> dimensionality = 1;
+                singleUnit.setDimensionality(1);
             }
 
             // 4.4. if singleUnit starts with an si_prefix, such as 'centi'
-            UMeasurePrefix prefix = singleUnit -> unitPrefix;
-            UnicodeString prefixPattern;
-            if (prefix != UMEASURE_PREFIX_ONE) {
+            MeasurePrefix prefix = singleUnit.getPrefix();
+            String prefixPattern = "";
+            if (prefix != MeasurePrefix.ONE) {
                 // 4.4.1. set siPrefixPattern to be getValue(that si_prefix, locale,
                 //        length), such as "centy{0}"
-                CharString prefixKey;
+                StringBuilder prefixKey = new StringBuilder();
                 // prefixKey looks like "1024p3" or "10p-2":
-                prefixKey.appendNumber(umeas_getPrefixBase(prefix), status);
-                prefixKey.append('p', status);
-                prefixKey.appendNumber(umeas_getPrefixPower(prefix), status);
+                prefixKey.append(prefix.getBase());
+                prefixKey.append('p');
+                prefixKey.append(prefix.getPower());
                 // Contains a pattern like "centy{0}".
-                prefixPattern = getCompoundValue(prefixKey.toStringPiece(), loc, width, status);
+                prefixPattern = getCompoundValue(prefixKey.toString(), loc, width);
 
                 // 4.4.2. set singlePluralCategory to be prefix0(singlePluralCategory)
                 //
@@ -1030,31 +971,26 @@ public class LongNameHandler
                 // propagates.
 
                 // 4.4.4. remove the si_prefix from singleUnit
-                singleUnit -> unitPrefix = UMEASURE_PREFIX_ONE;
+                singleUnit.setPrefix(MeasurePrefix.ONE);
             }
 
             // 4.5. Set corePattern to be the getValue(singleUnit, locale, length,
             //      singlePluralCategory, singleCaseVariant), such as "{0} metrem"
-            UnicodeString singleUnitArray[ARRAY_LENGTH];
+            String[] singleUnitArray = new String[ARRAY_LENGTH];
             // At this point we are left with a Simple Unit:
-            U_ASSERT(uprv_strcmp(
-                         singleUnit -> build(status).getIdentifier(), singleUnit -> getSimpleUnitID()) ==
-                     0);
-            getMeasureData(
-                loc, singleUnit -> build(status), width, singleCaseVariant, singleUnitArray, status);
-            if (U_FAILURE(status)) {
-                // Shouldn't happen if we have data for all single units
-                return;
-            }
+            assert singleUnit.build().getIdentifier().equals(singleUnit.getSimpleUnitID())
+                : "Should be equal: singleUnit.build().getIdentifier() produced " +
+                singleUnit.build().getIdentifier() + ", singleUnit.getSimpleUnitID() produced " +
+                singleUnit.getSimpleUnitID();
+            getMeasureData(loc, singleUnit.build(), width, singleCaseVariant, singleUnitArray);
 
             // Calculate output gender
-            if (!singleUnitArray[GENDER_INDEX].isBogus()) {
-                U_ASSERT(!singleUnitArray[GENDER_INDEX].isEmpty());
-                UnicodeString uVal;
+            if (singleUnitArray[GENDER_INDEX] != null) {
+                assert !singleUnitArray[GENDER_INDEX].isEmpty();
 
-                if (prefix != UMEASURE_PREFIX_ONE) {
+                if (prefix != MeasurePrefix.ONE) {
                     singleUnitArray[GENDER_INDEX] =
-                        getDerivedGender(loc, "prefix", singleUnitArray, nullptr, status);
+                        getDerivedGender(loc, "prefix", singleUnitArray, null);
                 }
 
                 // Powers use compoundUnitPattern1, dimensionalityPrefixPatterns may
@@ -1062,39 +998,40 @@ public class LongNameHandler
                 //
                 // TODO(icu-units#28): untested: no locale data uses this currently:
                 if (dimensionality != 1) {
-                    singleUnitArray[GENDER_INDEX] = getDerivedGender(
-                        loc, "power", singleUnitArray, dimensionalityPrefixPatterns, status);
+                    singleUnitArray[GENDER_INDEX] =
+                        getDerivedGender(loc, "power", singleUnitArray, dimensionalityPrefixPatterns);
                 }
 
-                UnicodeString timesGenderRule = getDeriveCompoundRule(loc, "gender", "times", status);
+                String timesGenderRule = getDeriveCompoundRule(loc, "gender", "times");
                 if (timesGenderRule.length() == 1) {
-                    switch (timesGenderRule[0]) {
-                    case u'0':
+                    switch (timesGenderRule.charAt(0)) {
+                    case '0':
                         if (singleUnitIndex == 0) {
-                            U_ASSERT(outArray[GENDER_INDEX].isBogus());
+                            assert outArray[GENDER_INDEX] == null;
                             outArray[GENDER_INDEX] = singleUnitArray[GENDER_INDEX];
                         }
                         break;
-                    case u'1':
-                        if (singleUnitIndex == productUnit.singleUnits.length() - 1) {
-                            U_ASSERT(outArray[GENDER_INDEX].isBogus());
+                    case '1':
+                        if (singleUnitIndex == singleUnits.size() - 1) {
+                            assert outArray[GENDER_INDEX] == null;
                             outArray[GENDER_INDEX] = singleUnitArray[GENDER_INDEX];
                         }
                     }
                 } else {
-                    if (outArray[GENDER_INDEX].isBogus()) {
+                    if (outArray[GENDER_INDEX] == null) {
                         outArray[GENDER_INDEX] = timesGenderRule;
                     }
                 }
             }
 
             // Calculate resulting patterns for each plural form
-            for (int32_t pluralIndex = 0; pluralIndex < StandardPlural::Form::COUNT; pluralIndex++) {
-                StandardPlural::Form plural = static_cast<StandardPlural::Form>(pluralIndex);
+            for (StandardPlural plural_ : StandardPlural.values()) {
+                StandardPlural plural = plural_;
+                int pluralIndex = plural.ordinal();
 
                 // singleUnitArray[pluralIndex] looks something like "{0} Meter"
-                if (outArray[pluralIndex].isBogus()) {
-                    if (singleUnitArray[pluralIndex].isBogus()) {
+                if (outArray[pluralIndex] == null) {
+                    if (singleUnitArray[pluralIndex] == null) {
                         // Let the usual plural fallback mechanism take care of this
                         // plural form
                         continue;
@@ -1102,38 +1039,30 @@ public class LongNameHandler
                         // Since our singleUnit can have a plural form that outArray
                         // doesn't yet have (relying on fallback to OTHER), we start
                         // by grabbing it with the normal plural fallback mechanism
-                        outArray[pluralIndex] = getWithPlural(outArray, plural, status);
-                        if (U_FAILURE(status)) {
-                            return;
-                        }
+                        outArray[pluralIndex] = getWithPlural(outArray, plural);
                     }
                 }
 
-                if (uprv_strcmp(singlePluralCategory, "") != 0) {
-                    plural = static_cast<StandardPlural::Form>(getIndex(singlePluralCategory, status));
+                if (singlePluralCategory != null) {
+                    plural = StandardPlural.fromString(singlePluralCategory);
                 }
 
                 // 4.6. Extract(corePattern, coreUnit, placeholder, placeholderPosition) from that
                 // pattern.
-                UnicodeString coreUnit;
-                PlaceholderPosition placeholderPosition;
-                UChar joinerChar;
-                extractCorePattern(getWithPlural(singleUnitArray, plural, status), coreUnit,
-                                   placeholderPosition, joinerChar);
+                ExtractCorePatternResult r = extractCorePattern(getWithPlural(singleUnitArray, plural));
 
                 // 4.7 If the position is middle, then fail
-                if (placeholderPosition == PH_MIDDLE) {
-                    status = U_UNSUPPORTED_ERROR;
-                    return;
+                if (r.placeholderPosition == PlaceholderPosition.MIDDLE) {
+                    throw new UnsupportedOperationException();
                 }
 
                 // 4.8. If globalPlaceholder is empty
-                if (globalPlaceholder[pluralIndex] == PH_EMPTY) {
-                    globalPlaceholder[pluralIndex] = placeholderPosition;
-                    globalJoinerChar = joinerChar;
+                if (globalPlaceholder[pluralIndex] == null) {
+                    globalPlaceholder[pluralIndex] = r.placeholderPosition;
+                    globalJoinerChar = r.joinerChar;
                 } else {
                     // Expect all units involved to have the same placeholder position
-                    U_ASSERT(globalPlaceholder[pluralIndex] == placeholderPosition);
+                    assert globalPlaceholder[pluralIndex] == r.placeholderPosition;
                     // TODO(icu-units#28): Do we want to add a unit test that checks
                     // for consistent joiner chars? Probably not, given how
                     // inconsistent they are. File a CLDR ticket with examples?
@@ -1141,81 +1070,67 @@ public class LongNameHandler
                 // Now coreUnit would be just "Meter"
 
                 // 4.9. If siPrefixPattern is not empty
-                if (prefix != UMEASURE_PREFIX_ONE) {
-                    SimpleFormatter prefixCompiled(prefixPattern, 1, 1, status);
-                    if (U_FAILURE(status)) {
-                        return;
-                    }
+                if (prefix != MeasurePrefix.ONE) {
+                    String prefixCompiled =
+                        SimpleFormatterImpl.compileToStringMinMaxArguments(prefixPattern, sb, 1, 1);
 
                     // 4.9.1. Set coreUnit to be the combineLowercasing(locale, length, siPrefixPattern,
                     //        coreUnit)
-                    UnicodeString tmp;
                     // combineLowercasing(locale, length, prefixPattern, coreUnit)
                     //
                     // TODO(icu-units#28): run this only if prefixPattern does not
                     // contain space characters - do languages "as", "bn", "hi",
                     // "kk", etc have concepts of upper and lower case?:
-                    if (width == UNUM_UNIT_WIDTH_FULL_NAME) {
-                        coreUnit.toLower(loc);
+                    if (width == UnitWidth.FULL_NAME) {
+                        r.coreUnit = UCharacter.toLowerCase(loc, r.coreUnit);
                     }
-                    prefixCompiled.format(coreUnit, tmp, status);
-                    if (U_FAILURE(status)) {
-                        return;
-                    }
-                    coreUnit = tmp;
+                    r.coreUnit = SimpleFormatterImpl.formatCompiledPattern(prefixCompiled, r.coreUnit);
                 }
 
                 // 4.10. If dimensionalityPrefixPattern is not empty
                 if (dimensionality != 1) {
-                    SimpleFormatter dimensionalityCompiled(
-                        getWithPlural(dimensionalityPrefixPatterns, plural, status), 1, 1, status);
-                    if (U_FAILURE(status)) {
-                        return;
-                    }
+                    String dimensionalityCompiled = SimpleFormatterImpl.compileToStringMinMaxArguments(
+                        getWithPlural(dimensionalityPrefixPatterns, plural), sb, 1, 1);
 
                     // 4.10.1. Set coreUnit to be the combineLowercasing(locale, length,
                     //         dimensionalityPrefixPattern, coreUnit)
-                    UnicodeString tmp;
                     // combineLowercasing(locale, length, prefixPattern, coreUnit)
                     //
                     // TODO(icu-units#28): run this only if prefixPattern does not
                     // contain space characters - do languages "as", "bn", "hi",
                     // "kk", etc have concepts of upper and lower case?:
-                    if (width == UNUM_UNIT_WIDTH_FULL_NAME) {
-                        coreUnit.toLower(loc);
+                    if (width == UnitWidth.FULL_NAME) {
+                        r.coreUnit = UCharacter.toLowerCase(loc, r.coreUnit);
                     }
-                    dimensionalityCompiled.format(coreUnit, tmp, status);
-                    if (U_FAILURE(status)) {
-                        return;
-                    }
-                    coreUnit = tmp;
+                    r.coreUnit =
+                        SimpleFormatterImpl.formatCompiledPattern(dimensionalityCompiled, r.coreUnit);
                 }
 
                 if (outArray[pluralIndex].length() == 0) {
                     // 4.11. If the result is empty, set result to be coreUnit
-                    outArray[pluralIndex] = coreUnit;
+                    outArray[pluralIndex] = r.coreUnit;
                 } else {
                     // 4.12. Otherwise set result to be format(timesPattern, result, coreUnit)
-                    UnicodeString tmp;
-                    timesPatternFormatter.format(outArray[pluralIndex], coreUnit, tmp, status);
-                    outArray[pluralIndex] = tmp;
+                    outArray[pluralIndex] = SimpleFormatterImpl.formatCompiledPattern(
+                        timesPatternFormatter, outArray[pluralIndex], r.coreUnit);
                 }
             }
         }
-        for (int32_t pluralIndex = 0; pluralIndex < StandardPlural::Form::COUNT; pluralIndex++) {
-            if (globalPlaceholder[pluralIndex] == PH_BEGINNING) {
-                UnicodeString tmp;
-                tmp.append(u"{0}", 3);
+        for (StandardPlural plural : StandardPlural.values()) {
+            int pluralIndex = plural.ordinal();
+            if (globalPlaceholder[pluralIndex] == PlaceholderPosition.BEGINNING) {
+                StringBuilder tmp = new StringBuilder();
+                tmp.append("{0}");
                 if (globalJoinerChar != 0) {
                     tmp.append(globalJoinerChar);
                 }
                 tmp.append(outArray[pluralIndex]);
-                outArray[pluralIndex] = tmp;
-            } else if (globalPlaceholder[pluralIndex] == PH_END) {
+                outArray[pluralIndex] = tmp.toString();
+            } else if (globalPlaceholder[pluralIndex] == PlaceholderPosition.END) {
                 if (globalJoinerChar != 0) {
-                    outArray[pluralIndex].append(globalJoinerChar);
+                    outArray[pluralIndex] = outArray[pluralIndex] + globalJoinerChar;
                 }
-                outArray[pluralIndex].append(u"{0}", 3);
+                outArray[pluralIndex] = outArray[pluralIndex] + "{0}";
             }
         }
     }
