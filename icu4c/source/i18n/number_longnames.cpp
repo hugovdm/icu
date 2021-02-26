@@ -1406,6 +1406,7 @@ void MixedUnitLongNameHandler::forMeasureUnit(const Locale &loc,
                                               const MicroPropsGenerator *parent,
                                               MixedUnitLongNameHandler *fillIn,
                                               UErrorCode &status) {
+    U_ASSERT(mixedUnit.getComplexity(status) == UMEASURE_UNIT_MIXED);
     U_ASSERT(fillIn != nullptr);
     if (U_FAILURE(status)) {
         return;
@@ -1413,6 +1414,9 @@ void MixedUnitLongNameHandler::forMeasureUnit(const Locale &loc,
 
     MeasureUnitImpl temp;
     const MeasureUnitImpl &impl = MeasureUnitImpl::forMeasureUnit(mixedUnit, temp, status);
+    // FIXME(review): in Java this one's still an assert. Calling code clearly
+    // checks for this, it is an invariant, an assert should be adequate. Our
+    // philosophy? Both?
     if (impl.complexity != UMEASURE_UNIT_MIXED) {
         // Should be using the normal LongNameHandler
         status = U_UNSUPPORTED_ERROR;

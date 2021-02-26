@@ -131,7 +131,7 @@ public class MixedUnitLongNameHandler
      */
     @Override
     public Modifier getModifier(Modifier.Signum signum, StandardPlural plural) {
-        // TODO(units): investigate this method while investigating where
+        // TODO(icu-units#28): investigate this method while investigating where
         // LongNameHandler.getModifier() gets used. To be sure it remains
         // unreachable:
         assert false : "should be unreachable";
