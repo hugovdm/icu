@@ -543,7 +543,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                 NumberFormatter.with().unit(MeasureUnit.forIdentifier("hectometer")),
                 ULocale.ENGLISH,
                 "87,650 hm",
-                "8,765 ham",
+                "8,765 hm",
                 "876.5 hm",
                 "87.65 hm",
                 "8.765 hm",
@@ -2186,9 +2186,9 @@ public class NumberFormatterApiTest extends TestFmwk {
                 //   value1="compound"/>
                 // TODO: this looks wrong, and will change if CLDR-14533 causes a change:
                 new UnitInflectionTestCase("square-decimeter-square-second", "fr", null, 1,
-                                           "1\u00A0décimètre carréseconde carrée"),
+                                           "1\u00A0décimètre carré-seconde carrée"),
                 new UnitInflectionTestCase("square-decimeter-square-second", "fr", null, 2,
-                                           "2\u00A0décimètres carréssecondes carrées"),
+                                           "2\u00A0décimètres carrés-secondes carrées"),
             };
             for (UnitInflectionTestCase t : testCases) {
                 t.runTest(unf, skeleton);
