@@ -773,7 +773,16 @@ public class MeasureUnit implements Serializable {
         return MeasureUnit.addUnit(type, subType, factory);
     }
 
-    private static MeasureUnit findBySubType(String subType) {
+    /**
+     * FIXME(review): is @internal/@deprecated enough protection? Do we have another option?
+     *
+     * @internal
+     * @deprecated This API is ICU internal only.
+
+     * @param subType The unit identifier we're looking for.
+     * @return A built-in MeasureUnit if there is one, else null.
+     */
+    public static MeasureUnit findBySubType(String subType) {
         populateCache();
         for (Map<String, MeasureUnit> unitsForType : cache.values()) {
             if (unitsForType.containsKey(subType)) {
