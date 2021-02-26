@@ -130,7 +130,7 @@ public class LongNameHandler
     // Gets the gender of a built-in unit: unit must be a built-in. Returns an empty
     // string both in case of unknown gender and in case of unknown unit.
     private static String getGenderForBuiltin(ULocale locale, MeasureUnit builtinUnit) {
-        ICUResourceBundle unitsBundle = (ICUResourceBundle) UResourceBundle.getBundleInstance(ICUData.ICU_UNIT_BASE_NAME, locale));
+        ICUResourceBundle unitsBundle = (ICUResourceBundle) UResourceBundle.getBundleInstance(ICUData.ICU_UNIT_BASE_NAME, locale);
 
         StringBuilder key = new StringBuilder();
         key.append("units/");
@@ -198,8 +198,7 @@ public class LongNameHandler
                     continue;
                 }
                 UResource.Table genderTable = value.getTable();
-                value = loadForPluralForm(genderTable);
-                if (value != null) {
+                if (loadForPluralForm(genderTable, value)) {
                     outArray[pluralIndex] = value.getString();
                 }
             }
@@ -209,64 +208,56 @@ public class LongNameHandler
         // returned data will be for the configured gender if found, falling
         // back to "neuter" and no-gender. If none of those are found, null is
         // returned.
-        private UResource.Value loadForPluralForm(UResource.Table genderTable) {
-            UResource.Value value;
-            if (!gender.isEmpty()) {
-                value = loadForGender(genderTable, gender);
-                if (value != null) {
-                    return value;
+        private boolean loadForPluralForm(UResource.Table genderTable, UResource.Value value) {
+            if (gender != null && !gender.isEmpty()) {
+                if (loadForGender(genderTable, gender, value)) {
+                    return true;
                 }
                 if (gender != "neuter") {
-                    value = loadForGender(genderTable, "neuter");
-                    if (value != null) {
-                        return value;
+                    if (loadForGender(genderTable, "neuter", value)) {
+                        return true;
                     }
                 }
             }
-            value = loadForGender(genderTable, "_");
-            if (value != null) {
-                return value;
+            if (loadForGender(genderTable, "_", value)) {
+                return true;
             }
-            return null;
+            return false;
         }
 
         // Tries to load data for the given gender from `genderTable`. Returns true
         // if found, returning the data in `value`. The returned data will be for
         // the configured case if found, falling back to "nominative" and no-case if
         // not.
-        private UResource.Value loadForGender(UResource.Table genderTable, String genderVal) {
-            UResource.Value value;
+        private boolean
+        loadForGender(UResource.Table genderTable, String genderVal, UResource.Value value) {
             if (!genderTable.findValue(genderVal, value)) {
-                return null;
+                return false;
             }
             UResource.Table caseTable = value.getTable();
-            if (!caseVariant.isEmpty()) {
-                value = loadForCase(caseTable, caseVariant);
-                if (value != null) {
-                    return value;
+            if (caseVariant != null && !caseVariant.isEmpty()) {
+                if (loadForCase(caseTable, caseVariant, value)) {
+                    return true;
                 }
                 if (caseVariant != "nominative") {
-                    value = loadForCase(caseTable, "nominative");
-                    if (value != null) {
-                        return value;
+                    if (loadForCase(caseTable, "nominative", value)) {
+                        return true;
                     }
                 }
             }
-            value = loadForCase(caseTable, "_");
-            if (value != null) {
-                return value;
+            if (loadForCase(caseTable, "_", value)) {
+                return true;
             }
-            return null;
+            return false;
         }
 
         // Tries to load data for the given case from `caseTable`. Returns null
         // if not found.
-        private UResource.Value loadForCase(UResource.Table caseTable, String caseValue) {
-            UResource.Value value;
+        private boolean loadForCase(UResource.Table caseTable, String caseValue, UResource.Value value) {
             if (!caseTable.findValue(caseValue, value)) {
-                return null;
+                return false;
             }
-            return value;
+            return true;
         }
 
         String gender;
@@ -284,7 +275,7 @@ public class LongNameHandler
         ICUResourceBundle unitsBundle =
             (ICUResourceBundle)UResourceBundle.getBundleInstance(ICUData.ICU_UNIT_BASE_NAME, locale);
 
-        StringBuilder key;
+        StringBuilder key = new StringBuilder();
         key.append("units");
         if (width == UnitWidth.NARROW) {
             key.append("Narrow");
@@ -575,7 +566,8 @@ public class LongNameHandler
     //
     // Pass a null to data1 if the structure has no concept of value="1" (e.g.
     // "prefix" doesn't).
-    String getDerivedGender(ULocale locale, String structure, String[] data0, String[] data1) {
+    private static String
+    getDerivedGender(ULocale locale, String structure, String[] data0, String[] data1) {
         String val = getDeriveCompoundRule(locale, "gender", structure);
         if (val.length() == 1) {
             switch (val.charAt(0)) {
