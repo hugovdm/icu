@@ -63,7 +63,20 @@ public class LongNameHandler
         return result;
     }
 
-    private enum PlaceholderPosition { EMPTY, NONE, BEGINNING, MIDDLE, END }
+    private enum PlaceholderPosition { NONE, BEGINNING, MIDDLE, END }
+
+    private static class ExtractCorePatternResult {
+        // extractCorePatternResult(String coreUnit,
+        //                          PlaceholderPosition placeholderPosition,
+        //                          char joinerChar) {
+        //     this.coreUnit = coreUnit;
+        //     this.placeholderPosition = placeholderPosition;
+        //     this.joinerChar = joinerChar;
+        // }
+        String coreUnit;
+        PlaceholderPosition placeholderPosition;
+        char joinerChar;
+    }
 
     /**
      * Returns three outputs extracted from pattern.
@@ -76,39 +89,38 @@ public class LongNameHandler
      *   contains the space character (if any) that separated the placeholder from
      *   the rest of the pattern. Otherwise, joinerChar is set to NUL.
      */
-    void extractCorePattern(const UnicodeString &pattern,
-                            UnicodeString &coreUnit,
-                            PlaceholderPosition &placeholderPosition,
-                            UChar &joinerChar) {
-        joinerChar = 0;
-        if (pattern.startsWith("{0}", 3)) {
-            placeholderPosition = PH_BEGINNING;
-            if (u_isJavaSpaceChar(pattern[3])) {
-                joinerChar = pattern[3];
-                coreUnit.setTo(pattern, 4, pattern.length() - 4);
-                // Expecting no double spaces
-                U_ASSERT(!u_isJavaSpaceChar(pattern[4]));
+    private static ExtractCorePatternResult extractCorePattern(String pattern) {
+        ExtractCorePatternResult result = new ExtractCorePatternResult();
+        result.joinerChar = 0;
+        int len = pattern.length();
+        if (pattern.startsWith("{0}")) {
+            result.placeholderPosition = PlaceholderPosition.BEGINNING;
+            if (len > 3 && Character.isSpace(pattern.charAt(3))) {
+                result.joinerChar = pattern.charAt(3);
+                result.coreUnit = pattern.substring(4);
+                // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
+                // assert !Character.isSpaceChar(pattern.charAt(4)) : "Expecting no double spaces";
             } else {
-                coreUnit.setTo(pattern, 3, pattern.length() - 3);
+                result.coreUnit = pattern.substring(3);
             }
-        } else if (pattern.endsWith("{0}", 3)) {
-            placeholderPosition = PH_END;
-            int32_t len = pattern.length();
-            if (u_isJavaSpaceChar(pattern[len - 4])) {
-                coreUnit.setTo(pattern, 0, pattern.length() - 4);
-                joinerChar = pattern[len - 4];
-                // Expecting no double spaces
-                U_ASSERT(!u_isJavaSpaceChar(pattern[len - 5]));
+        } else if (pattern.endsWith("{0}")) {
+            result.placeholderPosition = PlaceholderPosition.END;
+            if (Character.isSpaceChar(pattern.charAt(len - 4))) {
+                result.coreUnit = pattern.substring(0, len - 4);
+                result.joinerChar = pattern.charAt(len - 4);
+                // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
+                // assert !Character.isSpaceChar(pattern.charAt(len - 5)) : "Expecting no double spaces";)
             } else {
-                coreUnit.setTo(pattern, 0, pattern.length() - 3);
+                result.coreUnit = pattern.substring(0, len - 3);
             }
-        } else if (pattern.indexOf("{0}", 0, 1, pattern.length() - 2) == -1) {
-            placeholderPosition = PH_NONE;
-            coreUnit = pattern;
+        } else if (pattern.indexOf("{0}", 1) == -1) {
+            result.placeholderPosition = PlaceholderPosition.NONE;
+            result.coreUnit = pattern;
         } else {
-            placeholderPosition = PH_MIDDLE;
-            coreUnit = pattern;
+            result.placeholderPosition = PlaceholderPosition.MIDDLE;
+            result.coreUnit = pattern;
         }
+        return result;
     }
 
     //////////////////////////
@@ -117,37 +129,28 @@ public class LongNameHandler
 
     // Gets the gender of a built-in unit: unit must be a built-in. Returns an empty
     // string both in case of unknown gender and in case of unknown unit.
-    const char *getGenderForBuiltin(const Locale &locale, MeasureUnit builtinUnit, UErrorCode &status) {
-        LocalUResourceBundlePointer unitsBundle(ures_open(U_ICUDATA_UNIT, locale.getName(), &status));
-        if (U_FAILURE(status)) {
-            return "";
-        }
+    private static String getGenderForBuiltin(ULocale locale, MeasureUnit builtinUnit) {
+        ICUResourceBundle unitsBundle = (ICUResourceBundle) UResourceBundle.getBundleInstance(ICUData.ICU_UNIT_BASE_NAME, locale));
+
+        StringBuilder key = new StringBuilder();
+        key.append("units/");
+        key.append(builtinUnit.getType());
+        key.append("/");
 
         // Map duration-year-person, duration-week-person, etc. to duration-year, duration-week, ...
         // TODO(ICU-20400): Get duration-*-person data properly with aliases.
-        StringPiece subtypeForResource;
-        int32_t subtypeLen = static_cast<int32_t>(uprv_strlen(builtinUnit.getSubtype()));
-        if (subtypeLen > 7 && uprv_strcmp(builtinUnit.getSubtype() + subtypeLen - 7, "-person") == 0) {
-            subtypeForResource = {builtinUnit.getSubtype(), subtypeLen - 7};
+        if (builtinUnit.getSubtype() != null && builtinUnit.getSubtype().endsWith("-person")) {
+            key.append(builtinUnit.getSubtype(), 0, builtinUnit.getSubtype().length() - 7);
         } else {
-            subtypeForResource = builtinUnit.getSubtype();
+            key.append(builtinUnit.getSubtype());
         }
+        key.append("/gender");
 
-        CharString key;
-        key.append("units/", status);
-        key.append(builtinUnit.getType(), status);
-        key.append("/", status);
-        key.append(subtypeForResource, status);
-        key.append("/gender", status);
-
-        UErrorCode localStatus = status;
-        StackUResourceBundle fillIn;
-        ures_getByKeyWithFallback(unitsBundle.getAlias(), key.data(), fillIn.getAlias(), &localStatus);
-        if (U_SUCCESS(localStatus)) {
-            status = localStatus;
-            UnicodeString directString = ures_getUnicodeString(fillIn.getAlias(), &status);
-            return getGenderString(directString, status);
-        } else {
+        try {
+            ICUResourceBundle stackBundle =
+                (ICUResourceBundle)unitsBundle.getWithFallback(key.toString());
+            return stackBundle.getString();
+        } catch (Exception e) {
             // TODO(icu-units#28): "$unitRes/gender" does not exist. Do we want to
             // check whether the parent "$unitRes" exists? Then we could return
             // U_MISSING_RESOURCE_ERROR for incorrect usage (e.g. builtinUnit not
@@ -171,142 +174,141 @@ public class LongNameHandler
     // TODO: Spec violation: expects presence of "count" - does not fallback to an
     // absent "count"! If this fallback were added, getCompoundValue could be
     // superseded?
-    class InflectedPluralSink extends UResource.Sink {
-
-        // Accepts `char*` rather than StringPiece because
-        // ResourceTable::findValue(...) requires a null-terminated `char*`.
-        //
+    private static final class InflectedPluralSink extends UResource.Sink {
         // NOTE: outArray MUST have a length of at least ARRAY_LENGTH. No bounds
         // checking is performed.
-        public InflectedPluralSink(const char *gender, const char *caseVariant, UnicodeString *outArray)
-            : gender(gender), caseVariant(caseVariant), outArray(outArray) {
-            // Initialize the array to bogus strings.
-            for (int32_t i = 0; i < ARRAY_LENGTH; i++) {
-                outArray[i].setToBogus();
+        public InflectedPluralSink(String gender, String caseVariant, String[] outArray) {
+            this.gender = gender;
+            this.caseVariant = caseVariant;
+            this.outArray = outArray;
+            for (int i = 0; i < ARRAY_LENGTH; i++) {
+                outArray[i] = null;
             }
         }
 
         // See ResourceSink::put().
-        public void
-        put(const char *key, ResourceValue &value, UBool /*noFallback*/, UErrorCode &status) U_OVERRIDE {
-            ResourceTable pluralsTable = value.getTable(status);
-            if (U_FAILURE(status)) {
-                return;
-            }
-            for (int32_t i = 0; pluralsTable.getKeyAndValue(i, key, value); ++i) {
-                int32_t pluralIndex = getIndex(key, status);
-                if (U_FAILURE(status)) {
-                    return;
-                }
-                if (!outArray[pluralIndex].isBogus()) {
+        @Override
+        public void put(UResource.Key key, UResource.Value value, boolean noFallback) {
+            UResource.Table pluralsTable = value.getTable();
+            for (int i = 0; pluralsTable.getKeyAndValue(i, key, value); ++i) {
+                String keyString = key.toString();
+                int pluralIndex = getIndex(keyString);
+                if (outArray[pluralIndex] != null) {
                     // We already have a pattern
                     continue;
                 }
-                ResourceTable genderTable = value.getTable(status);
-                if (loadForPluralForm(genderTable, value, status)) {
-                    outArray[pluralIndex] = value.getUnicodeString(status);
+                UResource.Table genderTable = value.getTable();
+                value = loadForPluralForm(genderTable);
+                if (value != null) {
+                    outArray[pluralIndex] = value.getString();
                 }
             }
         }
 
-        // Tries to load data for the configured gender from `genderTable`. Returns
-        // true if found, returning the data in `value`. The returned data will be
-        // for the configured gender if found, falling back to "neuter" and
-        // no-gender if not.
-        private bool
-        loadForPluralForm(const ResourceTable &genderTable, ResourceValue &value, UErrorCode &status) {
-            if (uprv_strcmp(gender, "") != 0) {
-                if (loadForGender(genderTable, gender, value, status)) {
-                    return true;
+        // Tries to load data for the configured gender from `genderTable`. The
+        // returned data will be for the configured gender if found, falling
+        // back to "neuter" and no-gender. If none of those are found, null is
+        // returned.
+        private UResource.Value loadForPluralForm(UResource.Table genderTable) {
+            UResource.Value value;
+            if (!gender.isEmpty()) {
+                value = loadForGender(genderTable, gender);
+                if (value != null) {
+                    return value;
                 }
-                if (uprv_strcmp(gender, "neuter") != 0 &&
-                    loadForGender(genderTable, "neuter", value, status)) {
-                    return true;
+                if (gender != "neuter") {
+                    value = loadForGender(genderTable, "neuter");
+                    if (value != null) {
+                        return value;
+                    }
                 }
             }
-            if (loadForGender(genderTable, "_", value, status)) {
-                return true;
+            value = loadForGender(genderTable, "_");
+            if (value != null) {
+                return value;
             }
-            return false;
+            return null;
         }
 
         // Tries to load data for the given gender from `genderTable`. Returns true
         // if found, returning the data in `value`. The returned data will be for
         // the configured case if found, falling back to "nominative" and no-case if
         // not.
-        private bool loadForGender(const ResourceTable &genderTable,
-                                   const char *genderVal,
-                                   ResourceValue &value,
-                                   UErrorCode &status) {
+        private UResource.Value loadForGender(UResource.Table genderTable, String genderVal) {
+            UResource.Value value;
             if (!genderTable.findValue(genderVal, value)) {
-                return false;
+                return null;
             }
-            ResourceTable caseTable = value.getTable(status);
-            if (uprv_strcmp(caseVariant, "") != 0) {
-                if (loadForCase(caseTable, caseVariant, value)) {
-                    return true;
+            UResource.Table caseTable = value.getTable();
+            if (!caseVariant.isEmpty()) {
+                value = loadForCase(caseTable, caseVariant);
+                if (value != null) {
+                    return value;
                 }
-                if (uprv_strcmp(caseVariant, "nominative") != 0 &&
-                    loadForCase(caseTable, "nominative", value)) {
-                    return true;
+                if (caseVariant != "nominative") {
+                    value = loadForCase(caseTable, "nominative");
+                    if (value != null) {
+                        return value;
+                    }
                 }
             }
-            if (loadForCase(caseTable, "_", value)) {
-                return true;
+            value = loadForCase(caseTable, "_");
+            if (value != null) {
+                return value;
             }
-            return false;
+            return null;
         }
 
-        // Tries to load data for the given case from `caseTable`. Returns true if
-        // found, returning the data in `value`.
-        bool loadForCase(const ResourceTable &caseTable, const char *caseValue, ResourceValue &value) {
+        // Tries to load data for the given case from `caseTable`. Returns null
+        // if not found.
+        private UResource.Value loadForCase(UResource.Table caseTable, String caseValue) {
+            UResource.Value value;
             if (!caseTable.findValue(caseValue, value)) {
-                return false;
+                return null;
             }
-            return true;
+            return value;
         }
 
-        private const char *gender;
-        private const char *caseVariant;
-        private UnicodeString *outArray;
+        String gender;
+        String caseVariant;
+        String[] outArray;
     }
 
-    static void getInflectedMeasureData(StringPiece subKey,
-                                        const Locale &locale,
-                                        const UNumberUnitWidth &width,
-                                        const char *gender,
-                                        const char *caseVariant,
-                                        UnicodeString *outArray,
-                                        UErrorCode &status) {
-        InflectedPluralSink sink(gender, caseVariant, outArray);
-        LocalUResourceBundlePointer unitsBundle(ures_open(U_ICUDATA_UNIT, locale.getName(), &status));
-        if (U_FAILURE(status)) {
-            return;
+    static void getInflectedMeasureData(String subKey,
+                                        ULocale locale,
+                                        UnitWidth width,
+                                        String gender,
+                                        String caseVariant,
+                                        String[] outArray) {
+        InflectedPluralSink sink = new InflectedPluralSink(gender, caseVariant, outArray);
+        ICUResourceBundle unitsBundle =
+            (ICUResourceBundle)UResourceBundle.getBundleInstance(ICUData.ICU_UNIT_BASE_NAME, locale);
+
+        StringBuilder key;
+        key.append("units");
+        if (width == UnitWidth.NARROW) {
+            key.append("Narrow");
+        } else if (width == UnitWidth.SHORT) {
+            key.append("Short");
+        }
+        key.append("/");
+        key.append(subKey);
+
+        try {
+            unitsBundle.getAllItemsWithFallback(key.toString(), sink);
+            if (width == UnitWidth.SHORT) {
+                return;
+            }
+        } catch (Exception e) {
+            // Continue: fall back to short
         }
 
-        CharString key;
-        key.append("units", status);
-        if (width == UNUM_UNIT_WIDTH_NARROW) {
-            key.append("Narrow", status);
-        } else if (width == UNUM_UNIT_WIDTH_SHORT) {
-            key.append("Short", status);
-        }
-        key.append("/", status);
-        key.append(subKey, status);
-
-        UErrorCode localStatus = status;
-        ures_getAllItemsWithFallback(unitsBundle.getAlias(), key.data(), sink, status);
-        if (width == UNUM_UNIT_WIDTH_SHORT) {
-            status = localStatus;
-            return;
-        }
-
-        // TODO(ICU-13353): The fallback to short does not work in ICU4C.
-        // Manually fall back to short (this is done automatically in Java).
-        key.clear();
-        key.append("unitsShort/", status);
-        key.append(subKey, status);
-        ures_getAllItemsWithFallback(unitsBundle.getAlias(), key.data(), sink, status);
+        // TODO(ICU-13353): The ICU4J fallback mechanism works differently, is
+        // this explicit fallback necessary? FIXME(review)
+        key.setLength(0);
+        key.append("unitsShort/");
+        key.append(subKey);
+        unitsBundle.getAllItemsWithFallback(key.toString(), sink);
     }
 
     private static final class PluralTableSink extends UResource.Sink {
@@ -571,21 +573,17 @@ public class LongNameHandler
     // data0 and data1 should be pattern arrays (UnicodeString[ARRAY_SIZE]) that
     // correspond to value="0" and value="1".
     //
-    // Pass a nullptr to data1 if the structure has no concept of value="1" (e.g.
+    // Pass a null to data1 if the structure has no concept of value="1" (e.g.
     // "prefix" doesn't).
-    UnicodeString getDerivedGender(Locale locale,
-                                   const char *structure,
-                                   UnicodeString *data0,
-                                   UnicodeString *data1,
-                                   UErrorCode &status) {
-        UnicodeString val = getDeriveCompoundRule(locale, "gender", structure, status);
+    String getDerivedGender(ULocale locale, String structure, String[] data0, String[] data1) {
+        String val = getDeriveCompoundRule(locale, "gender", structure);
         if (val.length() == 1) {
-            switch (val[0]) {
+            switch (val.charAt(0)) {
             case '0':
                 return data0[GENDER_INDEX];
             case '1':
-                if (data1 == nullptr) {
-                    return {};
+                if (data1 == null) {
+                    return null; // FIXME(review): null or ""?
                 }
                 return data1[GENDER_INDEX];
             }

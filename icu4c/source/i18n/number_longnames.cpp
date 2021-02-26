@@ -145,33 +145,31 @@ enum PlaceholderPosition { PH_EMPTY, PH_NONE, PH_BEGINNING, PH_MIDDLE, PH_END };
  *   contains the space character (if any) that separated the placeholder from
  *   the rest of the pattern. Otherwise, joinerChar is set to NUL.
  */
-void extractCorePattern(const UnicodeString &pattern,
-                        UnicodeString &coreUnit,
-                        PlaceholderPosition &placeholderPosition,
-                        UChar &joinerChar) {
+void extractCorePattern(const UnicodeString &pattern, UnicodeString &coreUnit,
+                        PlaceholderPosition &placeholderPosition, UChar &joinerChar) {
     joinerChar = 0;
+    int32_t len = pattern.length();
     if (pattern.startsWith(u"{0}", 3)) {
         placeholderPosition = PH_BEGINNING;
         if (u_isJavaSpaceChar(pattern[3])) {
             joinerChar = pattern[3];
-            coreUnit.setTo(pattern, 4, pattern.length() - 4);
-            // Expecting no double spaces
-            U_ASSERT(!u_isJavaSpaceChar(pattern[4]));
+            coreUnit.setTo(pattern, 4, len - 4);
+            // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
+            // U_ASSERT(!u_isJavaSpaceChar(pattern[4]));
         } else {
-            coreUnit.setTo(pattern, 3, pattern.length() - 3);
+            coreUnit.setTo(pattern, 3, len - 3);
         }
     } else if (pattern.endsWith(u"{0}", 3)) {
         placeholderPosition = PH_END;
-        int32_t len = pattern.length();
         if (u_isJavaSpaceChar(pattern[len - 4])) {
-            coreUnit.setTo(pattern, 0, pattern.length() - 4);
+            coreUnit.setTo(pattern, 0, len - 4);
             joinerChar = pattern[len - 4];
-            // Expecting no double spaces
-            U_ASSERT(!u_isJavaSpaceChar(pattern[len - 5]));
+            // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
+            // U_ASSERT(!u_isJavaSpaceChar(pattern[len - 5]));
         } else {
-            coreUnit.setTo(pattern, 0, pattern.length() - 3);
+            coreUnit.setTo(pattern, 0, len - 3);
         }
-    } else if (pattern.indexOf(u"{0}", 0, 1, pattern.length() - 2) == -1) {
+    } else if (pattern.indexOf(u"{0}", 3, 1, len - 2) == -1) {
         placeholderPosition = PH_NONE;
         coreUnit = pattern;
     } else {
@@ -361,7 +359,7 @@ void getInflectedMeasureData(StringPiece subKey,
     key.append(subKey, status);
 
     UErrorCode localStatus = status;
-    ures_getAllItemsWithFallback(unitsBundle.getAlias(), key.data(), sink, status);
+    ures_getAllItemsWithFallback(unitsBundle.getAlias(), key.data(), sink, localStatus);
     if (width == UNUM_UNIT_WIDTH_SHORT) {
         status = localStatus;
         return;
