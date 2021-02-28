@@ -10,6 +10,7 @@ import java.util.MissingResourceException;
 import com.ibm.icu.impl.CurrencyData;
 import com.ibm.icu.impl.ICUData;
 import com.ibm.icu.impl.ICUResourceBundle;
+import com.ibm.icu.impl.PatternProps;
 import com.ibm.icu.impl.SimpleFormatterImpl;
 import com.ibm.icu.impl.StandardPlural;
 import com.ibm.icu.impl.UResource;
@@ -756,11 +757,8 @@ public class LongNameHandler
             // Some "one" pattern may not contain "{0}". For example in "ar" or "ne" locale.
             String denominatorFormatter =
                 SimpleFormatterImpl.compileToStringMinMaxArguments(rawDenominatorFormat, sb, 0, 1);
-            // FIXME(review): Trim should be insufficient, check that tests catch it!
-            String denominatorString =
-                SimpleFormatterImpl.getTextWithNoArguments(denominatorFormatter).trim();
-            // FIXME(review):
-            denominatorString = denominatorString.replaceAll("(^\\h*)|(\\h*$)", ""); // Trim all spaces.
+            String denominatorString = PatternProps.trimSpaceChar(
+                SimpleFormatterImpl.getTextWithNoArguments(denominatorFormatter));
 
             // 9. If the denominatorString is empty, set result to
             //    [numeratorString], otherwise set result to format(perPattern,
