@@ -143,10 +143,13 @@ enum PlaceholderPosition { PH_EMPTY, PH_NONE, PH_BEGINNING, PH_MIDDLE, PH_END };
  *   found.
  * @param joinerChar Iff the placeholder was at the beginning or end, joinerChar
  *   contains the space character (if any) that separated the placeholder from
- *   the rest of the pattern. Otherwise, joinerChar is set to NUL.
+ *   the rest of the pattern. Otherwise, joinerChar is set to NUL. Only one
+ *   space character is considered.
  */
-void extractCorePattern(const UnicodeString &pattern, UnicodeString &coreUnit,
-                        PlaceholderPosition &placeholderPosition, UChar &joinerChar) {
+void extractCorePattern(const UnicodeString &pattern,
+                        UnicodeString &coreUnit,
+                        PlaceholderPosition &placeholderPosition,
+                        UChar &joinerChar) {
     joinerChar = 0;
     int32_t len = pattern.length();
     if (pattern.startsWith(u"{0}", 3)) {
@@ -154,8 +157,6 @@ void extractCorePattern(const UnicodeString &pattern, UnicodeString &coreUnit,
         if (u_isJavaSpaceChar(pattern[3])) {
             joinerChar = pattern[3];
             coreUnit.setTo(pattern, 4, len - 4);
-            // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
-            // U_ASSERT(!u_isJavaSpaceChar(pattern[4]));
         } else {
             coreUnit.setTo(pattern, 3, len - 3);
         }
@@ -164,8 +165,6 @@ void extractCorePattern(const UnicodeString &pattern, UnicodeString &coreUnit,
         if (u_isJavaSpaceChar(pattern[len - 4])) {
             coreUnit.setTo(pattern, 0, len - 4);
             joinerChar = pattern[len - 4];
-            // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
-            // U_ASSERT(!u_isJavaSpaceChar(pattern[len - 5]));
         } else {
             coreUnit.setTo(pattern, 0, len - 3);
         }
@@ -1414,9 +1413,7 @@ void MixedUnitLongNameHandler::forMeasureUnit(const Locale &loc,
 
     MeasureUnitImpl temp;
     const MeasureUnitImpl &impl = MeasureUnitImpl::forMeasureUnit(mixedUnit, temp, status);
-    // FIXME(review): in Java this one's still an assert. Calling code clearly
-    // checks for this, it is an invariant, an assert should be adequate. Our
-    // philosophy? Both?
+    // Defensive, for production code:
     if (impl.complexity != UMEASURE_UNIT_MIXED) {
         // Should be using the normal LongNameHandler
         status = U_UNSUPPORTED_ERROR;
