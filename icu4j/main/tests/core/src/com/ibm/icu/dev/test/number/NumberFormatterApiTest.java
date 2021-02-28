@@ -1135,7 +1135,7 @@ public class NumberFormatterApiTest extends TestFmwk {
         try {
             lnf.format(1);
             fail("Expected failure for pow4-mile, got: " + lnf.format(1) + ".");
-        } catch (MissingResourceException e) {
+        } catch (UnsupportedOperationException e) {
             // pass
         }
 

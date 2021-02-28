@@ -1065,7 +1065,7 @@ void LongNameHandler::processPatternTimes(MeasureUnitImpl &&productUnit,
             getInflectedMeasureData(dimensionalityKey.toStringPiece(), loc, width, gender,
                                     singleCaseVariant, dimensionalityPrefixPatterns, status);
             if (U_FAILURE(status)) {
-                // At the time of writing, only power2 and power3 are supported.
+                // At the time of writing, only pow2 and pow3 are supported.
                 // Attempting to format other powers results in a
                 // U_RESOURCE_TYPE_MISMATCH. We convert the error if we
                 // understand it:

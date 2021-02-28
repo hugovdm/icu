@@ -61,6 +61,9 @@ public class MixedUnitLongNameHandler
                                                           String unitDisplayName,
                                                           PluralRules rules,
                                                           MicroPropsGenerator parent) {
+        // In Java we rely on the assert. In ICU4C, where we can efficiently
+        // check complexity via a const MeasureUnitImpl, we also return errors
+        // in production mode.
         assert (mixedUnit.getComplexity() == MeasureUnit.Complexity.MIXED);
 
         MixedUnitLongNameHandler result = new MixedUnitLongNameHandler(rules, parent);

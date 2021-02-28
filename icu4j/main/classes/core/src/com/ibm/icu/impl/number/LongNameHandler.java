@@ -70,13 +70,6 @@ public class LongNameHandler
     private enum PlaceholderPosition { NONE, BEGINNING, MIDDLE, END }
 
     private static class ExtractCorePatternResult {
-        // extractCorePatternResult(String coreUnit,
-        //                          PlaceholderPosition placeholderPosition,
-        //                          char joinerChar) {
-        //     this.coreUnit = coreUnit;
-        //     this.placeholderPosition = placeholderPosition;
-        //     this.joinerChar = joinerChar;
-        // }
         String coreUnit;
         PlaceholderPosition placeholderPosition;
         char joinerChar;
@@ -87,11 +80,12 @@ public class LongNameHandler
      *
      * @param coreUnit is extracted as per Extract(...) in the spec:
      *   https://unicode.org/reports/tr35/tr35-general.html#compound-units
-     * @param PlaceholderPosition indicates where in the string the placeholder was
-     *   found.
-     * @param joinerChar Iff the placeholder was at the beginning or end, joinerChar
-     *   contains the space character (if any) that separated the placeholder from
-     *   the rest of the pattern. Otherwise, joinerChar is set to NUL.
+     * @param PlaceholderPosition indicates where in the string the placeholder
+     *   was found.
+     * @param joinerChar Iff the placeholder was at the beginning or end,
+     *   joinerChar contains the space character (if any) that separated the
+     *   placeholder from the rest of the pattern. Otherwise, joinerChar is set
+     *   to NUL. Only one space character is considered.
      */
     private static ExtractCorePatternResult extractCorePattern(String pattern) {
         ExtractCorePatternResult result = new ExtractCorePatternResult();
@@ -102,8 +96,6 @@ public class LongNameHandler
             if (len > 3 && Character.isSpaceChar(pattern.charAt(3))) {
                 result.joinerChar = pattern.charAt(3);
                 result.coreUnit = pattern.substring(4);
-                // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
-                // assert !Character.isSpaceChar(pattern.charAt(4)) : "Expecting no double spaces";
             } else {
                 result.coreUnit = pattern.substring(3);
             }
@@ -112,8 +104,6 @@ public class LongNameHandler
             if (Character.isSpaceChar(pattern.charAt(len - 4))) {
                 result.coreUnit = pattern.substring(0, len - 4);
                 result.joinerChar = pattern.charAt(len - 4);
-                // Expecting no double spaces - FIXME(review): assert failure feels bad, even in dev mode
-                // assert !Character.isSpaceChar(pattern.charAt(len - 5)) : "Expecting no double spaces";)
             } else {
                 result.coreUnit = pattern.substring(0, len - 3);
             }
@@ -298,8 +288,8 @@ public class LongNameHandler
             // Continue: fall back to short
         }
 
-        // TODO(ICU-13353): The ICU4J fallback mechanism works differently, is
-        // this explicit fallback necessary? FIXME(review)
+        // TODO(ICU-13353): The ICU4J fallback mechanism works differently:
+        // investigate? Without this code, unit tests do fail:
         key.setLength(0);
         key.append("unitsShort/");
         key.append(subKey);
@@ -437,13 +427,21 @@ public class LongNameHandler
         key.append(compoundKey);
         try {
             return resource.getStringWithFallback(key.toString());
-        } catch (MissingResourceException e) {
-            // FIXME(review): catch all exceptions? Might other issues happen?
-            throw new IllegalArgumentException(
-                    "Could not find x-per-y format for " + locale + ", width " + width);
-            // FIXME(review): how does Java's fallback process differ from
-            // ICU4C's? In ICU4C we have code for explicitly falling back to
-            // unitsShort.
+        } catch (Exception e) {
+            if (width == UnitWidth.SHORT) {
+                return "";
+            }
+        }
+
+        // TODO(icu-units#28): this code is not exercised by unit tests yet.
+        // Also, what's the fallback mechanism mentioned in ICU-13353?
+        key.setLength(0);
+        key.append("unitsShort/compound/");
+        key.append(compoundKey);
+        try {
+            return resource.getStringWithFallback(key.toString());
+        } catch (Exception e) {
+            return "";
         }
     }
 
@@ -509,12 +507,10 @@ public class LongNameHandler
             }
         }
 
-        // FIXME(review): is "getValue0" more idiomatic?
         String value0(String compoundValue) {
             return (this.value0 != null) ? this.value0 : compoundValue;
         }
 
-        // FIXME(review): is "getValue1" more idiomatic?
         String value1(String compoundValue) {
             return (this.value1 != null) ? this.value1 : compoundValue;
         }
@@ -579,7 +575,7 @@ public class LongNameHandler
                 return data0[GENDER_INDEX];
             case '1':
                 if (data1 == null) {
-                    return null; // FIXME(review): null or ""?
+                    return null;
                 }
                 return data1[GENDER_INDEX];
             }
@@ -800,6 +796,9 @@ public class LongNameHandler
                                             UnitWidth width,
                                             String caseVariant,
                                             String[] outArray) {
+        assert outArray[StandardPlural.OTHER.ordinal()] == null : "outArray must have only null values!";
+        assert outArray[PER_INDEX] == null : "outArray must have only null values!";
+
         if (productUnit == null) {
             outArray[StandardPlural.OTHER.ordinal()] = "";
             outArray[PER_INDEX] = "";
@@ -809,14 +808,6 @@ public class LongNameHandler
             // These are handled by MixedUnitLongNameHandler
             throw new UnsupportedOperationException("Mixed units not supported by LongNameHandler");
         }
-
-        // FIXME(review): do we need this precaution?
-// #if U_DEBUG
-//         for (int32_t pluralIndex = 0; pluralIndex < ARRAY_LENGTH; pluralIndex++) {
-//             U_ASSERT(outArray[pluralIndex].length() == 0);
-//             U_ASSERT(!outArray[pluralIndex].isBogus());
-//         }
-// #endif
 
         if (productUnit.getIdentifier() == null) {
             // TODO(icu-units#28): consider when serialize should be called.
@@ -866,7 +857,7 @@ public class LongNameHandler
             globalPlaceholder[pluralIndex] = null;
         }
 
-        // null (FIXME?) represents "compound" (propagate the plural form).
+        // null represents "compound" (propagate the plural form).
         String pluralCategory = null;
         DerivedComponents derivedTimesPlurals = new DerivedComponents(loc, "plural", "times");
         DerivedComponents derivedTimesCases = new DerivedComponents(loc, "case", "times");
@@ -917,13 +908,14 @@ public class LongNameHandler
                 try {
                     getInflectedMeasureData(dimensionalityKey.toString(), loc, width, gender,
                                             singleCaseVariant, dimensionalityPrefixPatterns);
-                } catch (UnsupportedClassVersionError e) {
-                    // At the time of writing, only power2 and power3 are supported.
+                } catch (MissingResourceException e) {
+                    // At the time of writing, only pow2 and pow3 are supported.
                     // Attempting to format other powers results in a
                     // U_RESOURCE_TYPE_MISMATCH. We convert the error if we
                     // understand it:
                     if (dimensionality > 3) {
-                        throw new UnsupportedOperationException("FIXME");
+                        throw new UnsupportedOperationException("powerN not supported for N > 3: " +
+                                                                productUnit.getIdentifier());
                     } else {
                         throw e;
                     }
