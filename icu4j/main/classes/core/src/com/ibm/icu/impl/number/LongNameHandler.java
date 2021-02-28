@@ -702,8 +702,8 @@ public class LongNameHandler
                 }
             }
         }
-        MeasureUnitImpl unitImpl = unit.getCopyOfMeasureUnitImpl();
-        MeasureUnitImpl perUnitImpl = perUnit != null ? perUnit.getCopyOfMeasureUnitImpl() : null;
+        MeasureUnitImpl unitImpl = unit == null ? null : unit.getCopyOfMeasureUnitImpl();
+        MeasureUnitImpl perUnitImpl = perUnit == null ? null : perUnit.getCopyOfMeasureUnitImpl();
 
         // TODO(icu-units#28): check placeholder logic, see if it needs to be
         // present here instead of only in processPatternTimes:
@@ -716,14 +716,11 @@ public class LongNameHandler
         String[] numeratorUnitData = new String[ARRAY_LENGTH];
         processPatternTimes(unitImpl, loc, width, derivedPerCases.value0(unitDisplayCase),
                             numeratorUnitData);
-        assert numeratorUnitData[StandardPlural.OTHER.ordinal()] != null;
 
         // 7. denominatorUnitString
         String[] denominatorUnitData = new String[ARRAY_LENGTH];
         processPatternTimes(perUnitImpl, loc, width, derivedPerCases.value1(unitDisplayCase),
                             denominatorUnitData);
-        assert denominatorUnitData[StandardPlural.OTHER.ordinal()] !=
-            null : "denominatorUnitData: " + denominatorUnitData;
 
         // TODO(icu-units#139):
         // - implement DerivedComponents for "plural/times" and "plural/power":
@@ -1167,10 +1164,14 @@ public class LongNameHandler
         String trailCompiled = SimpleFormatterImpl.compileToStringMinMaxArguments(trailFormat, sb, 1, 1);
         for (StandardPlural plural : StandardPlural.VALUES) {
             String leadFormat = getWithPlural(leadFormats, plural);
-            // FIXME: drop lead if empty. (Checking first that a unit test catches this.)
-            String compoundFormat = SimpleFormatterImpl.formatCompiledPattern(trailCompiled, leadFormat);
-            String compoundCompiled = SimpleFormatterImpl
-                    .compileToStringMinMaxArguments(compoundFormat, sb, 0, 1);
+            String compoundFormat;
+            if (leadFormat.length() == 0) {
+                compoundFormat = trailFormat;
+            } else {
+                compoundFormat = SimpleFormatterImpl.formatCompiledPattern(trailCompiled, leadFormat);
+            }
+            String compoundCompiled =
+                SimpleFormatterImpl.compileToStringMinMaxArguments(compoundFormat, sb, 0, 1);
             Modifier.Parameters parameters = new Modifier.Parameters();
             parameters.obj = this;
             parameters.signum = null; // Signum ignored
