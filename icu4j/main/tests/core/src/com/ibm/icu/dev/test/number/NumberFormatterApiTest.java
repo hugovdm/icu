@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -538,7 +539,7 @@ public class NumberFormatterApiTest extends TestFmwk {
 
         assertFormatDescending(
                 "Hectometers",
-                "measure-unit/length-hectometer",
+                "unit/hectometer",
                 "unit/hectometer",
                 NumberFormatter.with().unit(MeasureUnit.forIdentifier("hectometer")),
                 ULocale.ENGLISH,
@@ -680,7 +681,7 @@ public class NumberFormatterApiTest extends TestFmwk {
                         .unit(MeasureUnit.forIdentifier("kilometer-per-megaparsec-second")),
                 new ULocale("en"),
                 74, // Approximate 2019-03-18 measurement
-                "74 km/s.Mpc");
+                "74 km/Mpc⋅sec");
 
         assertFormatSingle(
                 "Mixed unit",
@@ -1134,7 +1135,7 @@ public class NumberFormatterApiTest extends TestFmwk {
         try {
             lnf.format(1);
             fail("Expected failure for pow4-mile, got: " + lnf.format(1) + ".");
-        } catch (UnsupportedOperationException e) { // FIXME: U_RESOURCE_TYPE_MISMATCH
+        } catch (MissingResourceException e) {
             // pass
         }
 
@@ -2184,7 +2185,6 @@ public class NumberFormatterApiTest extends TestFmwk {
                 //   value1="compound"/>
                 //   <deriveComponent feature="plural" structure="power" value0="compound"
                 //   value1="compound"/>
-                // TODO: this looks wrong, and will change if CLDR-14533 causes a change:
                 new UnitInflectionTestCase("square-decimeter-square-second", "fr", null, 1,
                                            "1\u00A0décimètre carré-seconde carrée"),
                 new UnitInflectionTestCase("square-decimeter-square-second", "fr", null, 2,
