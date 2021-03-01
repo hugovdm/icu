@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.MissingResourceException;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -2277,14 +2276,14 @@ public class NumberFormatterApiTest extends TestFmwk {
         LocalizedNumberFormatter formatter;
         FormattedNumber fn;
         for (TestCase t : cases) {
-            // TODO(icu-units#140): make this work for more than just UnitWidth.FULL_NAME
-        //     formatter = NumberFormatter.with()
-        //                     .unit(MeasureUnit.forIdentifier(t.unitIdentifier))
-        //                     .locale(new ULocale(t.locale));
-        //     fn = formatter.format(1.1);
-        //     assertEquals("Testing gender with default width, unit: " + t.unitIdentifier +
-        //                      ", locale: " + t.locale,
-        //                  t.expectedGender, fn.getGender());
+            // // TODO(icu-units#140): make this work for more than just UnitWidth.FULL_NAME
+            // formatter = NumberFormatter.with()
+            //                 .unit(MeasureUnit.forIdentifier(t.unitIdentifier))
+            //                 .locale(new ULocale(t.locale));
+            // fn = formatter.format(1.1);
+            // assertEquals("Testing gender with default width, unit: " + t.unitIdentifier +
+            //                  ", locale: " + t.locale,
+            //              t.expectedGender, fn.getGender());
 
             formatter = NumberFormatter.with()
                             .unit(MeasureUnit.forIdentifier(t.unitIdentifier))
