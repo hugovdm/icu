@@ -632,7 +632,8 @@ public class LongNameHandler
      * @param locale The desired locale.
      * @param unit The measure unit to construct a LongNameHandler for.
      * @param width Specifies the desired unit rendering.
-     * @param unitDisplayCase
+     * @param unitDisplayCase Specifies the desired grammatical case. If the
+     *     specified case is not found, we fall back to nominative or no-case.
      * @param rules Plural rules.
      * @param parent Plural rules.
      */
